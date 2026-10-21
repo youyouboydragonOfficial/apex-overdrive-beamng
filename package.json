@@ -1,0 +1,44 @@
+{
+  "name": "apex-overdrive-beamng",
+  "version": "2.0.0",
+  "description": "APEX OVERDRIVE: BeamNG Soft-Body Physics Edition - 超リアル軟体物理クラッシュ＆高速ハイウェイシミュレーター Windows App",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "smoke": "electron . --smoke-test",
+    "dist": "electron-builder --win portable nsis"
+  },
+  "author": "youyouboydragonOfficial",
+  "license": "MIT",
+  "build": {
+    "appId": "com.apexoverdrive.beamng.edition",
+    "productName": "ApexOverdriveBeamNG",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "src/**/*"
+    ],
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "artifactName": "ApexOverdrive-BeamNG-Setup-v2.0.0.exe"
+    },
+    "portable": {
+      "artifactName": "ApexOverdrive-BeamNG-Portable-v2.0.0.exe"
+    }
+  },
+  "devDependencies": {
+    "electron": "^39.0.0",
+    "electron-builder": "^26.0.0"
+  }
+}

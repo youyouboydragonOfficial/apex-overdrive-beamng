@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>APEX OVERDRIVE: BeamNG Soft-Body Physics Edition v2.0</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Bundled Offline Three.js r128 & Cannon.js 0.6.2 -->
+    <script src="./vendor/three.min.js"></script>
+    <script src="./vendor/cannon.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #050811;
+            color: #f8fafc;
+            font-family: 'Noto Sans JP', sans-serif;
+            overflow: hidden;
+        }
+        #canvas-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        canvas {
+            background-color: #050811;
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+        canvas:active {
+            cursor: grabbing;
+        }
+        .hud-glass {
+            background: rgba(9, 14, 26, 0.84);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow: 0 10px 36px rgba(0, 0, 0, 0.65);
+        }
+        .game-btn {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+            transition: all 0.14s cubic-bezier(0.4, 0, 0.2, 1);
+            touch-action: manipulation;
+        }
+        .game-btn:hover {
+            border-color: #38bdf8;
+            box-shadow: 0 0 18px rgba(56, 189, 248, 0.45);
+            transform: translateY(-1px);
+        }
+        .game-btn:active, .game-btn.active-key {
+            background: linear-gradient(145deg, #0284c7, #0369a1);
+            border-color: #7dd3fc;
+            transform: translateY(2px) scale(0.96);
+            box-shadow: 0 0 22px rgba(56, 189, 248, 0.75);
+        }
+        .primary-btn {
+            background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+            border: 1px solid rgba(254, 202, 202, 0.55);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.55), inset 0 1px 2px rgba(255, 255, 255, 0.35);
+            transition: all 0.2s ease;
+        }
+        .primary-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 12px 32px rgba(239, 68, 68, 0.75);
+        }
+        .garage-tab-btn {
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            color: #94a3b8;
+            transition: all 0.15s ease;
+        }
+        .garage-tab-btn.active-tab {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.35), rgba(30, 41, 59, 0.95));
+            border-color: #38bdf8;
+            color: #ffffff;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+        }
+        .select-card {
+            background: rgba(15, 23, 42, 0.78);
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            transition: all 0.16s ease;
+            cursor: pointer;
+        }
+        .select-card:hover {
+            border-color: rgba(56, 189, 248, 0.65);
+            background: rgba(30, 41, 59, 0.9);
+            transform: translateY(-1px);
+        }
+        .select-card.selected {
+            background: linear-gradient(145deg, rgba(14, 116, 144, 0.52), rgba(15, 23, 42, 0.95));
+            border-color: #38bdf8;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.4), inset 0 0 8px rgba(56, 189, 248, 0.2);
+        }
+        .finish-btn.selected {
+            border-color: #38bdf8;
+            background: rgba(14, 165, 233, 0.3);
+            color: #fff;
+        }
+        .critical-vignette {
+            pointer-events: none;
+            box-shadow: inset 0 0 55px rgba(220, 38, 38, 0.42);
+        }
+        @keyframes popCombo {
+            0% { transform: scale(0.5) translateY(10px); opacity: 0; }
+            22% { transform: scale(1.1) translateY(0px); opacity: 1; }
+            82% { transform: scale(1.0) translateY(-4px); opacity: 1; }
+            100% { transform: scale(0.92) translateY(-18px); opacity: 0; }
+        }
+        .combo-pop {
+            animation: popCombo 1.2s forwards cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.45);
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen w-screen overflow-hidden select-none">
+
+    <!-- Top HUD Bar -->
+    <header class="w-full z-20 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 hud-glass border-b border-slate-700/60">
+        <!-- Left: Brand & Stage Progress -->
+        <div class="flex items-center gap-2.5">
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                <h1 class="font-['Orbitron'] font-black text-sm sm:text-base tracking-wider bg-gradient-to-r from-white via-sky-300 to-orange-400 bg-clip-text text-transparent">
+                    APEX OVERDRIVE: BeamNG EDITION
+                </h1>
+            </div>
+            <span id="hud-stage-badge" class="text-[11px] font-bold text-sky-300 bg-slate-900/90 px-2.5 py-0.5 rounded-full border border-sky-500/30">
+                Lv.2 | 首都高湾岸6車線
+            </span>
+        </div>
+
+        <!-- Center: Armor Bar + Goal Distance Progress Bar -->
+        <div class="flex-1 max-w-lg mx-2 flex flex-col gap-1">
+            <div class="flex justify-between items-center text-[11px]">
+                <span class="font-bold flex items-center gap-1 text-slate-200">
+                    <i class="fa-solid fa-car-burst text-orange-400"></i>
+                    軟体シャシー剛性 (CHASSIS)
+                </span>
+                <div class="flex items-center gap-2">
+                    <span id="goal-progress-text" class="text-[11px] font-bold text-emerald-300">GOAL残り: 3.20 km (0%)</span>
+                    <span id="detached-parts-badge" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 border border-amber-500/30">
+                        破損パーツ: 0 / 6
+                    </span>
+                    <span id="hp-text" class="font-['Orbitron'] font-bold text-emerald-400 text-xs">100%</span>
+                </div>
+            </div>
+            <div class="w-full h-2.5 bg-slate-900/90 rounded-full overflow-hidden border border-slate-700 p-0.5 flex gap-1">
+                <div id="hp-bar" class="h-full rounded-full transition-all duration-150 bg-gradient-to-r from-emerald-500 via-lime-400 to-emerald-300" style="width: 100%;"></div>
+            </div>
+            <div class="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+                <div id="goal-progress-bar" class="h-full bg-gradient-to-r from-sky-400 to-emerald-400 transition-all duration-150" style="width: 0%;"></div>
+            </div>
+        </div>
+
+        <!-- Right: Score, Overtakes & Action Buttons -->
+        <div class="flex items-center gap-1.5">
+            <div class="flex items-center gap-2 bg-slate-900/80 px-2.5 py-1 rounded-xl border border-slate-700/80">
+                <div class="text-right">
+                    <div class="text-[9px] text-slate-400 leading-none">OVERTAKES</div>
+                    <div id="overtake-count" class="font-['Orbitron'] font-bold text-sky-400 text-xs sm:text-sm">0</div>
+                </div>
+                <div class="h-5 w-[1px] bg-slate-700"></div>
+                <div class="text-right">
+                    <div class="text-[9px] text-slate-400 leading-none">SCORE</div>
+                    <div id="score-display" class="font-['Orbitron'] font-bold text-amber-400 text-xs sm:text-sm">000000</div>
+                </div>
+            </div>
+
+            <button id="btn-garage" class="game-btn px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 text-amber-300 border-amber-500/40" title="ショールーム＆設定画面">
+                <i class="fa-solid fa-warehouse"></i>
+                <span class="hidden xl:inline">ガレージ</span>
+            </button>
+            <button id="btn-beam-view" class="game-btn px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 text-slate-200" title="BeamNG 構造ノード・応力表示 (Vキー)">
+                <i class="fa-solid fa-diagram-project text-emerald-400"></i>
+                <span class="hidden lg:inline">構造ノード[V]</span>
+            </button>
+            <button id="btn-slowmo" class="game-btn px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 text-slate-200" title="スローモーション切替 (Shiftキー)">
+                <i class="fa-solid fa-Burst text-fuchsia-400 fa-clock"></i>
+                <span class="hidden lg:inline">スロー[Shift]</span>
+            </button>
+            <button id="btn-repair-hud" class="game-btn px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 text-lime-300" title="即座に板金・パンク修復 (Rキー)">
+                <i class="fa-solid fa-wrench"></i>
+                <span class="hidden xl:inline">修復[R]</span>
+            </button>
+            <button id="btn-camera" class="game-btn px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 text-slate-200" title="カメラ視点切替 (Cキー)">
+                <i class="fa-solid fa-video text-sky-400"></i>
+                <span class="hidden xl:inline" id="camera-label">チェイス</span>
+            </button>
+            <button id="btn-bgm" class="game-btn px-2 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 text-slate-200" title="BGM切替">
+                <i id="bgm-icon" class="fa-solid fa-music text-pink-400"></i>
+                <span class="hidden 2xl:inline" id="bgm-label">BGM 1</span>
+            </button>
+            <button id="btn-sound" class="game-btn px-2 py-1.5 rounded-xl text-xs font-bold flex items-center text-slate-200" title="効果音 ON/OFF">
+                <i id="sound-icon" class="fa-solid fa-volume-high text-emerald-400"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main 3D Viewport Area -->
+    <main id="canvas-wrapper" class="flex-1 relative">
+        <canvas id="game-canvas"></canvas>
+
+        <div id="critical-overlay" class="hidden absolute inset-0 critical-vignette"></div>
+
+        <!-- 6-Lane Oncoming Hazard Radar Bar (Shows Elderly Wrong-Way & Road-Rage lanes ahead!) -->
+        <div class="pointer-events-none absolute top-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
+            <span id="lane-radar-0" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900/75 text-emerald-400/80 border border-slate-700/70">L1 CLEAR</span>
+            <span id="lane-radar-1" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900/75 text-emerald-400/80 border border-slate-700/70">L2 CLEAR</span>
+            <span id="lane-radar-2" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900/75 text-emerald-400/80 border border-slate-700/70">L3 CLEAR</span>
+            <span id="lane-radar-3" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900/75 text-emerald-400/80 border border-slate-700/70">L4 CLEAR</span>
+            <span id="lane-radar-4" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900/75 text-emerald-400/80 border border-slate-700/70">L5 CLEAR</span>
+            <span id="lane-radar-5" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900/75 text-emerald-400/80 border border-slate-700/70">L6 CLEAR</span>
+        </div>
+
+        <!-- Sandbox Crash Lab Toolbar (Visible when in BeamNG Crash Sandbox Mode) -->
+        <div id="sandbox-toolbar" class="hidden absolute top-11 left-1/2 -translate-x-1/2 hud-glass px-3 py-1.5 rounded-xl border border-cyan-400/40 flex items-center gap-2 z-20">
+            <span class="text-xs font-bold text-cyan-300"><i class="fa-solid fa-flask mr-1"></i>実験場スポーン:</span>
+            <button id="sb-spawn-crusher" class="game-btn px-2.5 py-1 rounded-lg text-xs font-bold text-fuchsia-300">⚙️ 油圧クラッシャー</button>
+            <button id="sb-spawn-wall" class="game-btn px-2.5 py-1 rounded-lg text-xs font-bold text-orange-300">🧱 衝突試験バリア</button>
+            <button id="sb-spawn-ramp" class="game-btn px-2.5 py-1 rounded-lg text-xs font-bold text-sky-300">📐 大ジャンプ台</button>
+            <button id="sb-spawn-barrel" class="game-btn px-2.5 py-1 rounded-lg text-xs font-bold text-red-300">🛢️ 爆発ドラム缶</button>
+            <button id="sb-btn-repair" class="game-btn px-2.5 py-1 rounded-lg text-xs font-bold text-lime-300 border-lime-400/50">🔧 完全板金リセット[R]</button>
+        </div>
+
+        <!-- Floating Notifications -->
+        <div id="event-feed" class="pointer-events-none absolute top-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 z-10"></div>
+
+        <!-- Bottom-Right Speedometer, Gear, NOS & G-Force Telemetry HUD -->
+        <div class="pointer-events-none absolute bottom-4 right-4 hud-glass px-4 py-2.5 rounded-2xl border border-sky-500/30 flex items-center gap-4 z-10">
+            <!-- Live G-Force Meter -->
+            <div class="hidden sm:flex flex-col items-center">
+                <div class="w-11 h-11 rounded-full bg-slate-950 border border-slate-700 relative flex items-center justify-center">
+                    <div class="w-5 h-5 rounded-full border border-slate-800"></div>
+                    <div id="gforce-dot" class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e] transition-transform duration-75"></div>
+                </div>
+                <span id="gforce-text" class="text-[9px] font-['Orbitron'] text-rose-300 mt-0.5">MAX: 0.0G</span>
+            </div>
+
+            <div class="flex flex-col">
+                <span class="text-[10px] tracking-widest text-slate-400 font-bold">GEAR / RPM / NOS</span>
+                <div class="flex items-baseline gap-2">
+                    <span id="gear-display" class="font-['Orbitron'] text-2xl sm:text-3xl font-black text-amber-400">3</span>
+                    <div class="flex flex-col gap-1 w-24 sm:w-28">
+                        <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                            <div id="rpm-bar" class="h-full bg-gradient-to-r from-sky-400 via-amber-400 to-red-500 transition-all duration-75" style="width: 60%;"></div>
+                        </div>
+                        <div class="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-cyan-900">
+                            <div id="nos-bar" class="h-full bg-gradient-to-r from-cyan-400 to-indigo-400 transition-all duration-75" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                </div>
+                <span id="damage-warning" class="text-[10px] text-emerald-400 font-bold mt-1">
+                    <i class="fa-solid fa-shield-halved mr-1"></i>SOFT-BODY CHASSIS OK
+                </span>
+            </div>
+            <div class="text-right border-l border-slate-700 pl-4">
+                <div id="speed-display" class="font-['Orbitron'] text-3xl sm:text-5xl font-black tracking-tight text-white drop-shadow-[0_0_12px_rgba(56,189,248,0.6)]">
+                    145
+                </div>
+                <div class="text-xs font-['Orbitron'] text-sky-400 tracking-widest">KM/H</div>
+            </div>
+        </div>
+
+        <!-- Bottom-Left Soft-Body Chassis & 4-Wheel Schematic -->
+        <div class="pointer-events-none hidden sm:flex absolute bottom-4 left-4 hud-glass p-3 rounded-2xl border border-slate-700/80 items-center gap-3.5 z-10">
+            <div class="relative w-14 h-24 flex flex-col items-center justify-between p-1.5 bg-slate-900/95 rounded-xl border border-slate-700">
+                <div id="schem-tire-FL" class="absolute -left-1.5 top-2.5 w-2 h-5 rounded-sm bg-emerald-400 border border-white/30"></div>
+                <div id="schem-tire-FR" class="absolute -right-1.5 top-2.5 w-2 h-5 rounded-sm bg-emerald-400 border border-white/30"></div>
+                <div id="schem-tire-RL" class="absolute -left-1.5 bottom-2.5 w-2 h-5 rounded-sm bg-emerald-400 border border-white/30"></div>
+                <div id="schem-tire-RR" class="absolute -right-1.5 bottom-2.5 w-2 h-5 rounded-sm bg-emerald-400 border border-white/30"></div>
+
+                <div id="schem-hood" class="w-8 h-4 rounded-t-md bg-emerald-500/80 border border-white/20"></div>
+                <div class="w-full flex justify-between items-center my-0.5 px-0.5">
+                    <div id="schem-doorL" class="w-1.5 h-9 rounded-l bg-emerald-500/80"></div>
+                    <div id="schem-core" class="w-5 h-9 rounded bg-emerald-500/50 border border-white/20"></div>
+                    <div id="schem-doorR" class="w-1.5 h-9 rounded-r bg-emerald-500/80"></div>
+                </div>
+                <div id="schem-trunk" class="w-8 h-3.5 rounded-b-md bg-emerald-500/80 border border-white/20"></div>
+            </div>
+            <div class="text-xs space-y-1 max-w-[215px]">
+                <div id="hud-car-name" class="font-bold text-sky-300 truncate">V12 ROSSO CORSA</div>
+                <div id="tire-pull-status" class="text-[11px] font-bold text-emerald-400">
+                    <i class="fa-solid fa-circle-check mr-1"></i>4輪サス・アライメント正常
+                </div>
+                <div class="text-[10px] text-slate-400 leading-tight">
+                    [V] 構造ノード表示 / [R] 板金修復 / [Shift] スロー / [Space] ニトロ / [H] 威嚇ホーン
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- REDESIGNED SPLIT-VIEW 3D SHOWROOM & STAGE SELECT UI (Crystal Clear & Easy to Read!) -->
+        <!-- ========================================================================= -->
+        <div id="modal-overlay" class="absolute inset-0 z-30 flex flex-col lg:flex-row items-stretch justify-between p-3 sm:p-5 bg-gradient-to-r from-slate-950/95 via-slate-950/70 to-transparent pointer-events-none">
+
+            <!-- Left Interactive Control Deck (Scrollable, high contrast, readable fonts) -->
+            <div class="pointer-events-auto hud-glass w-full lg:w-[560px] xl:w-[610px] h-full rounded-3xl p-4 sm:p-5 border border-sky-500/35 flex flex-col justify-between gap-3 overflow-y-auto custom-scroll">
+
+                <!-- Top Title & Primary Launch Button -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 border-b border-slate-700/80 pb-3">
+                    <div>
+                        <div id="modal-badge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-300 text-[10px] font-bold mb-1">
+                            <i class="fa-solid fa-bolt"></i> BEAMNG SOFT-BODY VERTEX PHYSICS & 3D SHOWROOM
+                        </div>
+                        <h2 id="modal-title" class="font-['Orbitron'] text-xl sm:text-2xl font-black text-white tracking-wide">
+                            SHOWROOM & STAGE SELECT
+                        </h2>
+                    </div>
+                    <button id="btn-start" type="button" class="primary-btn w-full sm:w-auto py-3 px-6 rounded-2xl font-black text-white text-sm sm:text-base tracking-wider flex items-center justify-center gap-2 cursor-pointer shrink-0">
+                        <i class="fa-solid fa-flag-checkered"></i>
+                        <span id="btn-start-text">エンジン始動・出撃！</span>
+                    </button>
+                </div>
+
+                <!-- Result Stats Banner (Shown on Stage Clear or Game Over) -->
+                <div id="result-stats" class="hidden grid-cols-3 gap-2 bg-slate-900/90 p-3 rounded-2xl border border-sky-500/40 text-center">
+                    <div>
+                        <div class="text-xs text-slate-400">最終スコア / ランク</div>
+                        <div id="final-score" class="font-['Orbitron'] text-sm sm:text-base font-black text-amber-400">0</div>
+                    </div>
+                    <div class="border-x border-slate-700">
+                        <div class="text-xs text-slate-400">追い越し台数</div>
+                        <div id="final-overtakes" class="font-['Orbitron'] text-sm sm:text-base font-black text-sky-400">0台</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400">最高速度</div>
+                        <div id="final-topspeed" class="font-['Orbitron'] text-sm sm:text-base font-black text-emerald-400">0 km/h</div>
+                    </div>
+                </div>
+
+                <!-- Clean 3-Tab Navigation Bar -->
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" data-tab="tab-machines" class="garage-tab-btn active-tab py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-car-side"></i> 1. マシン＆塗装
+                    </button>
+                    <button type="button" data-tab="tab-stages" class="garage-tab-btn py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-road"></i> 2. コース＆難易度
+                    </button>
+                    <button type="button" data-tab="tab-guide" class="garage-tab-btn py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-book-open"></i> 3. 操作＆物理図鑑
+                    </button>
+                </div>
+
+                <!-- TAB 1: MACHINE SELECTION, SPEC BARS & CUSTOM PAINT -->
+                <div id="tab-machines" class="garage-tab-pane flex-1 flex flex-col gap-3">
+                    <!-- Selected Machine Live Spec Card -->
+                    <div class="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-700/80 space-y-2">
+                        <div class="flex items-baseline justify-between">
+                            <h3 id="garage-car-title" class="font-['Orbitron'] text-base sm:text-lg font-black text-sky-300">V12 ROSSO CORSA</h3>
+                            <span id="garage-car-category" class="text-[11px] font-bold text-amber-300">ITALIAN V12 | 1420kg | 385km/h</span>
+                        </div>
+                        <p id="garage-car-desc" class="text-xs text-slate-300 leading-relaxed">
+                            流麗なウェッジシェイプと高出力V12自然吸気エンジン。最高速・旋回性能・クラッシュ吸収ゾーンのバランスに優れたフラッグシップ。
+                        </p>
+                        <!-- Visual Spec Bars -->
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 pt-1 text-[11px]">
+                            <div>
+                                <div class="flex justify-between text-slate-300 mb-0.5"><span>最高速 (TOP SPEED)</span></div>
+                                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden"><div id="stat-bar-speed" class="h-full bg-sky-400" style="width:92%"></div></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-slate-300 mb-0.5"><span>加速・ニトロ (ACCEL)</span></div>
+                                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden"><div id="stat-bar-accel" class="h-full bg-emerald-400" style="width:88%"></div></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-slate-300 mb-0.5"><span>旋回グリップ (HANDLING)</span></div>
+                                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden"><div id="stat-bar-handling" class="h-full bg-amber-400" style="width:90%"></div></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-slate-300 mb-0.5"><span>車体剛性・質量 (ARMOR)</span></div>
+                                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden"><div id="stat-bar-armor" class="h-full bg-rose-500" style="width:72%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 6 Sculpted Car Cards -->
+                    <div id="car-select-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <div data-car="HYPER" class="select-card selected rounded-xl p-2.5 text-left">
+                            <div class="text-[10px] font-bold text-red-400">ITALIAN V12</div>
+                            <div class="font-bold text-sm text-white">V12 ROSSO</div>
+                            <div class="text-[11px] text-slate-400">385km/h・王道スーパーカー</div>
+                        </div>
+                        <div data-car="JDM" class="select-card rounded-xl p-2.5 text-left">
+                            <div class="text-[10px] font-bold text-sky-400">TWIN-TURBO AWD</div>
+                            <div class="font-bold text-sm text-white">N-GTR NISMO</div>
+                            <div class="text-[11px] text-slate-400">猛烈加速＆高剛性4WD</div>
+                        </div>
+                        <div data-car="INTERCEPTOR" class="select-card rounded-xl p-2.5 text-left">
+                            <div class="text-[10px] font-bold text-amber-400">ARMORED RAM</div>
+                            <div class="font-bold text-sm text-white">TITAN V8 RAM</div>
+                            <div class="text-[11px] text-slate-400">剛性180%・逆走車粉砕仕様</div>
+                        </div>
+                        <div data-car="PROTOTYPE" class="select-card rounded-xl p-2.5 text-left">
+                            <div class="text-[10px] font-bold text-purple-400">LMP1 PROTOTYPE</div>
+                            <div class="font-bold text-sm text-white">LE MANS X-1</div>
+                            <div class="text-[11px] text-slate-400">最高425km/h・極限エアロ</div>
+                        </div>
+                        <div data-car="DRIFT" class="select-card rounded-xl p-2.5 text-left">
+                            <div class="text-[10px] font-bold text-yellow-400">ROTARY DRIFT</div>
+                            <div class="font-bold text-sm text-white">RX-7FD SPEC</div>
+                            <div class="text-[11px] text-slate-400">超旋回ワイドボディ</div>
+                        </div>
+                        <div data-car="GOLIATH" class="select-card rounded-xl p-2.5 text-left">
+                            <div class="text-[10px] font-bold text-emerald-400">3.1t HYPER-SUV</div>
+                            <div class="font-bold text-sm text-white">GOLIATH V10</div>
+                            <div class="text-[11px] text-slate-400">剛性215%・無敵の重戦車</div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Paint & Finish Bar -->
+                    <div class="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-xs font-bold text-slate-300 mr-1"><i class="fa-solid fa-palette text-sky-400 mr-1"></i>塗装:</span>
+                            <button type="button" data-color="ef233c" class="paint-swatch w-6 h-6 rounded-full bg-[#ef233c] border-2 border-white/60 hover:scale-110 transition"></button>
+                            <button type="button" data-color="0284c7" class="paint-swatch w-6 h-6 rounded-full bg-[#0284c7] border-2 border-white/60 hover:scale-110 transition"></button>
+                            <button type="button" data-color="facc15" class="paint-swatch w-6 h-6 rounded-full bg-[#facc15] border-2 border-white/60 hover:scale-110 transition"></button>
+                            <button type="button" data-color="10b981" class="paint-swatch w-6 h-6 rounded-full bg-[#10b981] border-2 border-white/60 hover:scale-110 transition"></button>
+                            <button type="button" data-color="9333ea" class="paint-swatch w-6 h-6 rounded-full bg-[#9333ea] border-2 border-white/60 hover:scale-110 transition"></button>
+                            <button type="button" data-color="f8fafc" class="paint-swatch w-6 h-6 rounded-full bg-[#f8fafc] border-2 border-white/60 hover:scale-110 transition"></button>
+                            <button type="button" data-color="18181b" class="paint-swatch w-6 h-6 rounded-full bg-[#18181b] border-2 border-white/60 hover:scale-110 transition"></button>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" data-finish="METALLIC" class="finish-btn selected px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-700 text-slate-300">メタリック</button>
+                            <button type="button" data-finish="MATTE" class="finish-btn px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-700 text-slate-300">マット</button>
+                            <button type="button" data-finish="CHROME" class="finish-btn px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-700 text-slate-300">クローム鏡面</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: GAME MODE, STAGE, DIFFICULTY & TRAFFIC VOLUME SLIDER -->
+                <div id="tab-stages" class="garage-tab-pane hidden flex-1 flex flex-col gap-3">
+                    <!-- Game Mode Selector -->
+                    <div>
+                        <div class="text-xs font-bold text-sky-300 mb-1.5"><i class="fa-solid fa-flag mr-1"></i>ゲームモード選択</div>
+                        <div id="mode-select-grid" class="grid grid-cols-3 gap-2">
+                            <div data-mode="CAREER" class="select-card selected rounded-xl p-2.5 text-left">
+                                <div class="text-xs font-bold text-emerald-400">🏆 ステージクリア制</div>
+                                <div class="text-[11px] text-slate-300 mt-0.5">目標距離のゴールゲート到達でステージ制覇！</div>
+                            </div>
+                            <div data-mode="SANDBOX" class="select-card rounded-xl p-2.5 text-left">
+                                <div class="text-xs font-bold text-cyan-300">🧪 物理クラッシュ実験場</div>
+                                <div class="text-[11px] text-slate-300 mt-0.5">ゲームオーバーなし！圧壊ローラーや壁を自在配置</div>
+                            </div>
+                            <div data-mode="ENDLESS" class="select-card rounded-xl p-2.5 text-left">
+                                <div class="text-xs font-bold text-amber-400">♾️ エンドレス耐久</div>
+                                <div class="text-[11px] text-slate-300 mt-0.5">限界まで走り続けてハイスコアを競うモード</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Course Map Selection -->
+                    <div>
+                        <div class="flex justify-between text-xs font-bold text-sky-300 mb-1">
+                            <span><i class="fa-solid fa-map-location-dot mr-1"></i>コース環境選択 (全4ステージ)</span>
+                            <span id="map-hazard-label" class="text-[11px] text-slate-300">路面グリップ: 100%</span>
+                        </div>
+                        <div id="map-select-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div data-map="TOKYO" class="select-card selected rounded-xl p-2.5 text-left">
+                                <div class="text-xs font-bold text-sky-300">🌃 首都高湾岸</div>
+                                <div class="text-[11px] text-slate-400">ネオン高層ビル群</div>
+                            </div>
+                            <div data-map="CANYON" class="select-card rounded-xl p-2.5 text-left">
+                                <div class="text-xs font-bold text-amber-400">🏜️ 大渓谷サンセット</div>
+                                <div class="text-[11px] text-slate-400">夕陽の赤岩ハイウェイ</div>
+                            </div>
+                            <div data-map="SNOW" class="select-card rounded-xl p-2.5 text-left">
+                                <div class="text-xs font-bold text-cyan-200">❄️ ブリザード雪山</div>
+                                <div class="text-[11px] text-slate-400">滑りやすい凍結路</div>
+                            </div>
+                            <div data-map="INFERNO" class="select-card rounded-xl p-2.5 text-left">
+                                <div class="text-xs font-bold text-red-400">🌋 溶岩コンビナート</div>
+                                <div class="text-[11px] text-slate-400">火の粉舞う工業地帯</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rebalanced 5 Difficulty Levels -->
+                    <div>
+                        <div class="text-xs font-bold text-sky-300 mb-1"><i class="fa-solid fa-gauge-high mr-1"></i>レベル（難易度）選択 ※全レベルで回避ルート保証！</div>
+                        <div id="level-select-grid" class="grid grid-cols-5 gap-1.5">
+                            <div data-level="1" class="select-card rounded-xl p-2 text-center relative">
+                                <span class="clear-badge hidden absolute top-1 right-1 text-[10px] text-emerald-400">🏆</span>
+                                <div class="font-['Orbitron'] font-black text-xs text-emerald-400">LV.1</div>
+                                <div class="text-xs font-bold text-white">ROOKIE</div>
+                                <div class="text-[10px] text-slate-400">2.5km</div>
+                            </div>
+                            <div data-level="2" class="select-card selected rounded-xl p-2 text-center relative">
+                                <span class="clear-badge hidden absolute top-1 right-1 text-[10px] text-emerald-400">🏆</span>
+                                <div class="font-['Orbitron'] font-black text-xs text-sky-400">LV.2</div>
+                                <div class="text-xs font-bold text-white">PRO</div>
+                                <div class="text-[10px] text-slate-400">3.2km</div>
+                            </div>
+                            <div data-level="3" class="select-card rounded-xl p-2 text-center relative">
+                                <span class="clear-badge hidden absolute top-1 right-1 text-[10px] text-emerald-400">🏆</span>
+                                <div class="font-['Orbitron'] font-black text-xs text-amber-400">LV.3</div>
+                                <div class="text-xs font-bold text-white">HAZARD</div>
+                                <div class="text-[10px] text-slate-400">4.0km</div>
+                            </div>
+                            <div data-level="4" class="select-card rounded-xl p-2 text-center relative">
+                                <span class="clear-badge hidden absolute top-1 right-1 text-[10px] text-emerald-400">🏆</span>
+                                <div class="font-['Orbitron'] font-black text-xs text-orange-400">LV.4</div>
+                                <div class="text-xs font-bold text-white">HARD</div>
+                                <div class="text-[10px] text-slate-400">4.8km</div>
+                            </div>
+                            <div data-level="5" class="select-card rounded-xl p-2 text-center border-fuchsia-500/50 relative">
+                                <span class="clear-badge hidden absolute top-1 right-1 text-[10px] text-emerald-400">🏆</span>
+                                <div class="font-['Orbitron'] font-black text-xs text-fuchsia-400">LV.5</div>
+                                <div class="text-xs font-bold text-white">逆走決戦</div>
+                                <div class="text-[10px] text-fuchsia-300">5.5km</div>
+                            </div>
+                        </div>
+                        <div id="level-desc-label" class="text-xs text-amber-300 font-bold mt-1.5 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800">
+                            目標 3.2km | ETC料金所ゲート・ジャンプ台が出現。まれに煽り運転車や逆走車も登場
+                        </div>
+                    </div>
+
+                    <!-- Traffic Volume Slider (Allows reducing traffic even further!) -->
+                    <div class="bg-slate-900/90 p-3 rounded-2xl border border-slate-800 flex flex-col gap-1">
+                        <div class="flex justify-between items-center text-xs font-bold">
+                            <span class="text-emerald-300"><i class="fa-solid fa-sliders mr-1"></i>一般車・逆走車の交通量スライダー (クリアしやすさ調整)</span>
+                            <span id="traffic-density-label" class="font-['Orbitron'] text-sky-300 text-sm">75%</span>
+                        </div>
+                        <input id="traffic-density-slider" type="range" min="30" max="140" value="75" step="5" class="w-full accent-sky-400 cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-slate-400">
+                            <span>30% (ガラガラ・超快適クリア)</span>
+                            <span>75% (推奨バランス)</span>
+                            <span>140% (高密度カオス)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: CONTROLS & BEAMNG PHYSICS GUIDE -->
+                <div id="tab-guide" class="garage-tab-pane hidden flex-1 flex flex-col gap-2.5 text-xs">
+                    <div class="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+                        <div class="font-bold text-sky-300 text-sm"><i class="fa-solid fa-keyboard mr-1.5"></i>キーボード＆ボタン操作一覧</div>
+                        <div class="grid grid-cols-2 gap-2 text-slate-200">
+                            <div><span class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-600 font-bold text-sky-300">← / → (A / D)</span> ステアリング旋回</div>
+                            <div><span class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-600 font-bold text-sky-300">↑ / ↓ (W / S)</span> アクセル / ブレーキ</div>
+                            <div><span class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-600 font-bold text-cyan-300">Space</span> ニトロ噴射 (NOS加速)</div>
+                            <div><span class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-600 font-bold text-fuchsia-300">Shift</span> スローモーション (Bullet-Time)</div>
+                            <div><span class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-600 font-bold text-emerald-300">V キー</span> BeamNG 構造ノード応力表示</div>
+                            <div><span class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-600 font-bold text-lime-300">R キー</span> 車体の板金・パンク即時修復</div>
+                            <div><span class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-600 font-bold text-amber-300">H キー</span> 威嚇ホーン＆パッシング (前車を退かす)</div>
+                            <div><span class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-600 font-bold text-slate-300">C / F11</span> カメラ切替 / フルスクリーン</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800 space-y-1.5">
+                        <div class="font-bold text-amber-300 text-sm"><i class="fa-solid fa-car-burst mr-1.5"></i>BeamNG 軟体物理＆ハイウェイギミック</div>
+                        <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-300">
+                            <div>🟢 <b>軟体メッシュ変形</b>: 衝突位置・角度に応じてボンネットやドアの頂点がリアルに凹み、ラッチ破損で風圧バタつき！</div>
+                            <div>🔱 <b>高齢者逆走車レーダー</b>: 画面上部の「L1〜L6」レーダーが赤点滅した車線に逆走車が接近！事前に隣車線へ回避可能。</div>
+                            <div>💢 <b>悪質煽り運転車</b>: 幅寄せしてくる黒塗り車。[H]キーのホーンで威嚇するか、装甲車で弾き飛ばせ！</div>
+                            <div>🛂 <b>突発ETC料金所</b>: 緑のETCレーンへ285km/h以下で進入するとバーが開いてボーナス！</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Launch Button -->
+                <button id="btn-start-bottom" type="button" class="primary-btn w-full py-3 px-6 rounded-2xl font-black text-white text-sm sm:text-base tracking-wider flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-play"></i>
+                    <span>この設定でハイウェイへ出撃！ (START RACE)</span>
+                </button>
+            </div>
+
+            <!-- Right Interactive 3D Showroom Floating Controls (Lets user inspect & crash-test the 3D car right on the Home screen!) -->
+            <div class="pointer-events-auto hidden lg:flex flex-col justify-end items-end p-4 gap-3">
+                <div class="hud-glass px-4 py-3 rounded-2xl border border-sky-500/30 flex flex-col items-end gap-2">
+                    <div class="text-xs font-bold text-sky-300">
+                        <i class="fa-solid fa-cube mr-1"></i>3D ショールーム・プレビュー (ドラッグで360°回転)
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="btn-showroom-dent" type="button" class="game-btn px-3 py-2 rounded-xl text-xs font-bold text-orange-300 border-orange-500/40 flex items-center gap-1.5">
+                            <i class="fa-solid fa-hammer"></i> 軟体クラッシュ試演 (凹ませる)
+                        </button>
+                        <button id="btn-showroom-beam" type="button" class="game-btn px-3 py-2 rounded-xl text-xs font-bold text-emerald-300 border-emerald-500/40 flex items-center gap-1.5">
+                            <i class="fa-solid fa-diagram-project"></i> 構造ノード表示
+                        </button>
+                        <button id="btn-showroom-repair" type="button" class="game-btn px-3 py-2 rounded-xl text-xs font-bold text-lime-300 border-lime-500/40 flex items-center gap-1.5">
+                            <i class="fa-solid fa-rotate-left"></i> 板金リセット
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom External Control Panel -->
+    <footer class="w-full z-20 px-4 py-2 hud-glass border-t border-slate-700/60 flex items-center justify-between sm:justify-center gap-3 sm:gap-6">
+        <div class="flex items-center gap-2">
+            <button id="ctrl-left" class="game-btn w-14 h-11 sm:w-16 sm:h-11 rounded-2xl flex items-center justify-center text-xl text-white" aria-label="左ステアリング">
+                <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <button id="ctrl-right" class="game-btn w-14 h-11 sm:w-16 sm:h-11 rounded-2xl flex items-center justify-center text-xl text-white" aria-label="右ステアリング">
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <div class="hidden md:flex flex-col items-center text-center">
+            <span class="text-xs font-bold text-slate-200">[←][→] 旋回 / [↑] 加速 / [↓] ブレーキ / [Space] ニトロ / [Shift] スロー / [V] 構造ノード / [R] 板金修復</span>
+            <span class="text-[10px] text-slate-400">上部レーダー(L1〜L6)で逆走車を事前察知！目標距離を走り抜けてステージクリアを目指せ！</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button id="ctrl-down" class="game-btn w-14 h-11 sm:w-16 sm:h-11 rounded-2xl flex flex-col items-center justify-center text-rose-400">
+                <i class="fa-solid fa-arrow-down text-sm"></i>
+                <span class="text-[9px] font-bold">BRAKE</span>
+            </button>
+            <button id="ctrl-up" class="game-btn w-14 h-11 sm:w-16 sm:h-11 rounded-2xl flex flex-col items-center justify-center text-sky-300 border-sky-400/50">
+                <i class="fa-solid fa-arrow-up text-sm"></i>
+                <span class="text-[9px] font-bold">ACCEL</span>
+            </button>
+            <button id="ctrl-nos" class="game-btn w-16 h-11 sm:w-20 sm:h-11 rounded-2xl flex flex-col items-center justify-center text-cyan-300 border-cyan-400/60">
+                <i class="fa-solid fa-fire-flame-simple text-sm"></i>
+                <span class="text-[9px] font-bold">NOS [Space]</span>
+            </button>
+        </div>
+    </footer>
+
+    <!-- Modular BeamNG Soft-Body Physics & Game Scripts -->
+    <script src="./carBuilder.js"></script>
+    <script src="./audioEngine.js"></script>
+    <script src="./worldBuilder.js"></script>
+    <script src="./gameEngine.js"></script>
+</body>
+</html>
