@@ -1,7 +1,7 @@
 {
   "name": "apex-overdrive-beamng",
-  "version": "2.0.0",
-  "description": "APEX OVERDRIVE: BeamNG Soft-Body Physics Edition - 超リアル軟体物理クラッシュ＆高速ハイウェイシミュレーター Windows App",
+  "version": "2.5.0",
+  "description": "APEX OVERDRIVE: BeamNG Soft-Body Physics Edition v2.5 - 超リアル軟体物理クラッシュ・アクスル破断・22大機能 Windows App",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -31,10 +31,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "artifactName": "ApexOverdrive-BeamNG-Setup-v2.0.0.exe"
+      "artifactName": "ApexOverdrive-BeamNG-Setup-v2.5.0.exe"
     },
     "portable": {
-      "artifactName": "ApexOverdrive-BeamNG-Portable-v2.0.0.exe"
+      "artifactName": "ApexOverdrive-BeamNG-Portable-v2.5.0.exe"
     }
   },
   "devDependencies": {
