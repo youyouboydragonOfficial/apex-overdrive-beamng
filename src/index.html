@@ -135,6 +135,10 @@
                 <span class="text-[10px] text-slate-400">WANTED:</span>
                 <span id="wanted-stars" class="text-xs font-black text-slate-500">☆☆☆☆☆</span>
             </div>
+            <!-- High Beam & Passing Indicator -->
+            <div id="highbeam-badge" class="hidden flex items-center gap-1 bg-blue-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.6)] animate-pulse">
+                <i class="fa-solid fa-bolt text-yellow-300"></i> HIGH BEAM [F]
+            </div>
         </div>
 
         <!-- Center: Armor Bar & Goal Distance -->
@@ -206,6 +210,36 @@
                 <div>過給圧: <span id="obd-boost" class="text-cyan-400 font-bold">1.4 bar</span></div>
                 <div>回転数: <span id="obd-rpm" class="text-rose-400 font-bold">4200 RPM</span></div>
             </div>
+        </div>
+
+        <!-- Realistic Japanese Dashcam HUD (Top-Right) -->
+        <div id="dashcam-hud" class="pointer-events-none absolute top-12 right-4 flex flex-col items-end gap-1 z-10 font-mono text-[10px] text-white/90 drop-shadow">
+            <div class="flex items-center gap-2 bg-black/75 px-2 py-0.5 rounded border border-white/20">
+                <span class="inline-block w-2 h-2 rounded-full bg-red-600 animate-ping"></span>
+                <span class="font-bold text-red-400">REC 60FPS</span>
+                <span id="dashcam-clock" class="text-white/90">2026/10/22 23:30:15</span>
+            </div>
+            <div class="bg-black/60 px-2 py-0.5 rounded text-[9px] text-emerald-400 border border-emerald-500/20">
+                GPS: 35°38'42"N 139°44'28"E (首都高湾岸)
+            </div>
+            <div id="dashcam-gsensor" class="bg-black/60 px-2 py-0.5 rounded text-[9px] text-sky-300 border border-sky-500/20">
+                衝撃G: <span id="dashcam-gval" class="font-bold">0.08G</span> [正常]
+            </div>
+            <div id="dashcam-incident-badge" class="hidden bg-red-600/90 text-white font-bold px-2 py-0.5 rounded text-[10px] border border-yellow-300 shadow-[0_0_12px_rgba(239,68,68,0.7)] animate-bounce">
+                ⚠️ 危険運転記録中: 急制動妨害
+            </div>
+        </div>
+
+        <!-- Quick Action Buttons (Bottom-Left) -->
+        <div class="absolute bottom-4 left-4 flex items-center gap-2 z-20">
+            <button id="btn-passing-action" type="button" class="game-btn px-3 py-1.5 rounded-xl text-xs font-bold text-sky-300 border-sky-500/50 flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95 transition-transform">
+                <i class="fa-solid fa-bolt text-yellow-300"></i>
+                <span>[F] パッシング連打</span>
+            </button>
+            <button id="btn-horn-action" type="button" class="game-btn px-3 py-1.5 rounded-xl text-xs font-bold text-amber-300 border-amber-500/50 flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95 transition-transform">
+                <i class="fa-solid fa-bullhorn text-amber-400"></i>
+                <span>[H] ホーン威嚇</span>
+            </button>
         </div>
 
         <!-- Bottom-Right Speedometer, Gear, NOS HUD -->
@@ -363,22 +397,38 @@
 
                 <!-- TAB 4: CONTROLS & 22+ FEATURES GUIDE -->
                 <div id="tab-guide" class="garage-tab-pane hidden flex-1 flex flex-col gap-2.5 text-xs custom-scroll overflow-y-auto">
-                    <div class="bg-slate-900/90 p-3 rounded-2xl border border-slate-800 space-y-1.5 text-slate-300">
-                        <div class="font-bold text-sky-300 text-sm"><i class="fa-solid fa-gamepad mr-1"></i>操作キー＆22大新機能一覧</div>
+                    <div class="bg-slate-900/90 p-3 rounded-2xl border border-slate-800 space-y-2 text-slate-300">
+                        <div class="font-bold text-sky-300 text-sm flex items-center justify-between">
+                            <span><i class="fa-solid fa-gamepad mr-1"></i>操作キー＆新機能一覧</span>
+                            <span class="text-[10px] text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-400/30">v2.6 煽り＆高齢者パニックAI搭載</span>
+                        </div>
                         <div class="grid grid-cols-2 gap-1.5 text-[11px]">
                             <div><b>[←][→] / [A][D]</b>: ステアリング</div>
                             <div><b>[↑][↓] / [W][S]</b>: アクセル/ブレーキ</div>
+                            <div><b>[F]</b>: <span class="text-yellow-300 font-bold">パッシング連打</span> (光線照射)</div>
+                            <div><b>[H]</b>: <span class="text-amber-300 font-bold">ホーン威嚇＆パッシング</span></div>
+                            <div><b>[L]</b>: ロー/ハイビーム切替</div>
                             <div><b>[Space]</b>: ニトロ噴射 (NOS)</div>
                             <div><b>[Shift]</b>: スローモーション (0.28x)</div>
                             <div><b>[V]</b>: BeamNG 構造ノード表示</div>
                             <div><b>[R]</b>: 車体・アクスル完全修復</div>
-                            <div><b>[H]</b>: ホーン威嚇＆パッシング</div>
                             <div><b>[W]</b>: 実動ワイパー ON/OFF</div>
                             <div><b>[M]</b>: 車載ラジオ局切替 (5局)</div>
                             <div><b>[C]</b>: 4段階カメラ視点切替</div>
                         </div>
-                        <div class="text-[10px] text-amber-300 pt-1">
-                            ✨ アクスル破断＆転がるホイール、引きずるバンパー火花、冷却水蒸気噴出、エンジン火災、OBD-IIリアルタイム診断、指名手配警察追跡など22機能完全実装！
+
+                        <!-- Highlights of Passing & Driver Reactions -->
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-sky-500/30 space-y-1 text-[11px]">
+                            <div class="font-bold text-amber-300 flex items-center gap-1">
+                                <i class="fa-solid fa-triangle-exclamation"></i> パッシング連打時のランダム心理リアクション
+                            </div>
+                            <div class="text-[10px] text-slate-300 leading-relaxed">
+                                🔘 <b>連打しても強制的にどきません！</b> 個性に応じた確率的心理挙動が発動します：<br>
+                                ・<b>高齢者車 (枯葉マーク)</b>: 眩しさに驚愕し<b>ペダル踏み間違い急ブレーキ (40%)</b>、ステアリング過大操作による<b>パニック蛇行＆ガードレール激突自爆 (25%)</b>、車線跨ぎ<b>低速硬直 (25%)</b>、稀に退避 (10%)<br>
+                                ・<b>煽り運転車 (黒塗りセダン)</b>: 絶対に道を譲らず<b>激怒報復ブレーキチェック (45%)</b>、左右へ動いて被せる<b>幅寄せ進路妨害ブロック (35%)</b>、200km/h超の<b>超急加速 (20%)</b><br>
+                                ・<b>パトカー</b>: 後方からの執拗なパッシングは威嚇行為とみなされ <b>WANTED ★+1 指名手配＆サイレン追跡</b><br>
+                                ・<b>ドラレコHUD</b>: 常時GPS・時刻・衝撃Gセンサー録画＆危険運転インシデント検知記録
+                            </div>
                         </div>
                     </div>
                 </div>

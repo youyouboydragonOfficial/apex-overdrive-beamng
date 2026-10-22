@@ -1104,6 +1104,67 @@
      * Builds Sculpted Traffic Vehicles (including Police Interceptors, Ambulances,
      * Oil Tankers with explosion triggers, and Bank Trucks)
      */
+    function createElderlyBadgeMesh() {
+        const markGroup = new THREE.Group();
+        const leafL = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.36, 0.04), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+        leafL.rotation.z = 0.28;
+        leafL.position.x = -0.15;
+        const leafR = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.36, 0.04), new THREE.MeshBasicMaterial({ color: 0xf97316 }));
+        leafR.rotation.z = -0.28;
+        leafR.position.x = 0.15;
+        const stem = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.14, 0.04), new THREE.MeshBasicMaterial({ color: 0x16a34a }));
+        stem.position.y = -0.22;
+        markGroup.add(leafL, leafR, stem);
+        markGroup.scale.set(0.9, 0.9, 0.9);
+        return markGroup;
+    }
+
+    function createEmotionBillboardSprite(group, carHeight) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        const texture = new THREE.CanvasTexture(canvas);
+        const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+        const sprite = new THREE.Sprite(mat);
+        sprite.scale.set(3.4, 0.85, 1.0);
+        sprite.position.set(0, carHeight + 0.95, 0);
+        sprite.visible = false;
+        group.add(sprite);
+
+        let hideTimeout = null;
+        const setEmotion = (text, bgColor = '#dc2626', textColor = '#ffffff') => {
+            ctx.clearRect(0, 0, 256, 64);
+            ctx.fillStyle = bgColor;
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(8, 8, 240, 48, 24);
+            } else {
+                ctx.rect(8, 8, 240, 48);
+            }
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#ffffff';
+            ctx.stroke();
+
+            ctx.fillStyle = textColor;
+            ctx.font = 'bold 20px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 128, 32);
+
+            texture.needsUpdate = true;
+            sprite.visible = true;
+
+            if (hideTimeout) clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(() => {
+                sprite.visible = false;
+            }, 2600);
+        };
+
+        return { sprite, setEmotion };
+    }
+
     function buildSculptedTrafficVehicle(type, bodyColor, envTexture) {
         const group = new THREE.Group();
         let width = 1.92, height = 1.38, length = 4.35;
@@ -1224,21 +1285,37 @@
             group.add(upper);
             deformableTrafficMeshes.push(upper);
 
-            if (type === 'WRONG_WAY') {
-                const markGroup = new THREE.Group();
-                const leafL = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.42, 0.08), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
-                leafL.position.x = -0.21;
-                const leafR = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.42, 0.08), new THREE.MeshBasicMaterial({ color: 0xf97316 }));
-                leafR.position.x = 0.21;
-                markGroup.add(leafL, leafR);
-                markGroup.position.set(0, 1.75, 0);
-                group.add(markGroup);
-                sirenBar = markGroup;
+            if (type === 'WRONG_WAY' || type === 'ELDERLY_CIVILIAN') {
+                // 3D Japanese Elderly Driver Badge (高齢者マーク / もみじマーク) on rear & front
+                const badgeRear = createElderlyBadgeMesh();
+                badgeRear.position.set(width * 0.28, 0.82, length / 2 + 0.04);
+                const badgeFront = createElderlyBadgeMesh();
+                badgeFront.position.set(-width * 0.28, 0.72, -length / 2 - 0.04);
+                group.add(badgeRear, badgeFront);
 
-                hazardLights = new THREE.Mesh(new THREE.BoxGeometry(width * 0.92, 0.24, 0.14), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
-                hazardLights.position.set(0, 0.68, -length / 2 - 0.04);
-                group.add(hazardLights);
+                if (type === 'WRONG_WAY') {
+                    const roofMark = createElderlyBadgeMesh();
+                    roofMark.scale.set(1.4, 1.4, 1.4);
+                    roofMark.position.set(0, 1.76, 0);
+                    group.add(roofMark);
+                    sirenBar = roofMark;
+
+                    hazardLights = new THREE.Mesh(new THREE.BoxGeometry(width * 0.92, 0.24, 0.14), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+                    hazardLights.position.set(0, 0.68, -length / 2 - 0.04);
+                    group.add(hazardLights);
+                }
             } else if (type === 'ROAD_RAGE') {
+                // Aggressive Carbon GT Wing on Trunk
+                const wingGroup = new THREE.Group();
+                const wingBlade = new THREE.Mesh(new THREE.BoxGeometry(width * 0.88, 0.06, 0.38), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.8 }));
+                const wingStandsL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.26, 0.12), new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.9 }));
+                wingStandsL.position.set(-width * 0.32, -0.13, 0);
+                const wingStandsR = wingStandsL.clone();
+                wingStandsR.position.x = width * 0.32;
+                wingGroup.add(wingBlade, wingStandsL, wingStandsR);
+                wingGroup.position.set(0, 1.24, length / 2 - 0.32);
+                group.add(wingGroup);
+
                 sirenBar = new THREE.Group();
                 const rageL = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.20, 0.22), new THREE.MeshBasicMaterial({ color: 0xd946ef }));
                 rageL.position.x = -0.32;
@@ -1282,6 +1359,19 @@
         blinkerR.position.x = width * 0.48;
         group.add(blinkerL, blinkerR);
 
+        // Exhausts
+        const exhausts = [];
+        [-0.45, 0.45].forEach(ex => {
+            const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.25, 10), new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.9 }));
+            pipe.rotation.x = Math.PI / 2;
+            pipe.position.set(ex, 0.32, length / 2 + 0.08);
+            group.add(pipe);
+            exhausts.push(pipe);
+        });
+
+        // 3D Emotion Floating Billboard
+        const { sprite: emotionSprite, setEmotion } = createEmotionBillboardSprite(group, height || 1.42);
+
         const wGeo = new THREE.CylinderGeometry(0.36, 0.36, 0.28, 16);
         wGeo.rotateZ(Math.PI / 2);
         const wMat = new THREE.MeshStandardMaterial({ color: 0x11151c, roughness: 0.8 });
@@ -1300,6 +1390,13 @@
             hazardLights,
             blinkerL,
             blinkerR,
+            tailL,
+            tailR,
+            headL,
+            headR,
+            exhausts,
+            emotionSprite,
+            setEmotion,
             isSpecialExplosive,
             isCashCarrier,
             deformableTrafficMeshes

@@ -75,6 +75,10 @@
         // Lights & Electrics
         lightsOn: true,
         highBeam: false,
+        passingFlashActive: false,
+        passingFlashTimer: 0,
+        passingTracker: { count: 0, lastTime: 0 },
+        dashcamIncidentTimer: 0,
         hazardBlinkers: false,
         wipersActive: false,
         wiperAngle: 0,
@@ -151,7 +155,7 @@
         ArrowLeft: false, ArrowRight: false, ArrowUp: false, ArrowDown: false,
         KeyA: false, KeyD: false, KeyW: false, KeyS: false,
         Space: false, ShiftLeft: false, ShiftRight: false,
-        KeyB: false, KeyL: false, KeyK: false, KeyJ: false, KeyU: false, KeyH: false, KeyM: false, KeyP: false
+        KeyB: false, KeyF: false, KeyL: false, KeyK: false, KeyJ: false, KeyU: false, KeyH: false, KeyM: false, KeyP: false
     };
 
     let scene, camera, renderer, clock;
@@ -861,14 +865,16 @@
         const roll = Math.random();
         let type;
 
-        // Rich AI Traffic Vehicle Variety (Ambulance, Tanker, Bank Truck, Police, Wrong-Way, Road-Rage)
+        // Rich AI Traffic Vehicle Variety (Ambulance, Tanker, Bank Truck, Police, Wrong-Way, Road-Rage, Elderly-Civilian)
         if (state.wantedLevel >= 2 && Math.random() < 0.45) {
             type = 'POLICE';
         } else if (roll < lvlSpec.wrongWayChance) {
             type = 'WRONG_WAY';
         } else if (roll < lvlSpec.wrongWayChance + lvlSpec.rageChance) {
             type = 'ROAD_RAGE';
-        } else if (roll < 0.45) {
+        } else if (roll < lvlSpec.wrongWayChance + lvlSpec.rageChance + 0.22) {
+            type = 'ELDERLY_CIVILIAN';
+        } else if (roll < 0.58) {
             const specials = ['AMBULANCE', 'TANKER', 'BANK_TRUCK'];
             type = specials[Math.floor(Math.random() * specials.length)];
         } else {
@@ -880,16 +886,20 @@
         let bodyColor = colors[Math.floor(Math.random() * colors.length)];
         if (type === 'POLICE') bodyColor = 0x0f172a;
         if (type === 'WRONG_WAY') bodyColor = 0xd6d3d1;
+        if (type === 'ELDERLY_CIVILIAN') bodyColor = 0xd4d4d8;
         if (type === 'ROAD_RAGE') bodyColor = 0x18181b;
 
         const built = buildSculptedTrafficVehicle(type, bodyColor, envTexture);
         const group = built.group;
         const isWrongWay = type === 'WRONG_WAY';
+        const isElderly = isWrongWay || type === 'ELDERLY_CIVILIAN';
 
         let speedKmh = (72 + Math.random() * 58) * lvlSpec.trafficSpeedMult;
         if (isWrongWay) {
             speedKmh = -(55 + Math.random() * 35) * Math.min(1.15, lvlSpec.trafficSpeedMult);
             group.rotation.y = Math.PI;
+        } else if (type === 'ELDERLY_CIVILIAN') {
+            speedKmh = (62 + Math.random() * 22) * lvlSpec.trafficSpeedMult;
         } else if (type === 'ROAD_RAGE' || type === 'POLICE') {
             speedKmh = (112 + Math.random() * 45) * lvlSpec.trafficSpeedMult;
         } else if (type === 'AMBULANCE') {
@@ -899,26 +909,50 @@
         group.position.set(laneX, 0, zOffset);
         scene.add(group);
 
+        let driverPersonality = 'CIVILIAN';
+        if (isElderly) driverPersonality = 'ELDERLY';
+        else if (type === 'ROAD_RAGE') driverPersonality = 'ROAD_RAGE';
+        else if (type === 'POLICE') driverPersonality = 'POLICE';
+
         trafficCars.push({
             mesh: group,
             type,
             laneIndex,
+            targetLaneX: laneX,
             isWrongWay,
+            driverPersonality,
+            state: 'NORMAL',
+            stateTimer: 0,
+            reactionCooldown: 0,
+            panicMeter: 0,
+            aggroMeter: 0,
             sirenBar: built.sirenBar,
             hazardLights: built.hazardLights,
             blinkerL: built.blinkerL,
             blinkerR: built.blinkerR,
+            tailL: built.tailL,
+            tailR: built.tailR,
+            headL: built.headL,
+            headR: built.headR,
+            exhausts: built.exhausts,
+            emotionSprite: built.emotionSprite,
+            setEmotion: built.setEmotion,
+            brakeLightsActive: false,
+            hazardActive: isWrongWay,
+            blinkerState: null,
             isSpecialExplosive: built.isSpecialExplosive,
             isCashCarrier: built.isCashCarrier,
             deformableTrafficMeshes: built.deformableTrafficMeshes,
             width: built.width,
             length: built.length,
             speedKmh,
+            targetSpeedKmh: speedKmh,
             vx: 0, vz: 0, vy: 0,
             yawRate: 0, rollRate: 0,
             honked: false,
             hitByPlayer: false,
-            overtaken: false
+            overtaken: false,
+            evadedRewardGiven: false
         });
     }
 
@@ -1526,6 +1560,8 @@
                 addFloatingNotification(`📻 ラジオ局: ${stations[audio.bgmMode]}`);
             }
             if (e.code === 'Enter' && state.mode !== 'PLAYING') startNewRace();
+triggerPassingFlash(false);
+triggerPassingFlash(true);
         });
 
         window.addEventListener('keyup', (e) => {
@@ -1558,6 +1594,12 @@
         const weatherSelect = document.getElementById('weather-select');
         if (todSelect) todSelect.addEventListener('change', (e) => applyTimeOfDayAndWeather(e.target.value, state.weather));
         if (weatherSelect) weatherSelect.addEventListener('change', (e) => applyTimeOfDayAndWeather(state.timeOfDay, e.target.value));
+
+        // Quick Action Buttons
+        const passBtn = document.getElementById('btn-passing-action');
+        if (passBtn) passBtn.addEventListener('click', () => triggerPassingFlash(false));
+        const hornBtn = document.getElementById('btn-horn-action');
+        if (hornBtn) hornBtn.addEventListener('click', () => triggerPassingFlash(true));
 
         // Start Buttons
         document.getElementById('btn-start').addEventListener('click', startNewRace);

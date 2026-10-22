@@ -448,10 +448,11 @@
             osc.stop(now + 0.15);
         }
 
-        playHorn(isAggressive = true) {
+        playHorn(isAggressive = true, allowRapid = false) {
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
-            if (now - this.lastHornSfxTime < 0.45) return;
+            const debounce = allowRapid ? 0.14 : 0.45;
+            if (now - this.lastHornSfxTime < debounce) return;
             this.lastHornSfxTime = now;
 
             const dest = this.sfxGainNode || this.ctx.destination;
@@ -462,8 +463,8 @@
             osc2.type = 'sawtooth';
             osc1.frequency.setValueAtTime(isAggressive ? 415 : 490, now);
             osc2.frequency.setValueAtTime(isAggressive ? 520 : 620, now);
-            const dur = isAggressive ? 0.32 : 0.24;
-            gain.gain.setValueAtTime(0.07, now);
+            const dur = isAggressive ? 0.28 : 0.20;
+            gain.gain.setValueAtTime(0.08, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
             osc1.connect(gain);
             osc2.connect(gain);
@@ -472,6 +473,24 @@
             osc2.start(now);
             osc1.stop(now + dur + 0.02);
             osc2.stop(now + dur + 0.02);
+        }
+
+        playPassingFlash() {
+            if (!this.ctx || !this.sfxEnabled) return;
+            const now = this.ctx.currentTime;
+            const dest = this.sfxGainNode || this.ctx.destination;
+            // Crisp optical relay switch chirp
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(1450, now);
+            osc.frequency.exponentialRampToValueAtTime(850, now + 0.05);
+            gain.gain.setValueAtTime(0.045, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            osc.connect(gain);
+            gain.connect(dest);
+            osc.start(now);
+            osc.stop(now + 0.06);
         }
 
         playPoliceSiren(active = true) {
