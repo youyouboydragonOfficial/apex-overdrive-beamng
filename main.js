@@ -27,9 +27,17 @@ function createWindow() {
 
   win.loadFile(path.join(__dirname, 'src', 'index.html'));
 
+  win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    console.log(`[RENDERER_CONSOLE_${level}] ${message} (${sourceId}:${line})`);
+  });
+
   win.webContents.on('did-finish-load', () => {
     if (isSmokeTest) {
-      win.webContents.send('run-smoke-test');
+      setTimeout(() => {
+        try {
+          win.webContents.send('run-smoke-test');
+        } catch (e) {}
+      }, 400);
     }
   });
 

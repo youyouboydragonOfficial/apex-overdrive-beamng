@@ -37,19 +37,19 @@
                     this.ctx = new AudioCtx();
 
                     this.masterCompressor = this.ctx.createDynamicsCompressor();
-                    this.masterCompressor.threshold.setValueAtTime(-14, this.ctx.currentTime);
-                    this.masterCompressor.knee.setValueAtTime(18, this.ctx.currentTime);
-                    this.masterCompressor.ratio.setValueAtTime(8, this.ctx.currentTime);
+                    this.masterCompressor.threshold.setValueAtTime(-6, this.ctx.currentTime);
+                    this.masterCompressor.knee.setValueAtTime(14, this.ctx.currentTime);
+                    this.masterCompressor.ratio.setValueAtTime(4, this.ctx.currentTime);
                     this.masterCompressor.attack.setValueAtTime(0.003, this.ctx.currentTime);
                     this.masterCompressor.release.setValueAtTime(0.18, this.ctx.currentTime);
                     this.masterCompressor.connect(this.ctx.destination);
 
                     this.bgmGainNode = this.ctx.createGain();
-                    this.bgmGainNode.gain.setValueAtTime(0.80, this.ctx.currentTime);
+                    this.bgmGainNode.gain.setValueAtTime(1.15, this.ctx.currentTime);
                     this.bgmGainNode.connect(this.masterCompressor);
 
                     this.sfxGainNode = this.ctx.createGain();
-                    this.sfxGainNode.gain.setValueAtTime(0.72, this.ctx.currentTime);
+                    this.sfxGainNode.gain.setValueAtTime(0.70, this.ctx.currentTime);
                     this.sfxGainNode.connect(this.masterCompressor);
 
                     this.setupEngineSound();
@@ -136,7 +136,7 @@
                 bFilter.type = 'lowpass';
                 bFilter.frequency.setValueAtTime(620, now);
                 bFilter.frequency.exponentialRampToValueAtTime(160, now + 0.09);
-                bGain.gain.setValueAtTime(0.052, now);
+                bGain.gain.setValueAtTime(0.095, now);
                 bGain.gain.exponentialRampToValueAtTime(0.001, now + 0.095);
                 bOsc.connect(bFilter);
                 bFilter.connect(bGain);
@@ -427,11 +427,10 @@
             osc.stop(now + 0.15);
         }
 
-        playHorn(isAggressive = true, allowRapid = false) {
+        playHorn(isAggressive = true) {
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
-            const debounce = allowRapid ? 0.14 : 0.45;
-            if (now - this.lastHornSfxTime < debounce) return;
+            if (now - this.lastHornSfxTime < 0.45) return;
             this.lastHornSfxTime = now;
 
             const dest = this.sfxGainNode || this.ctx.destination;
@@ -444,8 +443,8 @@
             osc1.frequency.setValueAtTime(isAggressive ? 415 : 490, now);
             osc2.frequency.setValueAtTime(isAggressive ? 520 : 620, now);
 
-            const dur = isAggressive ? 0.28 : 0.20;
-            gain.gain.setValueAtTime(0.08, now);
+            const dur = isAggressive ? 0.32 : 0.24;
+            gain.gain.setValueAtTime(0.07, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
 
             osc1.connect(gain);
@@ -455,23 +454,6 @@
             osc2.start(now);
             osc1.stop(now + dur + 0.02);
             osc2.stop(now + dur + 0.02);
-        }
-
-        playPassingFlash() {
-            if (!this.ctx || !this.sfxEnabled) return;
-            const now = this.ctx.currentTime;
-            const dest = this.sfxGainNode || this.ctx.destination;
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(1450, now);
-            osc.frequency.exponentialRampToValueAtTime(850, now + 0.05);
-            gain.gain.setValueAtTime(0.045, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-            osc.connect(gain);
-            gain.connect(dest);
-            osc.start(now);
-            osc.stop(now + 0.06);
         }
 
         playExplosion() {

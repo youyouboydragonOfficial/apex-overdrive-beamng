@@ -142,37 +142,33 @@
 <body class="flex flex-col h-screen w-screen overflow-hidden select-none">
 
     <!-- Top HUD Bar -->
-    <header class="w-full z-20 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 hud-glass border-b border-slate-700/60">
+    <header class="w-full h-14 z-20 px-3 sm:px-5 flex items-center justify-between hud-glass border-b border-slate-700/60 shrink-0 select-none overflow-hidden">
         <!-- Left: Brand & Stage Progress -->
-        <div class="flex items-center gap-2.5">
+        <div class="flex items-center gap-2.5 shrink-0">
             <div class="flex items-center gap-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
                 <h1 class="font-['Orbitron'] font-black text-sm sm:text-base tracking-wider bg-gradient-to-r from-white via-sky-300 to-orange-400 bg-clip-text text-transparent">
-                    APEX OVERDRIVE: BeamNG EDITION
+                    APEX OVERDRIVE
                 </h1>
             </div>
             <span id="hud-stage-badge" class="text-[11px] font-bold text-sky-300 bg-slate-900/90 px-2.5 py-0.5 rounded-full border border-sky-500/30">
                 Lv.2 | 首都高湾岸6車線
             </span>
-            <!-- High Beam & Passing Indicator -->
-            <div id="highbeam-badge" class="hidden flex items-center gap-1 bg-blue-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.6)] animate-pulse">
+            <div id="highbeam-badge" class="hidden flex items-center gap-1 bg-blue-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.6)]">
                 <i class="fa-solid fa-bolt text-yellow-300"></i> HIGH BEAM [F]
             </div>
         </div>
 
-        <!-- Center: Armor Bar + Goal Distance Progress Bar -->
-        <div class="flex-1 max-w-lg mx-2 flex flex-col gap-1">
+        <!-- Center: Armor Bar + Goal Distance Progress Bar (Fixed width, tabular numbers so it NEVER pushes adjacent elements) -->
+        <div class="hidden md:flex flex-col gap-1 w-64 lg:w-80 shrink-0 mx-2">
             <div class="flex justify-between items-center text-[11px]">
                 <span class="font-bold flex items-center gap-1 text-slate-200">
                     <i class="fa-solid fa-car-burst text-orange-400"></i>
-                    軟体シャシー剛性 (CHASSIS)
+                    軟体剛性
                 </span>
                 <div class="flex items-center gap-2">
-                    <span id="goal-progress-text" class="text-[11px] font-bold text-emerald-300">GOAL残り: 3.20 km (0%)</span>
-                    <span id="detached-parts-badge" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 border border-amber-500/30">
-                        破損パーツ: 0 / 6
-                    </span>
-                    <span id="hp-text" class="font-['Orbitron'] font-bold text-emerald-400 text-xs">100%</span>
+                    <span id="goal-progress-text" class="text-[11px] font-bold text-emerald-300 font-mono tabular-nums">GOAL残り: 3.20 km (0%)</span>
+                    <span id="hp-text" class="font-['Orbitron'] font-bold text-emerald-400 text-xs w-10 text-right tabular-nums">100%</span>
                 </div>
             </div>
             <div class="w-full h-2.5 bg-slate-900/90 rounded-full overflow-hidden border border-slate-700 p-0.5 flex gap-1">
@@ -183,23 +179,27 @@
             </div>
         </div>
 
-        <!-- Right: Score, Overtakes & Action Buttons -->
-        <div class="flex items-center gap-1.5">
+        <!-- Right: Score, Overtakes & Action Buttons (Fixed widths for score and overtakes so buttons NEVER wobble!) -->
+        <div class="flex items-center gap-1.5 shrink-0 ml-auto">
             <div class="flex items-center gap-2 bg-slate-900/80 px-2.5 py-1 rounded-xl border border-slate-700/80">
                 <div class="text-right">
                     <div class="text-[9px] text-slate-400 leading-none">OVERTAKES</div>
-                    <div id="overtake-count" class="font-['Orbitron'] font-bold text-sky-400 text-xs sm:text-sm">0</div>
+                    <div id="overtake-count" class="font-['Orbitron'] font-bold text-sky-400 text-xs sm:text-sm w-7 text-right tabular-nums">0</div>
                 </div>
                 <div class="h-5 w-[1px] bg-slate-700"></div>
                 <div class="text-right">
                     <div class="text-[9px] text-slate-400 leading-none">SCORE</div>
-                    <div id="score-display" class="font-['Orbitron'] font-bold text-amber-400 text-xs sm:text-sm">000000</div>
+                    <div id="score-display" class="font-['Orbitron'] font-bold text-amber-400 text-xs sm:text-sm w-16 sm:w-20 text-right tabular-nums">000000</div>
                 </div>
             </div>
 
             <button id="btn-garage" class="game-btn px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 text-amber-300 border-amber-500/40" title="ショールーム＆設定画面">
                 <i class="fa-solid fa-warehouse"></i>
                 <span class="hidden xl:inline">ガレージ</span>
+            </button>
+            <button id="btn-weather" class="game-btn px-2 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 text-sky-300 border-sky-500/40" title="天候切替 (晴天/深夜/雨天/濃霧)">
+                <i id="weather-icon" class="fa-solid fa-sun text-yellow-400"></i>
+                <span class="hidden 2xl:inline" id="weather-label">晴天</span>
             </button>
             <button id="btn-beam-view" class="game-btn px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 text-slate-200" title="BeamNG 構造ノード・応力表示 (Vキー)">
                 <i class="fa-solid fa-diagram-project text-emerald-400"></i>
@@ -261,7 +261,7 @@
             <div class="flex items-center gap-2 bg-black/75 px-2 py-0.5 rounded border border-white/20">
                 <span class="inline-block w-2 h-2 rounded-full bg-red-600 animate-ping"></span>
                 <span class="font-bold text-red-400">REC 60FPS</span>
-                <span id="dashcam-clock" class="text-white/90">2026/10/23 22:30:00</span>
+                <span id="dashcam-clock" class="text-white/90">2026/10/23 23:00:00</span>
             </div>
             <div class="bg-black/60 px-2 py-0.5 rounded text-[9px] text-emerald-400 border border-emerald-500/20">
                 GPS: 35°38'42"N 139°44'28"E (首都高湾岸)
@@ -270,7 +270,7 @@
                 衝撃G: <span id="dashcam-gval" class="font-bold">0.08G</span> [正常]
             </div>
             <div id="dashcam-incident-badge" class="hidden bg-red-600/90 text-white font-bold px-2 py-0.5 rounded text-[10px] border border-yellow-300 shadow-[0_0_12px_rgba(239,68,68,0.7)] animate-bounce">
-                ⚠️ 危険運転記録中: 急制動妨害
+                ⚠️ パッシング退避要請 検知
             </div>
         </div>
 
@@ -283,6 +283,17 @@
                     <div id="gforce-dot" class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e] transition-transform duration-75"></div>
                 </div>
                 <span id="gforce-text" class="text-[9px] font-['Orbitron'] text-rose-300 mt-0.5">MAX: 0.0G</span>
+            </div>
+
+            <!-- Live Turbo Boost Gauge -->
+            <div class="hidden md:flex flex-col items-center">
+                <div class="w-11 h-11 rounded-full bg-slate-950 border border-slate-700 relative flex items-center justify-center overflow-hidden">
+                    <div class="absolute inset-1 rounded-full border border-sky-900/60 flex items-center justify-center">
+                        <div id="boost-needle" class="w-0.5 h-4 bg-amber-400 origin-bottom transform -rotate-45 transition-transform duration-75 shadow-[0_0_6px_#f59e0b]"></div>
+                    </div>
+                    <div class="w-2 h-2 rounded-full bg-slate-400 z-10"></div>
+                </div>
+                <span id="boost-text" class="text-[9px] font-['Orbitron'] text-amber-300 mt-0.5">+0.0 BAR</span>
             </div>
 
             <div class="flex flex-col">
@@ -332,7 +343,7 @@
                     <i class="fa-solid fa-circle-check mr-1"></i>4輪サス・アライメント正常
                 </div>
                 <div class="text-[10px] text-slate-400 leading-tight">
-                    [V] 構造ノード表示 / [R] 板金修復 / [Shift] スロー / [Space] ニトロ / [H] 威嚇ホーン
+                    [V] 構造ノード / [R] 修復 / [F] パッシング / [H] ホーン / [Z] ハザード / [P] 撮影
                 </div>
             </div>
         </div>
@@ -666,6 +677,10 @@
             <button id="ctrl-pass" class="game-btn w-16 h-11 sm:w-20 sm:h-11 rounded-2xl flex flex-col items-center justify-center text-yellow-300 border-yellow-400/60" aria-label="パッシング連打">
                 <i class="fa-solid fa-bolt text-sm"></i>
                 <span class="text-[9px] font-bold">FLASH [F]</span>
+            </button>
+            <button id="ctrl-hazard" class="game-btn w-16 h-11 sm:w-20 sm:h-11 rounded-2xl flex flex-col items-center justify-center text-orange-400 border-orange-400/60" aria-label="ハザード点滅">
+                <i class="fa-solid fa-triangle-exclamation text-sm"></i>
+                <span class="text-[9px] font-bold">HAZARD [Z]</span>
             </button>
         </div>
     </footer>

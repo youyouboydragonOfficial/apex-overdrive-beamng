@@ -51,11 +51,10 @@
         beamSkeletonVisible: false,
         slowMoActive: false,
         timeScale: 1.0,
-        passingFlashActive: false,
-        passingFlashTimer: 0,
-        passingTracker: { count: 0, lastTime: 0 },
-        dashcamIncidentTimer: 0,
-        wantedLevel: 0,
+        turboBoost: 0.0,
+        hazardActive: false,
+        weatherMode: 0,
+        photoModeActive: false,
         nosFuel: 100,
         nosActive: false,
         hp: 100,
@@ -99,7 +98,6 @@
         KeyD: false,
         KeyW: false,
         KeyS: false,
-        KeyF: false,
         Space: false
     };
 
@@ -851,8 +849,6 @@
             type = 'WRONG_WAY';
         } else if (roll < lvlSpec.wrongWayChance + lvlSpec.rageChance) {
             type = 'ROAD_RAGE';
-        } else if (roll < lvlSpec.wrongWayChance + lvlSpec.rageChance + 0.22) {
-            type = 'ELDERLY_CIVILIAN';
         } else {
             const normalTypes = ['SEDAN', 'SUV', 'TRUCK', 'POLICE', 'SPORTS'];
             type = normalTypes[Math.floor(Math.random() * normalTypes.length)];
@@ -862,21 +858,17 @@
         let bodyColor = colors[Math.floor(Math.random() * colors.length)];
         if (type === 'POLICE') bodyColor = 0x0f172a;
         if (type === 'WRONG_WAY') bodyColor = 0xd6d3d1;
-        if (type === 'ELDERLY_CIVILIAN') bodyColor = 0xd4d4d8;
         if (type === 'ROAD_RAGE') bodyColor = 0x18181b;
 
         const built = buildSculptedTrafficVehicle(type, bodyColor, envTexture);
         const group = built.group;
         const isWrongWay = type === 'WRONG_WAY';
-        const isElderly = isWrongWay || type === 'ELDERLY_CIVILIAN';
 
         // Moderated speeds for Wrong-Way Elderly Cars so players have ample time to spot & dodge them!
         let speedKmh = (72 + Math.random() * 58) * lvlSpec.trafficSpeedMult;
         if (isWrongWay) {
             speedKmh = -(55 + Math.random() * 35) * Math.min(1.15, lvlSpec.trafficSpeedMult);
             group.rotation.y = Math.PI;
-        } else if (type === 'ELDERLY_CIVILIAN') {
-            speedKmh = (62 + Math.random() * 22) * lvlSpec.trafficSpeedMult;
         } else if (type === 'ROAD_RAGE') {
             speedKmh = (108 + Math.random() * 40) * lvlSpec.trafficSpeedMult;
         } else if (type === 'TRUCK') {
@@ -886,39 +878,17 @@
         group.position.set(laneX, 0, zOffset);
         scene.add(group);
 
-        let driverPersonality = 'CIVILIAN';
-        if (isElderly) driverPersonality = 'ELDERLY';
-        else if (type === 'ROAD_RAGE') driverPersonality = 'ROAD_RAGE';
-        else if (type === 'POLICE') driverPersonality = 'POLICE';
-
         trafficCars.push({
             mesh: group,
             type,
             laneIndex,
-            targetLaneX: laneX,
             isWrongWay,
-            driverPersonality,
-            state: 'NORMAL',
-            stateTimer: 0,
-            reactionCooldown: 0,
-            panicMeter: 0,
-            aggroMeter: 0,
             sirenBar: built.sirenBar,
             hazardLights: built.hazardLights,
-            tailL: built.tailL,
-            tailR: built.tailR,
-            headL: built.headL,
-            headR: built.headR,
-            emotionSprite: built.emotionSprite,
-            setEmotion: built.setEmotion,
-            brakeLightsActive: false,
-            hazardActive: isWrongWay,
-            blinkerState: null,
             deformableTrafficMeshes: built.deformableTrafficMeshes,
             width: built.width,
             length: built.length,
             speedKmh,
-            targetSpeedKmh: speedKmh,
             vx: 0,
             vz: 0,
             vy: 0,
@@ -926,8 +896,7 @@
             rollRate: 0,
             honked: false,
             hitByPlayer: false,
-            overtaken: false,
-            evadedRewardGiven: false
+            overtaken: false
         });
     }
 
@@ -1121,206 +1090,85 @@
         roadTraps.push({ mesh: group, type, width, length, triggered: false });
     }
 
-    function recordDashcamIncident(text) {
-        state.dashcamIncidentTimer = 3.4;
-        const badge = document.getElementById('dashcam-incident-badge');
-        if (badge) {
-            badge.textContent = `⚠️ 危険運転記録中: ${text}`;
-            badge.classList.remove('hidden');
-        }
-    }
-
     /**
-     * Passing Flash & Horn Trigger:
-     * DOES NOT force cars to move aside deterministically!
-     * Triggers human driving errors, panic braking, swerve crashes, or road-rage retaliations!
+     * Honk Horn & High-Beam Flash ('H' key):
+     * Makes normal traffic cars and even road-rage cars ahead panic and swerve out of the player's lane!
      */
-    function triggerPassingFlash(isHorn = false) {
+    function triggerPlayerHornAndFlash(isFlashOnly = false) {
         audio.init();
-        if (!playerCar || state.mode !== 'PLAYING') return;
-
-        state.passingFlashActive = true;
-        state.passingFlashTimer = 0.22;
-
-        if (playerCar.headlightL && playerCar.headlightR) {
-            playerCar.headlightL.intensity = 11.5;
-            playerCar.headlightR.intensity = 11.5;
-            playerCar.headlightL.distance = 185;
-            playerCar.headlightR.distance = 185;
-            playerCar.headlightL.angle = 0.82;
-            playerCar.headlightR.angle = 0.82;
-        }
-
-        const highBeamBadge = document.getElementById('highbeam-badge');
-        if (highBeamBadge) highBeamBadge.classList.remove('hidden');
-
-        if (isHorn) {
-            audio.playHorn(true, true);
-        } else {
+        if (isFlashOnly) {
             audio.playPassingFlash();
-        }
-
-        const now = clock.getElapsedTime();
-        if (now - state.passingTracker.lastTime < 0.72) {
-            state.passingTracker.count++;
         } else {
-            state.passingTracker.count = 1;
+            audio.playHorn(false, true);
         }
-        state.passingTracker.lastTime = now;
+        if (!playerCar) return;
 
-        const spamCount = state.passingTracker.count;
-        const playerPos = playerCar.root.position;
+        playerCar.headlightL.intensity = 6.8;
+        playerCar.headlightR.intensity = 6.8;
+        const hb = document.getElementById('highbeam-badge');
+        if (hb) hb.classList.remove('hidden');
+
+        setTimeout(() => {
+            if (playerCar && playerCar.headlightL) {
+                playerCar.headlightL.intensity = 2.8;
+                playerCar.headlightR.intensity = 2.8;
+            }
+            if (hb) hb.classList.add('hidden');
+        }, 320);
 
         trafficCars.forEach(tc => {
-            const dz = tc.mesh.position.z - playerPos.z;
+            const dz = tc.mesh.position.z - playerCar.root.position.z;
             const dx = tc.mesh.position.x - state.playerX;
-            const inRange = (dz < -3 && dz > -125 && Math.abs(dx) < 6.0) || (tc.isWrongWay && dz < 0 && dz > -140 && Math.abs(dx) < 7.5);
-            if (inRange) {
-                handleTrafficVehicleFlashed(tc, spamCount, isHorn);
+            if (!tc.isWrongWay && dz < -3 && dz > -95 && Math.abs(dx) < 3.8) {
+                const escapeDir = tc.mesh.position.x > 0 ? -1 : 1;
+                tc.vx += escapeDir * 11.2;
+                tc.laneIndex = Math.max(0, Math.min(5, tc.laneIndex + escapeDir));
+                if (tc.type === 'ROAD_RAGE') {
+                    addFloatingNotification('💢 煽り車がパッシング威嚇に驚いて退避！', 'text-amber-400 font-bold');
+                } else if (tc.type === 'WRONG_WAY') {
+                    addFloatingNotification('⚠️ 逆走高齢車が警笛に慌てて減速！', 'text-yellow-300 font-bold');
+                } else {
+                    addFloatingNotification('🤝 前走車がパッシングを検知し進路を譲りました！', 'text-emerald-300 font-bold');
+                }
             }
         });
     }
 
-    function handleTrafficVehicleFlashed(tc, spamCount, isHorn) {
-        if (tc.hitByPlayer || tc.state === 'CRASHED') return;
-
-        tc.flashedTimes = (tc.flashedTimes || 0) + 1;
-
-        if (tc.reactionCooldown > 0) {
-            if (tc.driverPersonality === 'ELDERLY') tc.panicMeter = Math.min(100, tc.panicMeter + 25);
-            if (tc.driverPersonality === 'ROAD_RAGE') tc.aggroMeter = Math.min(100, tc.aggroMeter + 35);
-            return;
-        }
-        tc.reactionCooldown = 0.5;
-
-        // 1. POLICE CAR
-        if (tc.driverPersonality === 'POLICE') {
-            if (spamCount >= 2 || isHorn) {
-                tc.state = 'POLICE_ALERT';
-                tc.stateTimer = 9.0;
-                if (tc.sirenBar) tc.sirenBar.visible = true;
-                audio.playHorn(true);
-                state.wantedLevel = Math.min(5, (state.wantedLevel || 0) + 1);
-                if (tc.setEmotion) tc.setEmotion('🚨 WANTED ★+1', '#ef4444');
-                addFloatingNotification(`🚨【警察威嚇罪】パトカーへの煽りパッシングを現行犯検知！WANTED ★${state.wantedLevel}!!`, 'text-red-400 font-bold');
-                recordDashcamIncident('警察威嚇行為 検知 (WANTED+1)');
-            }
-            return;
-        }
-
-        // 2. ROAD RAGE DRIVER (あおり運転者 - 連打しても絶対に退かない！)
-        if (tc.driverPersonality === 'ROAD_RAGE') {
-            tc.aggroMeter = Math.min(100, (tc.aggroMeter || 0) + 30 * Math.min(spamCount, 4));
-            const roll = Math.random();
-
-            if (roll < 0.45 || tc.aggroMeter >= 75) {
-                // 45%: 報復ブレーキチェック急制動
-                tc.state = 'ROAD_RAGE_BRAKE_CHECK';
-                tc.stateTimer = 2.4;
-                tc.targetSpeedKmh = Math.max(30, tc.speedKmh - 65);
-                tc.brakeLightsActive = true;
-                tc.hazardActive = true;
-                if (tc.setEmotion) tc.setEmotion('💢 急制動妨害!', '#dc2626');
-                audio.playHorn(true, true);
-                addFloatingNotification('💢【煽り運転逆上】パッシングに激怒！超危険な報復ブレーキチェック妨害!!', 'text-red-500 font-black');
-                recordDashcamIncident('危険運転(急制動妨害) 検知');
-                spawnParticles(tc.mesh.position.clone().add(new THREE.Vector3(0, 0.2, tc.length / 2)), 8, 'SMOKE');
-            } else if (roll < 0.80) {
-                // 35%: 幅寄せ蛇行進路妨害ブロック
-                tc.state = 'ROAD_RAGE_BLOCKING';
-                tc.stateTimer = 4.2;
-                if (tc.setEmotion) tc.setEmotion('🛑 進路妨害!', '#9333ea');
-                addFloatingNotification('🛑【悪質煽り運転】進路を完全ブロック！幅寄せ蛇行妨害中!!', 'text-purple-400 font-bold');
-                recordDashcamIncident('蛇行進路妨害 検知');
-            } else {
-                // 20%: 超急加速逃走
-                tc.state = 'ROAD_RAGE_SPRINT';
-                tc.stateTimer = 4.0;
-                tc.targetSpeedKmh = 215;
-                if (tc.setEmotion) tc.setEmotion('🔥 爆走加速!', '#f97316');
-                addFloatingNotification('🔥【煽り運転加速】プライドを刺激され200km/h超でフルスロットル加速!!', 'text-orange-400 font-bold');
-            }
-            return;
-        }
-
-        // 3. ELDERLY DRIVER (高齢者運転 - 連打でパニック運転ミス・急ブレーキ)
-        if (tc.driverPersonality === 'ELDERLY') {
-            tc.panicMeter = Math.min(100, (tc.panicMeter || 0) + 35 * Math.min(spamCount, 4));
-            const roll = Math.random();
-
-            if (roll < 0.40 || tc.panicMeter >= 80) {
-                // 40%: パニックペダル踏み間違い急ブレーキ
-                tc.state = 'PANIC_BRAKE';
-                tc.stateTimer = 2.8;
-                tc.targetSpeedKmh = Math.max(15, tc.speedKmh - 75);
-                tc.brakeLightsActive = true;
-                tc.hazardActive = true;
-                if (tc.setEmotion) tc.setEmotion('⚠️ パニック急ブレーキ!', '#eab308', '#000000');
-                audio.playHorn(false);
-                addFloatingNotification('⚠️【高齢者パニック】後方パッシングに驚愕！ペダル踏み間違い急減速!!', 'text-yellow-400 font-black');
-                recordDashcamIncident('高齢者パニック急減速 遭遇');
-                spawnParticles(tc.mesh.position.clone().add(new THREE.Vector3(0, 0.2, tc.length / 2)), 10, 'SMOKE');
-            } else if (roll < 0.65) {
-                // 25%: パニック蛇行過大操作・ガードレール激突
-                tc.state = 'PANIC_SWERVE';
-                tc.stateTimer = 3.2;
-                tc.swerveDir = (Math.random() > 0.5 ? 1 : -1) * (14 + Math.random() * 8);
-                if (tc.setEmotion) tc.setEmotion('👵 視界不良スピン!', '#f59e0b', '#000000');
-                addFloatingNotification('💥【高齢者運転ミス】パッシングの眩しさでステアリング過大操作！蛇行スピン!!', 'text-amber-400 font-bold');
-                recordDashcamIncident('視界不良 制御不能スピン 検知');
-            } else if (roll < 0.90) {
-                // 25%: 進行方向見失い・車線跨ぎ低速硬直
-                tc.state = 'PANIC_CONFUSED';
-                tc.stateTimer = 4.0;
-                tc.targetSpeedKmh = 35;
-                tc.hazardActive = true;
-                tc.blinkerState = Math.random() > 0.5 ? 'LEFT' : 'RIGHT';
-                if (tc.setEmotion) tc.setEmotion('❓ 進行方向見失い', '#38bdf8', '#000000');
-                addFloatingNotification('🌀【高齢者混乱】進路を見失いウィンカー誤作動・車線跨ぎで低速硬直!!', 'text-cyan-400 font-bold');
-                recordDashcamIncident('低速車線跨ぎ硬直 遭遇');
-            } else {
-                // 10%: 稀に慎重に道を譲る
-                tc.state = 'YIELDING';
-                tc.stateTimer = 3.8;
-                tc.blinkerState = 'LEFT';
-                tc.hazardActive = false;
-                const targetLane = Math.max(0, tc.laneIndex - 1);
-                tc.targetLaneX = LANE_CENTERS[targetLane];
-                tc.laneIndex = targetLane;
-                if (tc.setEmotion) tc.setEmotion('🤝 ハザード退避', '#10b981');
-                addFloatingNotification('👵【高齢者退避】ハザードを焚きながらゆっくり左車線へ退避しました', 'text-emerald-400');
-            }
-            return;
-        }
-
-        // 4. NORMAL CIVILIAN DRIVER
-        const roll = Math.random();
-        if (roll < 0.50) {
-            // 50%: 素直に道を譲る
-            tc.state = 'YIELDING';
-            tc.stateTimer = 2.4;
-            tc.blinkerState = 'LEFT';
-            const targetLane = Math.max(0, tc.laneIndex - 1);
-            tc.targetLaneX = LANE_CENTERS[targetLane];
-            tc.laneIndex = targetLane;
-            if (tc.setEmotion) tc.setEmotion('🤝 車線変更', '#10b981');
-            addFloatingNotification('🤝【一般車】左ウィンカーを出し速やかに進路を譲りました', 'text-emerald-300');
-        } else if (roll < 0.80) {
-            // 30%: マイペース無視
-            if (tc.setEmotion) tc.setEmotion('💤 マイペース', '#64748b');
-        } else {
-            // 20%: 驚いて急減速
-            tc.state = 'PANIC_BRAKE';
-            tc.stateTimer = 1.8;
-            tc.targetSpeedKmh = Math.max(50, tc.speedKmh - 30);
-            tc.brakeLightsActive = true;
-            if (tc.setEmotion) tc.setEmotion('💧 驚き急減速', '#60a5fa');
-            addFloatingNotification('💧【一般車】突然のパッシングに驚いて急減速しました', 'text-blue-300');
-        }
+    function toggleHazardLights() {
+        state.hazardActive = !state.hazardActive;
+        if (audio && audio.playHazardClick) audio.playHazardClick();
+        addFloatingNotification(state.hazardActive ? '⚠️ ハザードランプ 点滅開始 [Z]' : '✅ ハザードランプ 消灯', 'text-amber-400 font-bold');
     }
 
-    function triggerPlayerHornAndFlash() {
-        triggerPassingFlash(true);
+    function cycleWeather() {
+        state.weatherMode = (state.weatherMode + 1) % 4;
+        const modes = [
+            { name: '晴天', icon: 'fa-sun text-yellow-400', sky: 0x050b18, fog: 0.0075 },
+            { name: '深夜湾岸', icon: 'fa-moon text-indigo-400', sky: 0x020308, fog: 0.009 },
+            { name: '豪雨', icon: 'fa-cloud-showers-heavy text-cyan-400', sky: 0x07111c, fog: 0.016 },
+            { name: '濃霧', icon: 'fa-smog text-slate-300', sky: 0x1a2332, fog: 0.035 }
+        ];
+        const curr = modes[state.weatherMode];
+        const lbl = document.getElementById('weather-label');
+        const icn = document.getElementById('weather-icon');
+        if (lbl) lbl.textContent = curr.name;
+        if (icn) icn.className = 'fa-solid ' + curr.icon;
+        scene.background.setHex(curr.sky);
+        scene.fog.color.setHex(curr.sky);
+        scene.fog.density = curr.fog;
+        addFloatingNotification('🌤️ 天候変更: 【' + curr.name + '】', 'text-sky-300 font-bold');
+    }
+
+    function togglePhotoMode() {
+        state.photoModeActive = !state.photoModeActive;
+        if (state.photoModeActive) {
+            state.prevMode = state.mode;
+            state.mode = 'PHOTO_PAUSED';
+            addFloatingNotification('📷 フォトモード起動 [P]: 時間停止中・カメラ自由操作', 'text-cyan-300 font-bold');
+        } else {
+            state.mode = state.prevMode || 'PLAYING';
+            addFloatingNotification('▶️ レース再開', 'text-emerald-400 font-bold');
+        }
     }
 
     function addFloatingNotification(text, colorClass = 'text-sky-300') {
@@ -2457,8 +2305,10 @@
             if (e.code === 'KeyV') toggleBeamSkeleton();
             if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') toggleSlowMotion();
             if (e.code === 'KeyR') repairAllSoftBodyAndTires(false);
-            if (e.code === 'KeyF') triggerPassingFlash(false);
-            if (e.code === 'KeyH') triggerPassingFlash(true);
+            if (e.code === 'KeyF') triggerPlayerHornAndFlash(true);
+            if (e.code === 'KeyH') triggerPlayerHornAndFlash(false);
+            if (e.code === 'KeyZ') toggleHazardLights();
+            if (e.code === 'KeyP') togglePhotoMode();
             if (e.code === 'F11') {
                 try {
                     const { ipcRenderer } = require('electron');
@@ -2467,8 +2317,6 @@
             }
             if (e.code === 'Enter' && state.mode !== 'PLAYING' && state.mode !== 'EXPLODING') {
                 startNewRace();
-triggerPassingFlash(false);
-triggerPassingFlash(true);
             }
         });
 
@@ -2495,7 +2343,21 @@ triggerPassingFlash(true);
         bindControlBtn('ctrl-down', 'ArrowDown');
         bindControlBtn('ctrl-nos', 'Space');
         const passBtn = document.getElementById('ctrl-pass');
-        if (passBtn) passBtn.addEventListener('click', () => triggerPassingFlash(false));
+        if (passBtn) passBtn.addEventListener('click', () => triggerPlayerHornAndFlash(true));
+        const hazardBtn = document.getElementById('ctrl-hazard');
+        if (hazardBtn) hazardBtn.addEventListener('click', toggleHazardLights);
+        const weatherBtn = document.getElementById('btn-weather');
+        if (weatherBtn) weatherBtn.addEventListener('click', cycleWeather);
+
+        // Global audio unlock on first user interaction so BGM always starts cleanly
+        const unlockAudio = () => {
+            audio.init();
+            if (audio.ctx && audio.ctx.state === 'suspended') {
+                audio.ctx.resume();
+            }
+        };
+        window.addEventListener('pointerdown', unlockAudio, { once: true });
+        window.addEventListener('keydown', unlockAudio, { once: true });
 
         // Home / Garage Tab Switching
         document.querySelectorAll('.garage-tab-btn').forEach(tabBtn => {

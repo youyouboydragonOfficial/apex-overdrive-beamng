@@ -1172,67 +1172,6 @@
         };
     }
 
-    function createElderlyBadgeMesh() {
-        const markGroup = new THREE.Group();
-        const leafL = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.36, 0.04), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
-        leafL.rotation.z = 0.28;
-        leafL.position.x = -0.15;
-        const leafR = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.36, 0.04), new THREE.MeshBasicMaterial({ color: 0xf97316 }));
-        leafR.rotation.z = -0.28;
-        leafR.position.x = 0.15;
-        const stem = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.14, 0.04), new THREE.MeshBasicMaterial({ color: 0x16a34a }));
-        stem.position.y = -0.22;
-        markGroup.add(leafL, leafR, stem);
-        markGroup.scale.set(0.9, 0.9, 0.9);
-        return markGroup;
-    }
-
-    function createEmotionBillboardSprite(group, carHeight) {
-        const canvas = document.createElement('canvas');
-        canvas.width = 256;
-        canvas.height = 64;
-        const ctx = canvas.getContext('2d');
-        const texture = new THREE.CanvasTexture(canvas);
-        const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
-        const sprite = new THREE.Sprite(mat);
-        sprite.scale.set(3.4, 0.85, 1.0);
-        sprite.position.set(0, carHeight + 0.95, 0);
-        sprite.visible = false;
-        group.add(sprite);
-
-        let hideTimeout = null;
-        const setEmotion = (text, bgColor = '#dc2626', textColor = '#ffffff') => {
-            ctx.clearRect(0, 0, 256, 64);
-            ctx.fillStyle = bgColor;
-            ctx.beginPath();
-            if (ctx.roundRect) {
-                ctx.roundRect(8, 8, 240, 48, 24);
-            } else {
-                ctx.rect(8, 8, 240, 48);
-            }
-            ctx.fill();
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = '#ffffff';
-            ctx.stroke();
-
-            ctx.fillStyle = textColor;
-            ctx.font = 'bold 20px "Segoe UI", sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(text, 128, 32);
-
-            texture.needsUpdate = true;
-            sprite.visible = true;
-
-            if (hideTimeout) clearTimeout(hideTimeout);
-            hideTimeout = setTimeout(() => {
-                sprite.visible = false;
-            }, 2600);
-        };
-
-        return { sprite, setEmotion };
-    }
-
     /**
      * Builds a Sculpted, Deformable Traffic Vehicle so AI cars also look realistic
      * AND crumple / deform vertex-by-vertex when hit!
@@ -1411,31 +1350,6 @@
             group.add(wGroup);
         });
 
-        // Emotion Billboard Sprite
-        const { sprite: emotionSprite, setEmotion } = createEmotionBillboardSprite(group, height || 1.38);
-
-        // Elderly Driver 3D Badges
-        if (type === 'WRONG_WAY' || type === 'ELDERLY_CIVILIAN') {
-            const badgeR = createElderlyBadgeMesh();
-            badgeR.position.set(width * 0.28, 0.82, length / 2 + 0.04);
-            const badgeF = createElderlyBadgeMesh();
-            badgeF.position.set(-width * 0.28, 0.72, -length / 2 - 0.04);
-            group.add(badgeR, badgeF);
-        }
-
-        // Road Rage GT Carbon Wing
-        if (type === 'ROAD_RAGE') {
-            const wingGroup = new THREE.Group();
-            const blade = new THREE.Mesh(new THREE.BoxGeometry(width * 0.88, 0.06, 0.38), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.8 }));
-            const standL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.26, 0.12), new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.9 }));
-            standL.position.set(-width * 0.32, -0.13, 0);
-            const standR = standL.clone();
-            standR.position.x = width * 0.32;
-            wingGroup.add(blade, standL, standR);
-            wingGroup.position.set(0, 1.24, length / 2 - 0.32);
-            group.add(wingGroup);
-        }
-
         return {
             group,
             width,
@@ -1443,12 +1357,6 @@
             length,
             sirenBar,
             hazardLights,
-            tailL,
-            tailR,
-            headL,
-            headR,
-            emotionSprite,
-            setEmotion,
             deformableTrafficMeshes
         };
     }
