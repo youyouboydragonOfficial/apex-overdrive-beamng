@@ -1,7 +1,6 @@
 /**
- * APEX OVERDRIVE: BeamNG Soft-Body Physics Edition v2.5
- * 3D Highway World, Destructible Environment Props, Weather & Day/Night System,
- * Crash Lab Props (Hydraulic Crusher, Wrecking Ball, Car Cannon)
+ * APEX OVERDRIVE: BeamNG Soft-Body Physics Edition
+ * 3D Highway World, Procedural PBR Textures, Traps, ETC Toll Plaza, Sandbox Obstacles & Finish Gate Builder
  */
 
 (function (global) {
@@ -11,15 +10,7 @@
     const LANE_CENTERS = [-13.5, -8.1, -2.7, 2.7, 8.1, 13.5];
     const HIGHWAY_SEGMENT_LENGTH = 260;
 
-    // Time of Day Lighting Presets
-    const TIME_OF_DAY_PRESETS = {
-        NOON: { name: '昼 (NOON)', sky: 0x38bdf8, fog: 0x93c5fd, density: 0.0035, lightColor: 0xffffff, lightIntensity: 1.8, hemiGround: 0x334155 },
-        SUNSET: { name: '夕方 (SUNSET)', sky: 0x7c2d12, fog: 0x9a3412, density: 0.0048, lightColor: 0xfb923c, lightIntensity: 1.5, hemiGround: 0x1e1b4b },
-        MIDNIGHT: { name: '深夜 (MIDNIGHT)', sky: 0x050811, fog: 0x050811, density: 0.0050, lightColor: 0x38bdf8, lightIntensity: 0.9, hemiGround: 0x020617 },
-        DAWN: { name: '朝焼け (DAWN)', sky: 0x4c1d95, fog: 0x831843, density: 0.0042, lightColor: 0xf472b6, lightIntensity: 1.4, hemiGround: 0x1e1b4b }
-    };
-
-    // 4 Selectable Maps
+    // 4 Selectable Maps / Stages
     const MAP_SPECS = {
         TOKYO: {
             id: 'TOKYO',
@@ -79,14 +70,14 @@
         }
     };
 
-    // Rebalanced Difficulty Levels
+    // 5 Rebalanced & Clearable Difficulty Levels!
+    // Traffic counts reduced and paired with a guaranteed 2-lane open escape corridor so Lv.4 & Lv.5 are genuinely clearable!
     const LEVEL_SPECS = {
         1: {
             level: 1,
             name: 'Lv.1 ROOKIE',
             title: 'ルーキー・クルーズ',
             goalKm: 2.5,
-            rewardCr: 15000,
             trafficCount: 4,
             trapCount: 2,
             etcInterval: 600,
@@ -101,7 +92,6 @@
             name: 'Lv.2 STREET PRO',
             title: 'ストリート・プロ',
             goalKm: 3.2,
-            rewardCr: 25000,
             trafficCount: 6,
             trapCount: 2,
             etcInterval: 480,
@@ -116,7 +106,6 @@
             name: 'Lv.3 HAZARD KING',
             title: 'ハザード・キング',
             goalKm: 4.0,
-            rewardCr: 40000,
             trafficCount: 7,
             trapCount: 3,
             etcInterval: 400,
@@ -131,7 +120,6 @@
             name: 'Lv.4 NIGHTMARE',
             title: 'ナイトメア・ラン',
             goalKm: 4.8,
-            rewardCr: 60000,
             trafficCount: 9,
             trapCount: 4,
             etcInterval: 340,
@@ -146,7 +134,6 @@
             name: 'Lv.5 逆走・暴走クライマックス',
             title: 'OVERDRIVE FINALE',
             goalKm: 5.5,
-            rewardCr: 100000,
             trafficCount: 10,
             trapCount: 4,
             etcInterval: 300,
@@ -189,6 +176,7 @@
             ctx.fillRect(cx - 60, 0, 120, 1024);
         }
 
+        // Red/White racing rumble curbs on outer edges
         for (let y = 0; y < 1024; y += 64) {
             ctx.fillStyle = (y / 64) % 2 === 0 ? '#ef4444' : '#f8fafc';
             ctx.fillRect(4, y, 16, 64);
@@ -239,6 +227,7 @@
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 512, 256);
 
+        // Studio showroom softbox reflection strips for realistic automotive paint highlights
         ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
         for (let i = 0; i < 16; i++) {
             ctx.fillRect(i * 32 + 8, 64, 18, 8);
@@ -250,6 +239,9 @@
         return texture;
     }
 
+    /**
+     * Builds the Checkered Flag Finish Arch when the player approaches the Stage Clear goal distance!
+     */
     function createFinishGoalArch(zOffset = -195) {
         const group = new THREE.Group();
         const pillarMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.8, roughness: 0.2 });
@@ -265,6 +257,7 @@
         topBeam.position.set(0, 8.8, 0);
         group.add(topBeam);
 
+        // Glowing Checkered Pattern Blocks along the arch
         for (let i = -15; i <= 15; i += 2) {
             const chk = new THREE.Mesh(
                 new THREE.BoxGeometry(1.8, 0.6, 1.5),
@@ -274,6 +267,7 @@
             group.add(chk);
         }
 
+        // Ground laser finish line
         const finishLine = new THREE.Mesh(
             new THREE.PlaneGeometry(ROAD_WIDTH, 3.0),
             new THREE.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.65, side: THREE.DoubleSide })
@@ -293,59 +287,43 @@
     }
 
     /**
-     * Creates Advanced BeamNG Crash Lab Obstacles:
-     * - 50t Hydraulic Crusher Press (油圧クラッシャー)
-     * - Giant Wrecking Ball Pendulum (巨大鉄球ペンデュラム)
-     * - High-Speed Car Cannon Catapult (400km/h 射出ランチャー)
-     * - Concrete Crash Wall (衝突試験バリア)
+     * Builds a BeamNG Sandbox Crash Obstacle (Hydraulic Roller Crusher, Concrete Wedge Wall, or Mega Ramp)
      */
     function createSandboxObstacle(subType, laneX, zOffset = -150) {
         const group = new THREE.Group();
         let width = 3.8, length = 3.2;
 
         if (subType === 'CRUSHER') {
-            width = 4.4; length = 2.6;
+            // Spinning spiked steel crusher drum suspended at hood/roof height!
+            width = 4.4;
+            length = 2.6;
             const postMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.7, roughness: 0.3 });
             [-2.1, 2.1].forEach(px => {
-                const post = new THREE.Mesh(new THREE.BoxGeometry(0.4, 3.2, 0.8), postMat);
-                post.position.set(px, 1.6, 0);
+                const post = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.6, 0.8), postMat);
+                post.position.set(px, 1.3, 0);
                 group.add(post);
             });
             const drum = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.68, 0.68, 3.9, 16),
+                new THREE.CylinderGeometry(0.62, 0.62, 3.9, 16),
                 new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.85, roughness: 0.2 })
             );
             drum.rotation.z = Math.PI / 2;
             drum.position.set(0, 1.15, 0);
             group.add(drum);
             group.userData.spinner = drum;
-        } else if (subType === 'WRECKING_BALL') {
-            width = 4.0; length = 3.0;
-            const frame = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.4, 0.4), new THREE.MeshStandardMaterial({ color: 0x475569 }));
-            frame.position.y = 6.8;
-            const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 4.8, 6), new THREE.MeshBasicMaterial({ color: 0x94a3b8 }));
-            chain.position.set(0, 4.4, 0);
-            const ball = new THREE.Mesh(new THREE.SphereGeometry(0.95, 16, 16), new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.95, roughness: 0.1 }));
-            ball.position.set(0, 1.8, 0);
-            group.add(frame, chain, ball);
-            group.userData.pendulumBall = ball;
-            group.userData.pendulumChain = chain;
-        } else if (subType === 'CANNON') {
-            width = 3.6; length = 5.2;
-            const tube = new THREE.Mesh(
-                new THREE.CylinderGeometry(1.4, 1.4, 4.8, 16),
-                new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.8, roughness: 0.2 })
-            );
-            tube.rotation.x = Math.PI / 2;
-            tube.position.set(0, 1.2, 0);
-            const base = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.4, 5.2), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
-            base.position.y = 0.2;
-            group.add(tube, base);
         } else if (subType === 'CONCRETE_WALL') {
-            width = 2.6; length = 2.4;
-            const block = new THREE.Mesh(new THREE.BoxGeometry(width, 1.65, length), new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.6 }));
+            // Offset Deformable Barrier Test Block (IIHS / EuroNCAP Crash Test Block!)
+            width = 2.4;
+            length = 2.2;
+            const block = new THREE.Mesh(
+                new THREE.BoxGeometry(width, 1.65, length),
+                new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.6 })
+            );
             block.position.y = 0.825;
-            const orangeFace = new THREE.Mesh(new THREE.BoxGeometry(width * 0.92, 1.45, 0.25), new THREE.MeshBasicMaterial({ color: 0xf97316 }));
+            const orangeFace = new THREE.Mesh(
+                new THREE.BoxGeometry(width * 0.92, 1.45, 0.25),
+                new THREE.MeshBasicMaterial({ color: 0xf97316 })
+            );
             orangeFace.position.set(0, 0.825, length / 2 + 0.05);
             group.add(block, orangeFace);
         }
@@ -364,7 +342,6 @@
         ROAD_WIDTH,
         LANE_CENTERS,
         HIGHWAY_SEGMENT_LENGTH,
-        TIME_OF_DAY_PRESETS,
         MAP_SPECS,
         LEVEL_SPECS,
         createProceduralRoadTexture,

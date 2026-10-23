@@ -1,9 +1,6 @@
 /**
- * APEX OVERDRIVE: BeamNG Soft-Body Physics Edition v2.5
- * Enhanced Procedural Web Audio Engine:
- * - 5 Multi-Channel In-Game Radio Stations (Synthwave, Eurobeat, Cyber Rock, Lo-Fi, Police Scanner)
- * - Multi-Harmonic V12/V8/Rotary/EV Engine Synthesizers & Turbo Spool / Blow-Off
- * - Deep Impact Crunch, Glass Shatter, Metal Groaning, Doppler Effect & Police Siren
+ * APEX OVERDRIVE: BeamNG Soft-Body Physics Edition
+ * Enhanced Procedural Web Audio Synthesizer (V12/V8/Rotary Engine, Metal Crumple, Glass Shatter, NOS, BGM)
  */
 
 (function (global) {
@@ -16,7 +13,7 @@
             this.bgmGainNode = null;
             this.sfxGainNode = null;
             this.sfxEnabled = true;
-            this.bgmMode = 1; // 0: OFF, 1: Synthwave FM, 2: Eurobeat Nitro, 3: Cyber Rock, 4: Lo-Fi Chill, 5: Police Scanner
+            this.bgmMode = 1; // 1: Cyber Synthwave, 2: Nitro Eurobeat, 3: Dark Overdrive, 0: OFF
             this.isPlayingEngine = false;
             this.engineOsc1 = null;
             this.engineOsc2 = null;
@@ -31,8 +28,6 @@
             this.lastScreechSfxTime = 0;
             this.lastHornSfxTime = 0;
             this.lastNosSfxTime = 0;
-            this.policeSirenOsc = null;
-            this.policeSirenGain = null;
         }
 
         init() {
@@ -118,20 +113,15 @@
             const now = this.ctx.currentTime;
             const dest = this.bgmGainNode || this.ctx.destination;
 
-            // 5 Station Melodic Patterns
             const bassPatterns = {
                 1: [55, 55, 110, 55, 65.4, 65.4, 130.8, 65.4, 73.4, 73.4, 146.8, 73.4, 61.7, 61.7, 123.5, 82.4],
                 2: [65.4, 130.8, 65.4, 130.8, 73.4, 146.8, 73.4, 146.8, 82.4, 164.8, 82.4, 164.8, 77.8, 155.6, 98.0, 196.0],
-                3: [41.2, 41.2, 41.2, 82.4, 43.65, 43.65, 41.2, 41.2, 49.0, 49.0, 46.25, 46.25, 41.2, 82.4, 61.7, 55.0],
-                4: [65.4, 0, 65.4, 0, 82.4, 0, 73.4, 0, 65.4, 0, 55.0, 0, 73.4, 0, 82.4, 0],
-                5: [110, 0, 0, 110, 0, 0, 123.5, 0, 110, 0, 0, 98, 0, 0, 110, 0]
+                3: [41.2, 41.2, 41.2, 82.4, 43.65, 43.65, 41.2, 41.2, 49.0, 49.0, 46.25, 46.25, 41.2, 82.4, 61.7, 55.0]
             };
             const leadPatterns = {
                 1: [440, 0, 523.3, 659.3, 587.3, 0, 523.3, 440, 392, 0, 440, 523.3, 659.3, 587.3, 523.3, 493.9],
                 2: [523.3, 659.3, 784.0, 659.3, 587.3, 698.5, 880.0, 698.5, 659.3, 784.0, 987.8, 784.0, 880.0, 784.0, 659.3, 587.3],
-                3: [329.6, 0, 349.2, 0, 329.6, 392.0, 0, 349.2, 329.6, 0, 293.7, 0, 261.6, 293.7, 329.6, 246.9],
-                4: [261.6, 0, 329.6, 0, 392.0, 0, 523.3, 0, 392.0, 0, 329.6, 0, 293.7, 0, 261.6, 0],
-                5: [880, 0, 0, 880, 0, 0, 987.8, 0, 880, 0, 0, 784, 0, 0, 880, 0]
+                3: [329.6, 0, 349.2, 0, 329.6, 392.0, 0, 349.2, 329.6, 0, 293.7, 0, 261.6, 293.7, 329.6, 246.9]
             };
 
             const bassFreq = bassPatterns[this.bgmMode]?.[step % 16];
@@ -141,11 +131,12 @@
                 const bOsc = this.ctx.createOscillator();
                 const bFilter = this.ctx.createBiquadFilter();
                 const bGain = this.ctx.createGain();
-                bOsc.type = this.bgmMode === 3 ? 'sawtooth' : (this.bgmMode === 4 ? 'sine' : 'sawtooth');
+                bOsc.type = 'sawtooth';
                 bOsc.frequency.setValueAtTime(bassFreq, now);
                 bFilter.type = 'lowpass';
-                bFilter.frequency.setValueAtTime(this.bgmMode === 4 ? 320 : 620, now);
-                bGain.gain.setValueAtTime(0.048, now);
+                bFilter.frequency.setValueAtTime(620, now);
+                bFilter.frequency.exponentialRampToValueAtTime(160, now + 0.09);
+                bGain.gain.setValueAtTime(0.052, now);
                 bGain.gain.exponentialRampToValueAtTime(0.001, now + 0.095);
                 bOsc.connect(bFilter);
                 bFilter.connect(bGain);
@@ -157,9 +148,9 @@
             if (step % 2 === 0 && leadFreq > 0) {
                 const lOsc = this.ctx.createOscillator();
                 const lGain = this.ctx.createGain();
-                lOsc.type = this.bgmMode === 2 ? 'sawtooth' : (this.bgmMode === 3 ? 'sawtooth' : (this.bgmMode === 4 ? 'sine' : 'square'));
+                lOsc.type = this.bgmMode === 2 ? 'sawtooth' : 'square';
                 lOsc.frequency.setValueAtTime(leadFreq, now);
-                lGain.gain.setValueAtTime(this.bgmMode === 4 ? 0.018 : 0.026, now);
+                lGain.gain.setValueAtTime(0.026, now);
                 lGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
                 lOsc.connect(lGain);
                 lGain.connect(dest);
@@ -167,7 +158,7 @@
                 lOsc.stop(now + 0.19);
             }
 
-            if (step % 4 === 0 && this.bgmMode !== 4) {
+            if (step % 4 === 0) {
                 const kOsc = this.ctx.createOscillator();
                 const kGain = this.ctx.createGain();
                 kOsc.type = 'sine';
@@ -350,35 +341,40 @@
         }
 
         /**
-         * DEEP BEAMNG CRUNCH + GLASS SHATTER + METALLIC GROANING
+         * Realistic BeamNG-style multi-layered Metal Crumple + Crunch + Glass Shatter sound
          */
         playCrash(intensity = 1.0) {
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
-            if (now - this.lastCrashSfxTime < 0.20) return;
+            if (now - this.lastCrashSfxTime < 0.24) return;
             this.lastCrashSfxTime = now;
 
             const dest = this.sfxGainNode || this.ctx.destination;
-            const safeIntensity = Number.isFinite(intensity) ? Math.min(1.8, Math.max(0.2, intensity)) : 0.6;
-            const duration = 0.32 + safeIntensity * 0.28;
+            const safeIntensity = Number.isFinite(intensity) ? Math.min(1.5, Math.max(0.2, intensity)) : 0.6;
+            const duration = 0.26 + safeIntensity * 0.22;
 
-            // 1. Multi-frequency folding crunch
+            // 1. Metallic crunch noise burst
             const bufferSize = Math.floor(this.ctx.sampleRate * duration);
             const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
             const data = buffer.getChannelData(0);
             for (let i = 0; i < bufferSize; i++) {
-                const foldMod = 0.7 + 0.3 * Math.sin(i * 0.05);
-                data[i] = (Math.random() * 2 - 1) * foldMod * Math.exp(-i / (this.ctx.sampleRate * 0.15));
+                // Modulated envelope to simulate sheet metal folding & buckling
+                const foldMod = 0.7 + 0.3 * Math.sin(i * 0.045);
+                data[i] = (Math.random() * 2 - 1) * foldMod * Math.exp(-i / (this.ctx.sampleRate * 0.13));
             }
+
             const noise = this.ctx.createBufferSource();
             noise.buffer = buffer;
+
             const filter = this.ctx.createBiquadFilter();
             filter.type = 'bandpass';
             filter.frequency.setValueAtTime(560, now);
             filter.Q.setValueAtTime(1.4, now);
+
             const gain = this.ctx.createGain();
-            gain.gain.setValueAtTime(0.16 + safeIntensity * 0.12, now);
+            gain.gain.setValueAtTime(0.14 + safeIntensity * 0.11, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
             noise.connect(filter);
             filter.connect(gain);
             gain.connect(dest);
@@ -388,47 +384,30 @@
             const osc = this.ctx.createOscillator();
             const oscGain = this.ctx.createGain();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(135, now);
-            osc.frequency.exponentialRampToValueAtTime(28, now + 0.24);
-            oscGain.gain.setValueAtTime(0.22, now);
-            oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+            osc.frequency.setValueAtTime(125, now);
+            osc.frequency.exponentialRampToValueAtTime(30, now + 0.20);
+            oscGain.gain.setValueAtTime(0.18, now);
+            oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.21);
             osc.connect(oscGain);
             oscGain.connect(dest);
             osc.start(now);
-            osc.stop(now + 0.26);
+            osc.stop(now + 0.22);
 
-            // 3. High-frequency glass tinkle on impacts
-            if (safeIntensity > 0.55) {
-                for (let g = 0; g < 4; g++) {
+            // 3. High-frequency glass tinkle on heavy impacts
+            if (safeIntensity > 0.65) {
+                for (let g = 0; g < 3; g++) {
                     const gOsc = this.ctx.createOscillator();
                     const gGain = this.ctx.createGain();
                     gOsc.type = 'sine';
-                    gOsc.frequency.setValueAtTime(2600 + Math.random() * 2400, now + g * 0.035);
-                    gGain.gain.setValueAtTime(0.045, now + g * 0.035);
-                    gGain.gain.exponentialRampToValueAtTime(0.001, now + g * 0.035 + 0.09);
+                    gOsc.frequency.setValueAtTime(2400 + Math.random() * 2200, now + g * 0.04);
+                    gGain.gain.setValueAtTime(0.035, now + g * 0.04);
+                    gGain.gain.exponentialRampToValueAtTime(0.001, now + g * 0.04 + 0.09);
                     gOsc.connect(gGain);
                     gGain.connect(dest);
-                    gOsc.start(now + g * 0.035);
-                    gOsc.stop(now + g * 0.035 + 0.10);
+                    gOsc.start(now + g * 0.04);
+                    gOsc.stop(now + g * 0.04 + 0.10);
                 }
             }
-        }
-
-        playDopplerPass() {
-            if (!this.ctx || !this.sfxEnabled) return;
-            const now = this.ctx.currentTime;
-            const dest = this.sfxGainNode || this.ctx.destination;
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(420, now);
-            osc.frequency.exponentialRampToValueAtTime(180, now + 0.35);
-            gain.gain.setValueAtTime(0.035, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
-            osc.connect(gain);
-            gain.connect(dest);
-            osc.start(now);
-            osc.stop(now + 0.40);
         }
 
         playOvertake() {
@@ -459,13 +438,16 @@
             const osc1 = this.ctx.createOscillator();
             const osc2 = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
+
             osc1.type = 'sawtooth';
             osc2.type = 'sawtooth';
             osc1.frequency.setValueAtTime(isAggressive ? 415 : 490, now);
             osc2.frequency.setValueAtTime(isAggressive ? 520 : 620, now);
+
             const dur = isAggressive ? 0.28 : 0.20;
             gain.gain.setValueAtTime(0.08, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
             osc1.connect(gain);
             osc2.connect(gain);
             gain.connect(dest);
@@ -479,7 +461,6 @@
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             const dest = this.sfxGainNode || this.ctx.destination;
-            // Crisp optical relay switch chirp
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
             osc.type = 'triangle';
@@ -493,51 +474,30 @@
             osc.stop(now + 0.06);
         }
 
-        playPoliceSiren(active = true) {
-            if (!this.ctx) return;
-            if (!active) {
-                if (this.policeSirenGain) {
-                    this.policeSirenGain.gain.setTargetAtTime(0.0001, this.ctx.currentTime, 0.1);
-                }
-                return;
-            }
-            if (!this.policeSirenOsc) {
-                const now = this.ctx.currentTime;
-                this.policeSirenOsc = this.ctx.createOscillator();
-                this.policeSirenGain = this.ctx.createGain();
-                this.policeSirenOsc.type = 'sine';
-                this.policeSirenOsc.frequency.setValueAtTime(650, now);
-                this.policeSirenGain.gain.setValueAtTime(0.038, now);
-                this.policeSirenOsc.connect(this.policeSirenGain);
-                this.policeSirenGain.connect(this.sfxGainNode || this.ctx.destination);
-                this.policeSirenOsc.start();
-            }
-            const time = this.ctx.currentTime;
-            const freq = 650 + Math.sin(time * 3.5) * 250;
-            this.policeSirenOsc.frequency.setValueAtTime(freq, time);
-            this.policeSirenGain.gain.setValueAtTime(0.045, time);
-        }
-
         playExplosion() {
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             const dest = this.sfxGainNode || this.ctx.destination;
-            const duration = 1.6;
+            const duration = 1.4;
             const bufferSize = Math.floor(this.ctx.sampleRate * duration);
             const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
             const data = buffer.getChannelData(0);
             for (let i = 0; i < bufferSize; i++) {
                 data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 1.8);
             }
+
             const noise = this.ctx.createBufferSource();
             noise.buffer = buffer;
+
             const filter = this.ctx.createBiquadFilter();
             filter.type = 'lowpass';
             filter.frequency.setValueAtTime(750, now);
             filter.frequency.exponentialRampToValueAtTime(65, now + duration);
+
             const gain = this.ctx.createGain();
-            gain.gain.setValueAtTime(0.32, now);
+            gain.gain.setValueAtTime(0.28, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
             noise.connect(filter);
             filter.connect(gain);
             gain.connect(dest);

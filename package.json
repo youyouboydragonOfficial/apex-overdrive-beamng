@@ -1,7 +1,7 @@
 {
   "name": "apex-overdrive-beamng",
-  "version": "2.6.0",
-  "description": "APEX OVERDRIVE: BeamNG Soft-Body Physics Edition v2.6 - パッシング連打・高齢者パニック急制動＆煽り運転逆上AI・ドラレコHUD Windows App",
+  "version": "2.7.0",
+  "description": "APEX OVERDRIVE: BeamNG Soft-Body Physics Edition v2.7 - 全5難易度レベル完全維持・ショールーム軟体クラッシュ試演・パッシング心理AI＆高齢者パニック急制動 Windows App",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -31,10 +31,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "artifactName": "ApexOverdrive-BeamNG-Setup-v2.6.0.exe"
+      "artifactName": "ApexOverdrive-BeamNG-Setup-v2.7.0.exe"
     },
     "portable": {
-      "artifactName": "ApexOverdrive-BeamNG-Portable-v2.6.0.exe"
+      "artifactName": "ApexOverdrive-BeamNG-Portable-v2.7.0.exe"
     }
   },
   "devDependencies": {
