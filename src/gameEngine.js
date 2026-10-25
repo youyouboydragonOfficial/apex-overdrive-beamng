@@ -111,6 +111,7 @@
     let weatherParticles = [];
     let trafficCars = [];
     let roadTraps = [];
+    let spilledHazards = [];
     let detachedDebris = [];
     let particles = [];
 
@@ -173,6 +174,8 @@
         sharedGeos.steam = new THREE.DodecahedronGeometry(0.24, 0);
         sharedGeos.explosion = new THREE.DodecahedronGeometry(0.58, 1);
         sharedGeos.debris = new THREE.BoxGeometry(0.36, 0.12, 0.40);
+        sharedGeos.logCylinder = new THREE.CylinderGeometry(0.38, 0.38, 3.2, 12);
+        sharedGeos.sandMound = new THREE.CylinderGeometry(2.4, 3.2, 0.26, 12);
 
         roadTexture = createProceduralRoadTexture();
         envTexture = createProceduralEnvTexture();
@@ -860,7 +863,12 @@
         if (type === 'WRONG_WAY') bodyColor = 0xd6d3d1;
         if (type === 'ROAD_RAGE') bodyColor = 0x18181b;
 
-        const built = buildSculptedTrafficVehicle(type, bodyColor, envTexture);
+        let truckCargoType = null;
+        if (type === 'TRUCK') {
+            const cargos = ['LOGS', 'SAND', 'BOX'];
+            truckCargoType = cargos[Math.floor(Math.random() * cargos.length)];
+        }
+        const built = buildSculptedTrafficVehicle(type, bodyColor, envTexture, truckCargoType);
         const group = built.group;
         const isWrongWay = type === 'WRONG_WAY';
 
@@ -896,7 +904,12 @@
             rollRate: 0,
             honked: false,
             hitByPlayer: false,
-            overtaken: false
+            overtaken: false,
+            cargoGroup: built.cargoGroup || null,
+            cargoType: built.cargoType || truckCargoType,
+            cargoSpilled: false,
+            brakeTestTriggered: false,
+            evasionTriggered: false
         });
     }
 
@@ -1174,13 +1187,249 @@
     function addFloatingNotification(text, colorClass = 'text-sky-300') {
         const feed = document.getElementById('event-feed');
         if (!feed) return;
+        // Limit maximum simultaneous notifications so they never pile up into a screen-obstructing wall!
+        while (feed.children.length >= 3) {
+            feed.removeChild(feed.firstChild);
+        }
         const el = document.createElement('div');
         el.className = `combo-pop px-3.5 py-1 rounded-full hud-glass border border-white/15 font-['Orbitron'] font-bold text-xs sm:text-sm shadow-lg ${colorClass}`;
         el.innerHTML = text;
         feed.appendChild(el);
         setTimeout(() => {
             if (el.parentNode) el.parentNode.removeChild(el);
-        }, 1200);
+        }, 1300);
+    }
+
+
+    function createSpilledLogMesh() {
+        const group = new THREE.Group();
+        const logMat = new THREE.MeshStandardMaterial({
+            color: 0x5c3818,
+            roughness: 0.92,
+            metalness: 0.05
+        });
+        const cylinder = new THREE.Mesh(sharedGeos.logCylinder, logMat);
+        cylinder.rotation.z = Math.PI / 2;
+        cylinder.castShadow = true;
+        group.add(cylinder);
+
+        const endGeo = new THREE.CircleGeometry(0.38, 12);
+        const endMat = new THREE.MeshStandardMaterial({ color: 0xa16207, roughness: 0.88 });
+        const end1 = new THREE.Mesh(endGeo, endMat);
+        end1.position.x = 1.6;
+        end1.rotation.y = Math.PI / 2;
+        const end2 = new THREE.Mesh(endGeo, endMat);
+        end2.position.x = -1.6;
+        end2.rotation.y = -Math.PI / 2;
+        group.add(end1, end2);
+
+        return group;
+    }
+
+    function createSpilledSandPatchMesh() {
+        const group = new THREE.Group();
+        const sandMat = new THREE.MeshStandardMaterial({
+            color: 0xb4813f,
+            roughness: 0.96,
+            metalness: 0.02,
+            transparent: true,
+            opacity: 0.92
+        });
+        const mound = new THREE.Mesh(sharedGeos.sandMound, sandMat);
+        mound.position.y = 0.12;
+        group.add(mound);
+
+        const gravelGeo = new THREE.DodecahedronGeometry(0.18, 0);
+        const gravelMat = new THREE.MeshStandardMaterial({ color: 0x785324, roughness: 0.9 });
+        for (let g = 0; g < 4; g++) {
+            const gr = new THREE.Mesh(gravelGeo, gravelMat);
+            gr.position.set((Math.random() - 0.5) * 2.2, 0.22, (Math.random() - 0.5) * 2.2);
+            group.add(gr);
+        }
+        return group;
+    }
+
+    function triggerTruckCargoSpill(tc) {
+        if (!tc || tc.cargoSpilled) return;
+        tc.cargoSpilled = true;
+        if (tc.cargoGroup) tc.cargoGroup.visible = false;
+
+        const truckPos = tc.mesh.position;
+        const truckSpeedMs = tc.speedKmh / 3.6;
+
+        if (tc.cargoType === 'LOGS') {
+            audio.playWoodImpact();
+            addFloatingNotification('⚠️ 前方大型トラックから【巨大丸太】が荷崩れ落下!!', 'text-red-400 font-bold');
+            for (let l = 0; l < 5; l++) {
+                const logMesh = createSpilledLogMesh();
+                const laneScatter = (Math.random() - 0.5) * 6.5;
+                const zScatter = -1.5 - l * 3.8;
+                logMesh.position.set(
+                    THREE.MathUtils.clamp(truckPos.x + laneScatter, -ROAD_WIDTH / 2 + 2, ROAD_WIDTH / 2 - 2),
+                    1.4 + l * 0.3,
+                    truckPos.z + zScatter
+                );
+                logMesh.rotation.set(
+                    Math.random() * 0.4,
+                    (Math.random() - 0.5) * 0.6,
+                    Math.PI / 2 + (Math.random() - 0.5) * 0.3
+                );
+                scene.add(logMesh);
+
+                spilledHazards.push({
+                    type: 'LOG',
+                    mesh: logMesh,
+                    vx: (Math.random() - 0.5) * 4.5,
+                    vy: 2.5 + Math.random() * 3.5,
+                    vz: (truckSpeedMs * 0.7) + (Math.random() - 0.5) * 4.0,
+                    rollSpeed: 8.0 + Math.random() * 12.0,
+                    radius: 0.38,
+                    length: 3.2,
+                    hitPlayer: false
+                });
+            }
+        } else if (tc.cargoType === 'SAND') {
+            audio.playSandGravelDrag();
+            addFloatingNotification('⚠️ 前方ダンプトラックから【大量土砂】が道路に流出!!', 'text-amber-400 font-bold');
+            for (let s = 0; s < 3; s++) {
+                const sandMesh = createSpilledSandPatchMesh();
+                const laneScatter = (s - 1) * 2.8 + (Math.random() - 0.5) * 1.5;
+                sandMesh.position.set(
+                    THREE.MathUtils.clamp(truckPos.x + laneScatter, -ROAD_WIDTH / 2 + 3, ROAD_WIDTH / 2 - 3),
+                    0.06,
+                    truckPos.z - 3.0 - s * 5.5
+                );
+                scene.add(sandMesh);
+
+                spilledHazards.push({
+                    type: 'SAND',
+                    mesh: sandMesh,
+                    vx: 0,
+                    vy: 0,
+                    vz: 0,
+                    width: 5.2,
+                    length: 6.8,
+                    hitPlayer: false,
+                    grindAudioTimer: 0
+                });
+            }
+        } else if (tc.cargoType === 'BOX') {
+            audio.playCrashSound(20);
+            addFloatingNotification('⚠️ 前方大型トラックから【輸送コンテナ】が路上脱落!!', 'text-orange-400 font-bold');
+            const boxGeo = new THREE.BoxGeometry(2.4, 2.2, 5.0);
+            const boxMat = new THREE.MeshStandardMaterial({ color: 0xc2410c, roughness: 0.5, metalness: 0.6 });
+            const boxMesh = new THREE.Mesh(boxGeo, boxMat);
+            boxMesh.position.set(truckPos.x, 1.1, truckPos.z - 3.0);
+            scene.add(boxMesh);
+            spilledHazards.push({
+                type: 'BOX',
+                mesh: boxMesh,
+                vx: (Math.random() - 0.5) * 3.0,
+                vy: 2.0,
+                vz: truckSpeedMs * 0.6,
+                rollSpeed: 2.0,
+                radius: 1.2,
+                length: 5.0,
+                hitPlayer: false
+            });
+        }
+    }
+
+    function updateSpilledHazards(dt, playerMetersPerSec) {
+        for (let h = spilledHazards.length - 1; h >= 0; h--) {
+            const hz = spilledHazards[h];
+            hz.mesh.position.z += (playerMetersPerSec - hz.vz) * dt;
+            hz.mesh.position.x += hz.vx * dt;
+
+            if (hz.type === 'LOG') {
+                hz.vy -= 26.0 * dt;
+                hz.mesh.position.y += hz.vy * dt;
+                if (hz.mesh.position.y <= hz.radius) {
+                    hz.mesh.position.y = hz.radius;
+                    hz.vy = -hz.vy * 0.45;
+                    hz.vx *= Math.pow(0.55, dt);
+                    hz.vz *= Math.pow(0.75, dt);
+                }
+                hz.mesh.rotation.x += hz.rollSpeed * dt;
+
+                const roadLimit = ROAD_WIDTH / 2 - 1.5;
+                if (Math.abs(hz.mesh.position.x) > roadLimit) {
+                    hz.mesh.position.x = Math.sign(hz.mesh.position.x) * roadLimit;
+                    hz.vx = -hz.vx * 0.6;
+                }
+
+                if (state.mode === 'PLAYING' && !hz.hitPlayer && state.playerY < 1.4) {
+                    const dx = hz.mesh.position.x - state.playerX;
+                    const dz = hz.mesh.position.z - playerCar.root.position.z;
+                    if (Math.abs(dx) < 2.3 && Math.abs(dz) < 2.2) {
+                        hz.hitPlayer = true;
+                        audio.playWoodImpact();
+                        spawnPhysicalShatterPieces(hz.mesh.position.clone().add(new THREE.Vector3(0, 0.4, 0)), 6, 0x78350f, 15);
+                        applySoftBodyCarDamage(50, dx * 0.5, -2.0);
+                        state.playerVY = 8.5;
+                        state.playerY = 0.35;
+                        state.speedKmh = Math.max(state.minSpeedKmh, state.speedKmh * 0.55);
+                        state.playerVX += (dx >= 0 ? -1 : 1) * 7.5;
+                        addFloatingNotification('🪵 落下丸太に激突!! 車体大破・サス圧壊!', 'text-red-500 font-black');
+
+                        hz.vx = (dx >= 0 ? 1 : -1) * 15;
+                        hz.vz = -25;
+                        hz.vy = 6.0;
+                    }
+                }
+            } else if (hz.type === 'SAND') {
+                if (state.mode === 'PLAYING' && state.playerY < 0.65) {
+                    const dx = hz.mesh.position.x - state.playerX;
+                    const dz = hz.mesh.position.z - playerCar.root.position.z;
+                    if (Math.abs(dx) < (hz.width / 2 + 0.9) && Math.abs(dz) < (hz.length / 2 + 1.8)) {
+                        state.speedKmh = Math.max(state.minSpeedKmh, state.speedKmh * Math.pow(0.42, dt * 2.8));
+                        applySoftBodyCarDamage(18 * dt, (Math.random() - 0.5) * 0.8, -1.9);
+
+                        hz.grindAudioTimer = (hz.grindAudioTimer || 0) - dt;
+                        if (hz.grindAudioTimer <= 0) {
+                            audio.playSandGravelDrag();
+                            hz.grindAudioTimer = 0.32;
+                        }
+
+                        if (!hz.hitPlayer) {
+                            hz.hitPlayer = true;
+                            addFloatingNotification('⚠️ 落下土砂に突入!! 急激減速＆バンパー激突破損!', 'text-amber-400 font-bold');
+                        }
+                    }
+                }
+            } else if (hz.type === 'BOX') {
+                hz.vy -= 26.0 * dt;
+                hz.mesh.position.y += hz.vy * dt;
+                if (hz.mesh.position.y <= hz.radius) {
+                    hz.mesh.position.y = hz.radius;
+                    hz.vy = -hz.vy * 0.3;
+                    hz.vx *= Math.pow(0.5, dt);
+                    hz.vz *= Math.pow(0.7, dt);
+                }
+                hz.mesh.rotation.y += 0.5 * dt;
+
+                if (state.mode === 'PLAYING' && !hz.hitPlayer && state.playerY < 1.6) {
+                    const dx = hz.mesh.position.x - state.playerX;
+                    const dz = hz.mesh.position.z - playerCar.root.position.z;
+                    if (Math.abs(dx) < 2.2 && Math.abs(dz) < 2.8) {
+                        hz.hitPlayer = true;
+                        audio.playCrashSound(35);
+                        spawnPhysicalShatterPieces(hz.mesh.position.clone(), 8, 0xc2410c, 18);
+                        applySoftBodyCarDamage(42, dx * 0.6, -2.0);
+                        state.speedKmh = Math.max(state.minSpeedKmh, state.speedKmh * 0.5);
+                        state.playerVX += (dx >= 0 ? -1 : 1) * 9.0;
+                        addFloatingNotification('💥 脱落コンテナに激突!! クランプルゾーン圧壊!', 'text-red-500 font-bold');
+                        hz.vx = (dx >= 0 ? 1 : -1) * 12;
+                        hz.vz = -22;
+                    }
+                }
+            }
+
+            if (hz.mesh.position.z > 35 || hz.mesh.position.z < -280) {
+                scene.remove(hz.mesh);
+                spilledHazards.splice(h, 1);
+            }
+        }
     }
 
     function updateStageHUDLabels() {
@@ -1734,10 +1983,22 @@
                 wp.material.opacity = 0;
                 return;
             }
-            wp.material.opacity = 0.75;
-            wp.material.color.setHex(mapSpec.weatherType === 'SNOW' ? 0xffffff : (mapSpec.weatherType === 'EMBER' ? 0xff5500 : 0xfde68a));
+            wp.material.opacity = 0.82;
+            if (mapSpec.weatherType === 'SNOW') {
+                wp.material.color.setHex(0xffffff);
+                wp.position.y += -3.5 * dt;
+            } else if (mapSpec.weatherType === 'EMBER') {
+                wp.material.color.setHex(0xff5500);
+                wp.position.y += 2.5 * dt;
+            } else if (mapSpec.weatherType === 'LEAVES') {
+                wp.material.color.setHex(Math.random() > 0.5 ? 0xd97706 : 0xb45309);
+                wp.position.y += -2.2 * dt;
+                wp.position.x += Math.sin(clock.elapsedTime * 2.2 + wp.position.z) * 1.8 * dt;
+            } else {
+                wp.material.color.setHex(0xfde68a);
+                wp.position.y += -3.5 * dt;
+            }
             wp.position.z += playerMetersPerSec * dt * 0.9;
-            wp.position.y += (mapSpec.weatherType === 'EMBER' ? 2.5 : -3.5) * dt;
             if (wp.position.z > 18 || wp.position.y < 0 || wp.position.y > 12) {
                 wp.position.z = -95 - Math.random() * 35;
                 wp.position.x = (Math.random() - 0.5) * 38;
@@ -1940,6 +2201,30 @@
                         audio.playHorn(false);
                         addFloatingNotification(`🔱 警告!! 第${tc.laneIndex + 1}レーンから【高齢者逆走車】接近中!!`, 'text-yellow-300');
                     }
+                } else if (tc.type === 'TRUCK' && !tc.cargoSpilled && tc.cargoGroup) {
+                    let shouldSpill = false;
+                    // 急ハンドル (Sharp swerve from steering or passing evasion)
+                    if (Math.abs(tc.vx) > 3.0) {
+                        shouldSpill = true;
+                    }
+                    // 急ブレーキ (Sudden emergency brake when approaching fast from behind)
+                    else if (!tc.brakeTestTriggered && dz > -65 && dz < -20 && Math.abs(dx) < 4.2 && (state.speedKmh - tc.speedKmh) > 90) {
+                        tc.brakeTestTriggered = true;
+                        tc.speedKmh = Math.max(22, tc.speedKmh - 46);
+                        tc.vx = (Math.random() > 0.5 ? 1 : -1) * (3.8 + Math.random() * 2.0);
+                        shouldSpill = true;
+                    }
+                    // Occasional swerve maneuver in dense highway traffic
+                    else if (!tc.evasionTriggered && Math.random() < 0.003 && dz > -80 && dz < -20) {
+                        tc.evasionTriggered = true;
+                        tc.speedKmh = Math.max(28, tc.speedKmh - 35);
+                        tc.vx = (Math.random() > 0.5 ? 1 : -1) * (4.2 + Math.random() * 2.0);
+                        shouldSpill = true;
+                    }
+
+                    if (shouldSpill) {
+                        triggerTruckCargoSpill(tc);
+                    }
                 }
             }
 
@@ -1978,6 +2263,9 @@
                     const relKmh = Math.max(20, Math.abs(state.speedKmh - tc.speedKmh));
 
                     tc.hitByPlayer = true;
+                    if (tc.type === 'TRUCK' && !tc.cargoSpilled && tc.cargoGroup) {
+                        triggerTruckCargoSpill(tc);
+                    }
                     const crashWorldPos = tc.mesh.position.clone().add(new THREE.Vector3(-dx * 0.4, 0.7, dz > 0 ? -tc.length * 0.4 : tc.length * 0.4));
                     spawnPhysicalShatterPieces(crashWorldPos, 3, 0x94a3b8, 13);
 
@@ -2061,6 +2349,8 @@
             }
         }
 
+        updateSpilledHazards(dt, playerMetersPerSec);
+
         updateCameraTransform(rawDt, speedRatio);
         audio.updateEngine(state.speedKmh, isAccelPressed || state.nosActive, state.mode === 'PLAYING', state.selectedCar, state.timeScale);
         updateHUD();
@@ -2113,6 +2403,8 @@
         trafficCars = [];
         roadTraps.forEach(t => scene.remove(t.mesh));
         roadTraps = [];
+        spilledHazards.forEach(h => scene.remove(h.mesh));
+        spilledHazards = [];
         detachedDebris.forEach(d => {
             scene.remove(d.mesh);
             physicsWorld.removeBody(d.body);

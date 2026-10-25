@@ -67,6 +67,34 @@
             sceneryColor: 0x27272a,
             grip: 0.92,
             weatherType: 'EMBER'
+        },
+        SHUTO_C1: {
+            id: 'SHUTO_C1',
+            name: '首都高C1環状トンネル',
+            sub: 'SHUTO C1 INNER-LOOP & TUNNEL',
+            info: '路面グリップ: 100% | 視界: ネオン高層ビル群＆地下トンネル帯 | 6車線環状',
+            skyColor: 0x02040b,
+            fogColor: 0x040916,
+            fogDensity: 0.0042,
+            roadTint: 0xffffff,
+            barrierColor: 0x1e293b,
+            sceneryColor: 0x0284c7,
+            grip: 1.0,
+            weatherType: 'NONE'
+        },
+        HAKONE: {
+            id: 'HAKONE',
+            name: '箱根紅葉ターンパイク',
+            sub: 'HAKONE MT. TOLL ROAD',
+            info: '路面グリップ: 94% | 視界: 茜色の山並み＆舞い散る紅葉 | 峠高速',
+            skyColor: 0x240d1f,
+            fogColor: 0x3d1728,
+            fogDensity: 0.0052,
+            roadTint: 0xfecdd3,
+            barrierColor: 0x831843,
+            sceneryColor: 0xb45309,
+            grip: 0.94,
+            weatherType: 'LEAVES'
         }
     };
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>APEX OVERDRIVE: BeamNG Soft-Body Physics Edition v2.0</title>
+    <title>APEX OVERDRIVE: BeamNG Soft-Body Physics Edition v2.9.0</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Bundled Offline Three.js r128 & Cannon.js 0.6.2 -->
@@ -118,14 +118,14 @@
             pointer-events: none;
             box-shadow: inset 0 0 55px rgba(220, 38, 38, 0.42);
         }
-        @keyframes popCombo {
-            0% { transform: scale(0.5) translateY(10px); opacity: 0; }
-            22% { transform: scale(1.1) translateY(0px); opacity: 1; }
-            82% { transform: scale(1.0) translateY(-4px); opacity: 1; }
-            100% { transform: scale(0.92) translateY(-18px); opacity: 0; }
+        @keyframes notifySlideIn {
+            0% { transform: translateX(-24px); opacity: 0; }
+            15% { transform: translateX(0); opacity: 1; }
+            80% { transform: translateX(0); opacity: 1; }
+            100% { transform: translateX(-16px); opacity: 0; }
         }
         .combo-pop {
-            animation: popCombo 1.2s forwards cubic-bezier(0.16, 1, 0.3, 1);
+            animation: notifySlideIn 1.5s forwards cubic-bezier(0.16, 1, 0.3, 1);
         }
         .custom-scroll::-webkit-scrollbar {
             width: 6px;
@@ -254,7 +254,8 @@
         </div>
 
         <!-- Floating Notifications -->
-        <div id="event-feed" class="pointer-events-none absolute top-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 z-10"></div>
+        <!-- Floating Notifications (Non-obstructive top-left feed so windshield view is 100% clear) -->
+        <div id="event-feed" class="pointer-events-none absolute top-16 left-4 flex flex-col items-start gap-1.5 z-20 max-w-xs sm:max-w-sm"></div>
 
         <!-- Realistic Japanese Dashcam HUD (Top-Right) -->
         <div id="dashcam-hud" class="pointer-events-none absolute top-3.5 right-4 flex flex-col items-end gap-1 z-10 font-mono text-[10px] text-white/90 drop-shadow">
@@ -433,8 +434,8 @@
                         </div>
                     </div>
 
-                    <!-- 6 Sculpted Car Cards -->
-                    <div id="car-select-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <!-- 8 Sculpted Car Cards -->
+                    <div id="car-select-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         <div data-car="HYPER" class="select-card selected rounded-xl p-2.5 text-left">
                             <div class="text-[10px] font-bold text-red-400">ITALIAN V12</div>
                             <div class="font-bold text-sm text-white">V12 ROSSO</div>
@@ -464,6 +465,16 @@
                             <div class="text-[10px] font-bold text-emerald-400">3.1t HYPER-SUV</div>
                             <div class="font-bold text-sm text-white">GOLIATH V10</div>
                             <div class="text-[11px] text-slate-400">剛性215%・無敵の重戦車</div>
+                        </div>
+                        <div data-car="PORSCHE_TURBO" class="select-card rounded-xl p-2.5 text-left">
+                            <div class="text-[10px] font-bold text-rose-400">AIR-COOLED TURBO</div>
+                            <div class="font-bold text-sm text-white">930 TURBO GT</div>
+                            <div class="text-[11px] text-slate-400">伝統ホエールテール・空冷RR</div>
+                        </div>
+                        <div data-car="HELLCAT" class="select-card rounded-xl p-2.5 text-left">
+                            <div class="text-[10px] font-bold text-orange-400">6.2L SUPERCHARGED</div>
+                            <div class="font-bold text-sm text-white">HELLCAT V8</div>
+                            <div class="text-[11px] text-slate-400">807hp・ボンネット開口＆轟音</div>
                         </div>
                     </div>
 
@@ -511,10 +522,10 @@
                     <!-- Course Map Selection -->
                     <div>
                         <div class="flex justify-between text-xs font-bold text-sky-300 mb-1">
-                            <span><i class="fa-solid fa-map-location-dot mr-1"></i>コース環境選択 (全4ステージ)</span>
+                            <span><i class="fa-solid fa-map-location-dot mr-1"></i>コース環境選択 (全6ステージ)</span>
                             <span id="map-hazard-label" class="text-[11px] text-slate-300">路面グリップ: 100%</span>
                         </div>
-                        <div id="map-select-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div id="map-select-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                             <div data-map="TOKYO" class="select-card selected rounded-xl p-2.5 text-left">
                                 <div class="text-xs font-bold text-sky-300">🌃 首都高湾岸</div>
                                 <div class="text-[11px] text-slate-400">ネオン高層ビル群</div>
@@ -530,6 +541,14 @@
                             <div data-map="INFERNO" class="select-card rounded-xl p-2.5 text-left">
                                 <div class="text-xs font-bold text-red-400">🌋 溶岩コンビナート</div>
                                 <div class="text-[11px] text-slate-400">火の粉舞う工業地帯</div>
+                            </div>
+                            <div data-map="SHUTO_C1" class="select-card rounded-xl p-2.5 text-left">
+                                <div class="text-xs font-bold text-cyan-300">🌀 首都高C1 環状線</div>
+                                <div class="text-[11px] text-slate-400">緊迫の連続地下トンネル</div>
+                            </div>
+                            <div data-map="HAKONE" class="select-card rounded-xl p-2.5 text-left">
+                                <div class="text-xs font-bold text-amber-300">🍁 箱根 ターンパイク</div>
+                                <div class="text-[11px] text-slate-400">紅葉舞い散る黄昏峠道</div>
                             </div>
                         </div>
                     </div>

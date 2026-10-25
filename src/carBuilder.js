@@ -121,6 +121,44 @@
             armorMultiplier: 2.15,
             profile: 'HEAVY_SUV',
             stats: { speed: 75, accel: 79, handling: 74, armor: 100, mass: 100 }
+        },
+        PORSCHE_TURBO: {
+            id: 'PORSCHE_TURBO',
+            name: '930 TURBO GT',
+            category: 'AIR-COOLED TURBO RR',
+            desc: '伝統の空冷フラット6＋超大型ホエールテールスポイラー。独特のリア重量配分による鋭いトラクションと猛烈なブースト加速。',
+            color: 0x18181b,
+            accent: 0xe11d48,
+            rimColor: 0xd4d4d8,
+            caliperColor: 0xe11d48,
+            underglowColor: 0xf43f5e,
+            maxSpeed: 372,
+            accel: 110,
+            steerPower: 33.5,
+            massKg: 1330,
+            stiffness: 1.08,
+            armorMultiplier: 1.10,
+            profile: 'CLASSIC_WIDE_TURBO',
+            stats: { speed: 89, accel: 91, handling: 92, armor: 78, mass: 68 }
+        },
+        HELLCAT: {
+            id: 'HELLCAT',
+            name: 'HELLCAT SUPERCHARGED V8',
+            category: 'AMERICAN SUPERCHARGED MUSCLE',
+            desc: '6.2L HEMIスーパーチャージャー搭載の807馬力マッスルカー。巨大なエアインテークスクープと炸裂するスーパーチャージャー鳴きでハイウェイを支配。',
+            color: 0xea580c,
+            accent: 0x18181b,
+            rimColor: 0x27272a,
+            caliperColor: 0xf97316,
+            underglowColor: 0xf97316,
+            maxSpeed: 368,
+            accel: 122,
+            steerPower: 31.0,
+            massKg: 2010,
+            stiffness: 1.45,
+            armorMultiplier: 1.45,
+            profile: 'MUSCLE_WIDE',
+            stats: { speed: 88, accel: 96, handling: 82, armor: 90, mass: 88 }
         }
     };
 
@@ -814,6 +852,14 @@
         const ventR = ventL.clone();
         ventR.position.x = 0.42;
         hoodGroup.add(ventL, ventR);
+        if (profile === 'MUSCLE_WIDE') {
+            // Massive Shaker Air Intake Scoop protruding from supercharged V8 engine
+            const scoop = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.18, 0.72), carbonMat);
+            scoop.position.set(0, 0.12, -0.05);
+            const intakeOpening = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.09, 0.08), new THREE.MeshBasicMaterial({ color: 0x0a0a0c }));
+            intakeOpening.position.set(0, 0.12, -0.40);
+            hoodGroup.add(scoop, intakeOpening);
+        }
 
         hoodGroup.position.set(0, isSUV ? 0.90 : 0.72, -1.34);
         chassisGroup.add(hoodGroup);
@@ -947,7 +993,30 @@
         const strutR = strutL.clone();
         strutR.position.x = 0.56;
 
-        wingGroup.add(wingBlade, epL, epR, strutL, strutR);
+        if (profile === 'CLASSIC_WIDE_TURBO') {
+            // Classic Whale-Tail Tea-Tray Spoiler for Porsche 930
+            const whaleGeo = new THREE.BoxGeometry(1.92, 0.08, 0.88);
+            const whaleMesh = new THREE.Mesh(whaleGeo, paintMat.clone());
+            whaleMesh.position.set(0, 0.42, 0.05);
+            whaleMesh.rotation.x = -0.16;
+            const whaleLip = new THREE.Mesh(new THREE.BoxGeometry(1.98, 0.06, 0.94), carbonMat);
+            whaleLip.position.set(0, 0.43, 0.05);
+            whaleLip.rotation.x = -0.16;
+            const whaleLouver = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.04, 0.48), carbonMat);
+            whaleLouver.position.set(0, 0.48, -0.05);
+            whaleLouver.rotation.x = -0.16;
+            wingGroup.add(whaleMesh, whaleLip, whaleLouver);
+            deformableMeshes.push(whaleMesh);
+        } else if (profile === 'MUSCLE_WIDE') {
+            // Aggressive Drag Ducktail Spoiler for Hellcat
+            const ducktail = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.22, 0.10), carbonMat.clone());
+            ducktail.position.set(0, 0.32, 0.25);
+            ducktail.rotation.x = 0.35;
+            wingGroup.add(ducktail);
+            deformableMeshes.push(ducktail);
+        } else {
+            wingGroup.add(wingBlade, epL, epR, strutL, strutR);
+        }
         wingGroup.position.set(0, isSUV ? 1.12 : 0.86, 1.92);
         chassisGroup.add(wingGroup);
 
@@ -1176,7 +1245,7 @@
      * Builds a Sculpted, Deformable Traffic Vehicle so AI cars also look realistic
      * AND crumple / deform vertex-by-vertex when hit!
      */
-    function buildSculptedTrafficVehicle(type, bodyColor, envTexture) {
+    function buildSculptedTrafficVehicle(type, bodyColor, envTexture, truckCargoType = 'BOX') {
         const group = new THREE.Group();
         let width = 1.92, height = 1.38, length = 4.35;
         let sirenBar = null;
@@ -1199,19 +1268,77 @@
             envMap: envTexture
         });
 
+        let cargoGroup = null;
         if (type === 'TRUCK') {
             width = 2.42;
             height = 2.95;
             length = 7.6;
-            const cargoGeo = createSculptedPanelGeometry(2.42, 2.25, 5.5, 6, 6, 10, () => {}, 1.4);
-            const cargo = new THREE.Mesh(
-                cargoGeo,
-                new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.42, metalness: 0.38, vertexColors: true })
-            );
-            cargo.position.set(0, 1.52, 0.8);
-            cargo.castShadow = true;
-            group.add(cargo);
-            deformableTrafficMeshes.push(cargo);
+            cargoGroup = new THREE.Group();
+
+            if (truckCargoType === 'LOGS') {
+                // Open Flatbed Logging Timber Truck
+                const bed = new THREE.Mesh(new THREE.BoxGeometry(2.42, 0.35, 5.5), new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6 }));
+                bed.position.set(0, 0.68, 0.8);
+                cargoGroup.add(bed);
+
+                // Heavy steel vertical log stanchions
+                [-1.15, 1.15].forEach(sx => {
+                    [-2.0, -0.6, 0.8, 2.2].forEach(sz => {
+                        const stake = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.9, 0.12), new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.4 }));
+                        stake.position.set(sx, 1.55, 0.8 + sz);
+                        cargoGroup.add(stake);
+                    });
+                });
+
+                // Stacked 3D Cylindrical Wooden Logs with Bark & End-Grain
+                const logMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.72 });
+                const logCoords = [
+                    [-0.65, 1.18, 0.8], [0, 1.18, 0.8], [0.65, 1.18, 0.8],
+                    [-0.34, 1.78, 0.8], [0.34, 1.78, 0.8],
+                    [0, 2.38, 0.8]
+                ];
+                logCoords.forEach(pos => {
+                    const logMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.35, 5.2, 12), logMat);
+                    logMesh.rotation.x = Math.PI / 2;
+                    logMesh.position.set(pos[0], pos[1], pos[2]);
+                    logMesh.castShadow = true;
+                    cargoGroup.add(logMesh);
+                });
+
+                // Yellow Tie-down security straps
+                [-1.2, 0.4, 2.0].forEach(sz => {
+                    const strap = new THREE.Mesh(new THREE.TorusGeometry(1.22, 0.04, 6, 16, Math.PI), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+                    strap.position.set(0, 1.18, 0.8 + sz);
+                    cargoGroup.add(strap);
+                });
+
+                group.add(cargoGroup);
+            } else if (truckCargoType === 'SAND') {
+                // Open Heavy Dump Truck
+                const dumpBed = new THREE.Mesh(new THREE.BoxGeometry(2.42, 1.45, 5.5), new THREE.MeshStandardMaterial({ color: 0x0369a1, roughness: 0.45 }));
+                dumpBed.position.set(0, 1.25, 0.8);
+                cargoGroup.add(dumpBed);
+
+                // Golden-brown Gravel / Sand Mound inside dump bed
+                const sandMound = new THREE.Mesh(new THREE.DodecahedronGeometry(1.5, 1), new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.95 }));
+                sandMound.scale.set(1.28, 0.78, 2.35);
+                sandMound.position.set(0, 1.62, 0.8);
+                cargoGroup.add(sandMound);
+
+                group.add(cargoGroup);
+            } else {
+                // Standard Freight Cargo Container
+                const cargoGeo = createSculptedPanelGeometry(2.42, 2.25, 5.5, 6, 6, 10, () => {}, 1.4);
+                const cargo = new THREE.Mesh(
+                    cargoGeo,
+                    new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.42, metalness: 0.38, vertexColors: true })
+                );
+                cargo.position.set(0, 1.52, 0.8);
+                cargo.castShadow = true;
+                cargoGroup.add(cargo);
+                group.add(cargoGroup);
+                deformableTrafficMeshes.push(cargo);
+            }
 
             const cabGeo = createSculptedPanelGeometry(2.26, 1.75, 1.85, 6, 6, 6, (nx, ny, nz, v) => {
                 if (ny > 0.2 && nz < 0) v.z -= nz * 0.22;
@@ -1355,6 +1482,8 @@
             width,
             height,
             length,
+            cargoGroup,
+            cargoType: truckCargoType,
             sirenBar,
             hazardLights,
             deformableTrafficMeshes

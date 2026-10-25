@@ -201,8 +201,10 @@
             const pitchMap = {
                 PROTOTYPE: 1.35,
                 DRIFT: 1.25,
+                PORSCHE_TURBO: 1.18,
                 JDM: 1.12,
                 HYPER: 1.0,
+                HELLCAT: 0.78,
                 INTERCEPTOR: 0.76,
                 GOLIATH: 0.68
             };
@@ -454,6 +456,84 @@
             osc2.start(now);
             osc1.stop(now + dur + 0.02);
             osc2.stop(now + dur + 0.02);
+        }
+
+        /**
+         * Heavy Wood Log Impact: Deep hollow trunk thud with splintering resonance
+         */
+        playWoodImpact() {
+            if (!this.ctx || !this.sfxEnabled) return;
+            const now = this.ctx.currentTime;
+            const dest = this.sfxGainNode || this.ctx.destination;
+
+            // 1. Deep hollow wooden body resonance
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(140, now);
+            osc.frequency.exponentialRampToValueAtTime(45, now + 0.35);
+            gain.gain.setValueAtTime(0.38, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
+            osc.connect(gain);
+            gain.connect(dest);
+            osc.start(now);
+            osc.stop(now + 0.38);
+
+            // 2. High splinter crack noise burst
+            const bufSize = Math.floor(this.ctx.sampleRate * 0.18);
+            const buffer = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufSize, 2.5);
+            }
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(1850, now);
+            filter.Q.setValueAtTime(2.2, now);
+            const nGain = this.ctx.createGain();
+            nGain.gain.setValueAtTime(0.22, now);
+            nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+            noise.connect(filter);
+            filter.connect(nGain);
+            nGain.connect(dest);
+            noise.start(now);
+        }
+
+        /**
+         * Granular Sand & Gravel Friction Drag: Gritty rushing sound when front bumper grinds through sand
+         */
+        playSandGravelDrag() {
+            if (!this.ctx || !this.sfxEnabled) return;
+            const now = this.ctx.currentTime;
+            const dest = this.sfxGainNode || this.ctx.destination;
+
+            const bufSize = Math.floor(this.ctx.sampleRate * 0.28);
+            const buffer = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) {
+                // Granular irregular modulation
+                const grit = 0.6 + 0.4 * Math.sin(i * 0.08);
+                data[i] = (Math.random() * 2 - 1) * grit * Math.pow(1 - i / bufSize, 0.7);
+            }
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(1250, now);
+            filter.Q.setValueAtTime(1.1, now);
+            const gain = this.ctx.createGain();
+            gain.gain.setValueAtTime(0.19, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(dest);
+            noise.start(now);
+        }
+
+        playCrashSound(damage = 20) {
+            this.playCrash(damage / 25);
         }
 
         playExplosion() {

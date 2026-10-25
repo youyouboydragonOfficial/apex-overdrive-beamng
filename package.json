@@ -1,7 +1,7 @@
 {
   "name": "apex-overdrive-beamng",
-  "version": "2.8.0",
-  "description": "APEX OVERDRIVE: BeamNG Soft-Body Physics Edition v2.8 - v2.0安定復元ベース・パッシング完全回避・非ブレ固定HUD・迫力Synthwave音響・ターボ過給圧計＆ブローオフバルブ・天候切替 Windows App",
+  "version": "2.9.0",
+  "description": "APEX OVERDRIVE: BeamNG Soft-Body Physics Edition v2.9 - 大型トラック荷崩れ物理（丸太転がり大ダメージ＆土砂流出バンパー破損・急減速）・新マップ（首都高C1＆箱根紅葉）・新車（930 TURBO GT＆HELLCAT V8）・視界クリア左上通知HUD Windows App",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -31,10 +31,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "artifactName": "ApexOverdrive-BeamNG-Setup-v2.8.0.exe"
+      "artifactName": "ApexOverdrive-BeamNG-Setup-v2.9.0.exe"
     },
     "portable": {
-      "artifactName": "ApexOverdrive-BeamNG-Portable-v2.8.0.exe"
+      "artifactName": "ApexOverdrive-BeamNG-Portable-v2.9.0.exe"
     }
   },
   "devDependencies": {

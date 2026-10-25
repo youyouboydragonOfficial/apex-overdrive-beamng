@@ -14,7 +14,7 @@ function createWindow() {
     height: 860,
     minWidth: 1024,
     minHeight: 640,
-    title: 'APEX OVERDRIVE: BeamNG Soft-Body Physics Edition v2.0',
+    title: 'APEX OVERDRIVE: BeamNG Soft-Body Physics Edition v2.9.0',
     backgroundColor: '#040710',
     autoHideMenuBar: true,
     show: true,
