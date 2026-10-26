@@ -17,6 +17,9 @@
             name: '首都高湾岸6車線',
             sub: 'TOKYO BAYSHORE MIDNIGHT',
             info: '路面グリップ: 100% | 視界: ネオン夜景 | 6車線メガハイウェイ',
+            gimmickName: '首都高オービス自動取締 ＆ 夜間道路工事',
+            gimmickTag: '🚨 ORVIS RADAR TRAP',
+            gimmickDesc: '240km/h超でオービス検知！ブラインド車線かパッシング目眩ましで電撃突破せよ',
             skyColor: 0x050811,
             fogColor: 0x050811,
             fogDensity: 0.0048,
@@ -31,6 +34,9 @@
             name: 'サンセット大渓谷',
             sub: 'RED ROCK CANYON SUNSET',
             info: '路面グリップ: 95% | 視界: 夕陽＆砂塵 | ワイドハイウェイ',
+            gimmickName: '巨石落石崩落 ＆ キャニオン突風',
+            gimmickTag: '🪨 BOULDER AVALANCHE',
+            gimmickDesc: '崖から跳ね転がる巨大岩石と突風横風！紙一重の回避で高得点',
             skyColor: 0x261008,
             fogColor: 0x42180b,
             fogDensity: 0.0050,
@@ -45,6 +51,9 @@
             name: 'ブリザード雪山峠',
             sub: 'ALPS BLIZZARD EXPRESSWAY',
             info: '路面グリップ: 76% (凍結スリップ注意) | 視界: 吹雪',
+            gimmickName: 'ブラックアイス凍結路 ＆ 超巨大除雪車',
+            gimmickTag: '🧊 BLACK ICE & PLOW',
+            gimmickDesc: 'グリップ激変のツルツル凍結路！除雪車の真後ろはクリア路面＆ドラフティング有効',
             skyColor: 0x1e293b,
             fogColor: 0x334155,
             fogDensity: 0.0064,
@@ -59,6 +68,9 @@
             name: '溶岩コンビナート',
             sub: 'VOLCANIC INDUSTRIAL ZONE',
             info: '路面グリップ: 92% | 視界: 火の粉＆赤熱溶岩地帯',
+            gimmickName: '高圧火柱トラップ ＆ 沸騰マグマだまり',
+            gimmickTag: '🔥 FLAME JETS & MAGMA',
+            gimmickDesc: '定期的に噴き出す巨大火柱！休止期の隙間を突けばNOSが完全満タン過給',
             skyColor: 0x160404,
             fogColor: 0x290808,
             fogDensity: 0.0056,
@@ -73,6 +85,9 @@
             name: '首都高C1環状トンネル',
             sub: 'SHUTO C1 INNER-LOOP & TUNNEL',
             info: '路面グリップ: 100% | 視界: ネオン高層ビル群＆地下トンネル帯 | 6車線環状',
+            gimmickName: '超電導サイバー加速帯 ＆ トンネル散水カーテン',
+            gimmickTag: '⚡ CYBER BOOST 400KM/H',
+            gimmickDesc: '床面加速パッドで400km/h超ワープ！散水ミスト帯で車体冷却＆耐久修復',
             skyColor: 0x02040b,
             fogColor: 0x040916,
             fogDensity: 0.0042,
@@ -87,6 +102,9 @@
             name: '箱根紅葉ターンパイク',
             sub: 'HAKONE MT. TOLL ROAD',
             info: '路面グリップ: 94% | 視界: 茜色の山並み＆舞い散る紅葉 | 峠高速',
+            gimmickName: '谷越え展望メガジャンプ台 ＆ 濃霧パッチ',
+            gimmickTag: '🌉 MEGA AIR FLIGHT',
+            gimmickDesc: '空中を50m以上飛翔する巨大展望ジャンプ台！濃霧はパッシングライトで照らせ',
             skyColor: 0x240d1f,
             fogColor: 0x3d1728,
             fogDensity: 0.0052,
@@ -366,7 +384,289 @@
         };
     }
 
-    global.ApexWorldBuilder = {
+
+    function createOrvisGantry(zOffset = -185) {
+        const group = new THREE.Group();
+        const trussMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.3 });
+        const signMat = new THREE.MeshBasicMaterial({ color: 0x090d16 });
+
+        [-ROAD_WIDTH / 2 + 0.4, ROAD_WIDTH / 2 - 0.4].forEach(px => {
+            const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.8, 8.5, 0.8), trussMat);
+            pillar.position.set(px, 4.25, 0);
+            group.add(pillar);
+        });
+
+        const beam = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH + 1.2, 1.4, 1.8), trussMat);
+        beam.position.set(0, 7.8, 0);
+        group.add(beam);
+
+        const board = new THREE.Mesh(new THREE.BoxGeometry(16, 1.1, 0.2), signMat);
+        board.position.set(0, 7.8, 0.95);
+        const textBorder = new THREE.Mesh(new THREE.BoxGeometry(15.6, 0.9, 0.05), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+        textBorder.position.set(0, 7.8, 1.06);
+        group.add(board, textBorder);
+
+        const safeLane = Math.floor(Math.random() * 6);
+        const cameraSensors = [];
+        LANE_CENTERS.forEach((lx, idx) => {
+            const camBox = new THREE.Mesh(
+                new THREE.BoxGeometry(1.0, 0.7, 0.9),
+                new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 })
+            );
+            camBox.position.set(lx, 6.7, 0.3);
+
+            const isSafe = (idx === safeLane);
+            const sensorLens = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.22, 0.22, 0.1, 16),
+                new THREE.MeshBasicMaterial({ color: isSafe ? 0x10b981 : 0xef4444 })
+            );
+            sensorLens.rotation.x = Math.PI / 2;
+            sensorLens.position.set(lx, 6.7, 0.8);
+
+            const laser = new THREE.Mesh(
+                new THREE.PlaneGeometry(4.8, 0.35),
+                new THREE.MeshBasicMaterial({ color: isSafe ? 0x10b981 : 0xef4444, transparent: true, opacity: 0.65 })
+            );
+            laser.rotation.x = -Math.PI / 2;
+            laser.position.set(lx, 0.05, 0);
+
+            group.add(camBox, sensorLens, laser);
+            cameraSensors.push({ laneIndex: idx, isSafe, lens: sensorLens });
+        });
+
+        group.position.set(0, 0, zOffset);
+        return {
+            mesh: group,
+            type: 'ORVIS_CAMERA',
+            width: ROAD_WIDTH,
+            length: 2.5,
+            safeLane,
+            cameraSensors,
+            triggered: false
+        };
+    }
+
+    function createCyberBoostPad(zOffset = -185, laneIndex = null) {
+        if (laneIndex === null) laneIndex = Math.floor(Math.random() * 6);
+        const laneX = LANE_CENTERS[laneIndex];
+        const group = new THREE.Group();
+
+        const base = new THREE.Mesh(
+            new THREE.PlaneGeometry(4.6, 7.5),
+            new THREE.MeshBasicMaterial({ color: 0x06b6d4, transparent: true, opacity: 0.45, side: THREE.DoubleSide })
+        );
+        base.rotation.x = -Math.PI / 2;
+        base.position.y = 0.04;
+        group.add(base);
+
+        for (let c = -2.5; c <= 2.5; c += 1.6) {
+            const chvL = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, 0.35), new THREE.MeshBasicMaterial({ color: 0x22d3ee }));
+            chvL.rotation.y = 0.65;
+            chvL.position.set(-0.65, 0.06, c);
+            const chvR = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, 0.35), new THREE.MeshBasicMaterial({ color: 0x22d3ee }));
+            chvR.rotation.y = -0.65;
+            chvR.position.set(0.65, 0.06, c);
+            group.add(chvL, chvR);
+        }
+
+        [-2.4, 2.4].forEach(px => {
+            const p = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.4, 7.5), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+            p.position.set(px, 0.2, 0);
+            group.add(p);
+        });
+
+        group.position.set(laneX, 0, zOffset);
+        return {
+            mesh: group,
+            type: 'CYBER_BOOST',
+            laneIndex,
+            width: 4.8,
+            length: 7.8,
+            triggered: false
+        };
+    }
+
+    function createFlameVentGantry(zOffset = -185) {
+        const group = new THREE.Group();
+        const pipeMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.85, roughness: 0.25 });
+
+        const startLane = Math.floor(Math.random() * 5);
+        const centerX = (LANE_CENTERS[startLane] + LANE_CENTERS[startLane + 1]) / 2;
+
+        const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, ROAD_WIDTH, 16), pipeMat);
+        pipe.rotation.z = Math.PI / 2;
+        pipe.position.set(0, 6.8, 0);
+        group.add(pipe);
+
+        const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.2, 1.2, 12), new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9 }));
+        nozzle.position.set(centerX, 5.8, 0);
+        group.add(nozzle);
+
+        const flame = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.2, 2.6, 5.6, 14),
+            new THREE.MeshBasicMaterial({ color: 0xff4500, transparent: true, opacity: 0.85 })
+        );
+        flame.position.set(centerX, 2.8, 0);
+        group.add(flame);
+
+        const coreFlame = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.6, 1.4, 5.4, 10),
+            new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.95 })
+        );
+        coreFlame.position.set(centerX, 2.8, 0);
+        group.add(coreFlame);
+
+        group.position.set(0, 0, zOffset);
+        return {
+            mesh: group,
+            type: 'FLAME_VENT',
+            centerX,
+            flameMesh: flame,
+            coreFlameMesh: coreFlame,
+            width: 6.2,
+            length: 3.5,
+            cycleTimer: 0,
+            isFlaming: true,
+            triggered: false
+        };
+    }
+
+    function createBlackIcePatch(zOffset = -185) {
+        const group = new THREE.Group();
+        const laneStart = Math.floor(Math.random() * 4);
+        const centerX = (LANE_CENTERS[laneStart] + LANE_CENTERS[laneStart + 2]) / 2;
+        const width = 16.5;
+        const length = 28.0;
+
+        const iceMat = new THREE.MeshStandardMaterial({
+            color: 0x99f6e4,
+            roughness: 0.02,
+            metalness: 0.95,
+            transparent: true,
+            opacity: 0.55
+        });
+        const sheet = new THREE.Mesh(new THREE.PlaneGeometry(width, length), iceMat);
+        sheet.rotation.x = -Math.PI / 2;
+        sheet.position.y = 0.035;
+        group.add(sheet);
+
+        for (let c = 0; c < 6; c++) {
+            const crack = new THREE.Mesh(
+                new THREE.PlaneGeometry(0.12, 4 + Math.random() * 6),
+                new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 })
+            );
+            crack.rotation.x = -Math.PI / 2;
+            crack.rotation.z = Math.random() * Math.PI;
+            crack.position.set((Math.random() - 0.5) * (width * 0.8), 0.04, (Math.random() - 0.5) * (length * 0.8));
+            group.add(crack);
+        }
+
+        group.position.set(centerX, 0, zOffset);
+        return {
+            mesh: group,
+            type: 'BLACK_ICE',
+            width,
+            length,
+            triggered: false
+        };
+    }
+
+    function createValleyMegaRamp(zOffset = -185, laneIndex = null) {
+        if (laneIndex === null) laneIndex = Math.floor(Math.random() * 4) + 1;
+        const laneX = LANE_CENTERS[laneIndex];
+        const group = new THREE.Group();
+        const width = 4.8;
+        const length = 7.5;
+
+        const rampMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.4, metalness: 0.5 });
+        const rampMesh = new THREE.Mesh(new THREE.BoxGeometry(width, 0.4, length), rampMat);
+        rampMesh.rotation.x = 0.32;
+        rampMesh.position.set(0, 1.25, 0);
+
+        const arrowStrip = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.44, length * 0.88), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+        arrowStrip.rotation.x = 0.32;
+        arrowStrip.position.set(0, 1.28, 0);
+
+        [-width / 2 + 0.15, width / 2 - 0.15].forEach(rx => {
+            const rail = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.8, length), new THREE.MeshStandardMaterial({ color: 0x991b1b }));
+            rail.rotation.x = 0.32;
+            rail.position.set(rx, 1.65, 0);
+            group.add(rail);
+        });
+
+        group.add(rampMesh, arrowStrip);
+        group.position.set(laneX, 0, zOffset);
+        return {
+            mesh: group,
+            type: 'VALLEY_RAMP',
+            laneIndex,
+            width,
+            length,
+            triggered: false
+        };
+    }
+
+    function createBoulderObstacle(zOffset = -195) {
+        const group = new THREE.Group();
+        const fromLeft = Math.random() > 0.5;
+        const startX = fromLeft ? -ROAD_WIDTH / 2 - 2 : ROAD_WIDTH / 2 + 2;
+        const targetVX = (fromLeft ? 1 : -1) * (7.5 + Math.random() * 5.0);
+
+        const rockGeo = new THREE.DodecahedronGeometry(1.4, 1);
+        const rockMat = new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.95, metalness: 0.05 });
+        const rockMesh = new THREE.Mesh(rockGeo, rockMat);
+        rockMesh.position.y = 1.4;
+        rockMesh.castShadow = true;
+        group.add(rockMesh);
+
+        group.position.set(startX, 0, zOffset);
+        return {
+            mesh: group,
+            type: 'BOULDER_FALL',
+            rockMesh,
+            vx: targetVX,
+            vy: 3.5,
+            radius: 1.4,
+            width: 2.8,
+            length: 2.8,
+            shattered: false,
+            triggered: false
+        };
+    }
+
+    function createTunnelDeluge(zOffset = -185) {
+        const group = new THREE.Group();
+        const trussMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 });
+
+        const arch = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH + 1, 0.8, 1.2), trussMat);
+        arch.position.set(0, 7.5, 0);
+
+        const strobeL = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.4, 0.4), new THREE.MeshBasicMaterial({ color: 0xf59e0b }));
+        strobeL.position.set(-6, 7.2, 0.6);
+        const strobeR = strobeL.clone();
+        strobeR.position.x = 6;
+        group.add(arch, strobeL, strobeR);
+
+        const mist = new THREE.Mesh(
+            new THREE.PlaneGeometry(ROAD_WIDTH, 7.0),
+            new THREE.MeshBasicMaterial({ color: 0xbae6fd, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
+        );
+        mist.position.set(0, 3.5, 0);
+        group.add(mist);
+
+        group.position.set(0, 0, zOffset);
+        return {
+            mesh: group,
+            type: 'TUNNEL_DELUGE',
+            strobeL,
+            strobeR,
+            width: ROAD_WIDTH,
+            length: 3.0,
+            triggered: false
+        };
+    }
+
+        global.ApexWorldBuilder = {
         ROAD_WIDTH,
         LANE_CENTERS,
         HIGHWAY_SEGMENT_LENGTH,
@@ -375,6 +675,13 @@
         createProceduralRoadTexture,
         createProceduralEnvTexture,
         createFinishGoalArch,
-        createSandboxObstacle
+        createSandboxObstacle,
+        createOrvisGantry,
+        createCyberBoostPad,
+        createFlameVentGantry,
+        createBlackIcePatch,
+        createValleyMegaRamp,
+        createBoulderObstacle,
+        createTunnelDeluge
     };
 })(window);

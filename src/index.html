@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>APEX OVERDRIVE: BeamNG Soft-Body Physics Edition v2.9.0</title>
+    <title>APEX OVERDRIVE: BeamNG Soft-Body Physics Edition v3.0.0 (Mega Gimmicks)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Bundled Offline Three.js r128 & Cannon.js 0.6.2 -->
@@ -257,6 +257,35 @@
         <!-- Floating Notifications (Non-obstructive top-left feed so windshield view is 100% clear) -->
         <div id="event-feed" class="pointer-events-none absolute top-16 left-4 flex flex-col items-start gap-1.5 z-20 max-w-xs sm:max-w-sm"></div>
 
+        <!-- Live In-Run Bounty / Mission HUD (Top-Left under notifications) -->
+        <div id="bounty-hud" class="pointer-events-none absolute top-32 left-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-xl hud-glass border border-amber-500/40 shadow-lg text-xs font-bold transition-all duration-200">
+            <span class="text-amber-400 text-sm animate-pulse">🎯</span>
+            <div class="flex flex-col leading-tight">
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[9px] text-amber-300 font-mono tracking-wider font-bold">MISSION</span>
+                    <span id="bounty-title" class="text-white font-bold text-[11px]">5連続ニアミスを達成せよ！</span>
+                </div>
+                <div class="flex items-center gap-2 text-[10px] text-slate-300 mt-0.5">
+                    <span id="bounty-progress" class="text-amber-400 font-mono font-bold">0 / 5</span>
+                    <span class="text-slate-500">|</span>
+                    <span id="bounty-reward" class="text-emerald-400 font-bold">報酬: NOS全回復 + 3,000 PTS</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Slipstream & Drift Indicators (Bottom Center) -->
+        <div class="pointer-events-none absolute bottom-24 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1">
+            <div id="slipstream-hud" class="hidden px-3.5 py-1 rounded-full hud-glass border border-cyan-400/60 text-cyan-300 font-['Orbitron'] font-bold text-xs sm:text-sm shadow-[0_0_15px_rgba(34,211,238,0.4)] animate-pulse">
+                💨 SLIPSTREAM DRAFTING +35km/h BOOST
+            </div>
+            <div id="drift-hud" class="hidden px-3.5 py-1 rounded-full hud-glass border border-amber-400/60 text-amber-300 font-['Orbitron'] font-bold text-xs sm:text-sm shadow-[0_0_15px_rgba(245,158,11,0.4)]">
+                🔥 POWER DRIFT: <span id="drift-meters" class="font-mono">0</span>m (+<span id="drift-pts" class="font-mono">0</span> PTS)
+            </div>
+        </div>
+
+        <!-- Fullscreen Flash Overlay (For Orvis Speed Camera & Hyper Boost) -->
+        <div id="screen-flash-overlay" class="pointer-events-none absolute inset-0 z-40 bg-white opacity-0 transition-opacity duration-150"></div>
+
         <!-- Realistic Japanese Dashcam HUD (Top-Right) -->
         <div id="dashcam-hud" class="pointer-events-none absolute top-3.5 right-4 flex flex-col items-end gap-1 z-10 font-mono text-[10px] text-white/90 drop-shadow">
             <div class="flex items-center gap-2 bg-black/75 px-2 py-0.5 rounded border border-white/20">
@@ -272,6 +301,10 @@
             </div>
             <div id="dashcam-incident-badge" class="hidden bg-red-600/90 text-white font-bold px-2 py-0.5 rounded text-[10px] border border-yellow-300 shadow-[0_0_12px_rgba(239,68,68,0.7)] animate-bounce">
                 ⚠️ パッシング退避要請 検知
+            </div>
+            <div id="dashcam-heat-badge" class="hidden flex items-center gap-1 bg-red-950/90 text-red-300 px-2 py-0.5 rounded text-[10px] border border-red-500/50 shadow-[0_0_12px_rgba(239,68,68,0.7)] animate-pulse">
+                <span class="text-amber-400 font-bold">WANTED:</span>
+                <span id="dashcam-heat-stars" class="text-yellow-400 font-bold">⭐</span>
             </div>
         </div>
 
@@ -528,27 +561,33 @@
                         <div id="map-select-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                             <div data-map="TOKYO" class="select-card selected rounded-xl p-2.5 text-left">
                                 <div class="text-xs font-bold text-sky-300">🌃 首都高湾岸</div>
-                                <div class="text-[11px] text-slate-400">ネオン高層ビル群</div>
+                                <div class="text-[10px] text-slate-400">ネオン高層ビル群</div>
+                                <div class="text-[9px] font-bold text-red-400 mt-1">🚨 オービス＆夜間工事</div>
                             </div>
                             <div data-map="CANYON" class="select-card rounded-xl p-2.5 text-left">
                                 <div class="text-xs font-bold text-amber-400">🏜️ 大渓谷サンセット</div>
-                                <div class="text-[11px] text-slate-400">夕陽の赤岩ハイウェイ</div>
+                                <div class="text-[10px] text-slate-400">夕陽の赤岩ハイウェイ</div>
+                                <div class="text-[9px] font-bold text-amber-300 mt-1">🪨 巨石崩落＆キャニオン突風</div>
                             </div>
                             <div data-map="SNOW" class="select-card rounded-xl p-2.5 text-left">
                                 <div class="text-xs font-bold text-cyan-200">❄️ ブリザード雪山</div>
-                                <div class="text-[11px] text-slate-400">滑りやすい凍結路</div>
+                                <div class="text-[10px] text-slate-400">滑りやすい凍結路</div>
+                                <div class="text-[9px] font-bold text-cyan-300 mt-1">🧊 ブラックアイス＆除雪車</div>
                             </div>
                             <div data-map="INFERNO" class="select-card rounded-xl p-2.5 text-left">
                                 <div class="text-xs font-bold text-red-400">🌋 溶岩コンビナート</div>
-                                <div class="text-[11px] text-slate-400">火の粉舞う工業地帯</div>
+                                <div class="text-[10px] text-slate-400">火の粉舞う工業地帯</div>
+                                <div class="text-[9px] font-bold text-orange-400 mt-1">🔥 高圧火柱＆沸騰マグマ</div>
                             </div>
                             <div data-map="SHUTO_C1" class="select-card rounded-xl p-2.5 text-left">
                                 <div class="text-xs font-bold text-cyan-300">🌀 首都高C1 環状線</div>
-                                <div class="text-[11px] text-slate-400">緊迫の連続地下トンネル</div>
+                                <div class="text-[10px] text-slate-400">緊迫の連続地下トンネル</div>
+                                <div class="text-[9px] font-bold text-sky-400 mt-1">⚡ 超電導加速帯＆散水ミスト</div>
                             </div>
                             <div data-map="HAKONE" class="select-card rounded-xl p-2.5 text-left">
                                 <div class="text-xs font-bold text-amber-300">🍁 箱根 ターンパイク</div>
-                                <div class="text-[11px] text-slate-400">紅葉舞い散る黄昏峠道</div>
+                                <div class="text-[10px] text-slate-400">紅葉舞い散る黄昏峠道</div>
+                                <div class="text-[9px] font-bold text-pink-400 mt-1">🌉 展望メガジャンプ台＆濃霧</div>
                             </div>
                         </div>
                     </div>
@@ -691,7 +730,11 @@
             </button>
             <button id="ctrl-nos" class="game-btn w-16 h-11 sm:w-20 sm:h-11 rounded-2xl flex flex-col items-center justify-center text-cyan-300 border-cyan-400/60">
                 <i class="fa-solid fa-fire-flame-simple text-sm"></i>
-                <span class="text-[9px] font-bold">NOS [Space]</span>
+                <span class="text-[9px] font-bold">NOS [Shift]</span>
+            </button>
+            <button id="ctrl-drift" class="game-btn w-16 h-11 sm:w-20 sm:h-11 rounded-2xl flex flex-col items-center justify-center text-amber-300 border-amber-400/60" aria-label="ハンドブレーキ ドリフト">
+                <i class="fa-solid fa-angles-right text-sm"></i>
+                <span class="text-[9px] font-bold">DRIFT [X]</span>
             </button>
             <button id="ctrl-pass" class="game-btn w-16 h-11 sm:w-20 sm:h-11 rounded-2xl flex flex-col items-center justify-center text-yellow-300 border-yellow-400/60" aria-label="パッシング連打">
                 <i class="fa-solid fa-bolt text-sm"></i>

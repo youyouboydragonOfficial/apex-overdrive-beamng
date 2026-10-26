@@ -536,6 +536,210 @@
             this.playCrash(damage / 25);
         }
 
+        /**
+         * Tokyo Highway Orvis Speed Camera: Flash snapshot shutter click or radar jam chime
+         */
+        playOrvisFlash(success = false) {
+            if (!this.ctx || !this.sfxEnabled) return;
+            const now = this.ctx.currentTime;
+            const dest = this.sfxGainNode || this.ctx.destination;
+
+            if (success) {
+                // High-tech radar jammer electronic dual-chirp
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, now);
+                osc.frequency.setValueAtTime(1760, now + 0.08);
+                gain.gain.setValueAtTime(0.24, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+                osc.connect(gain);
+                gain.connect(dest);
+                osc.start(now);
+                osc.stop(now + 0.24);
+            } else {
+                // Mechanical high-voltage xenon flash discharge + shutter click + alarm warble
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(1420, now);
+                osc.frequency.exponentialRampToValueAtTime(440, now + 0.28);
+                gain.gain.setValueAtTime(0.32, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.30);
+                osc.connect(gain);
+                gain.connect(dest);
+                osc.start(now);
+                osc.stop(now + 0.32);
+            }
+        }
+
+        /**
+         * Shuto C1 Tunnel: Cybernetic Boost Pad supersonic warp surge
+         */
+        playCyberBoost() {
+            if (!this.ctx || !this.sfxEnabled) return;
+            const now = this.ctx.currentTime;
+            const dest = this.sfxGainNode || this.ctx.destination;
+
+            // Pitch ascending supersonic sweep
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(220, now);
+            osc.frequency.exponentialRampToValueAtTime(1650, now + 0.42);
+
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(500, now);
+            filter.frequency.exponentialRampToValueAtTime(2800, now + 0.42);
+            filter.Q.setValueAtTime(3.5, now);
+
+            gain.gain.setValueAtTime(0.28, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(dest);
+            osc.start(now);
+            osc.stop(now + 0.46);
+        }
+
+        /**
+         * Inferno Industrial: High-pressure flaming pipeline burst
+         */
+        playFlameRoar() {
+            if (!this.ctx || !this.sfxEnabled) return;
+            const now = this.ctx.currentTime;
+            const dest = this.sfxGainNode || this.ctx.destination;
+
+            const bufSize = Math.floor(this.ctx.sampleRate * 0.42);
+            const buffer = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) {
+                const env = Math.sin((i / bufSize) * Math.PI);
+                data[i] = (Math.random() * 2 - 1) * env;
+            }
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(420, now);
+            filter.frequency.linearRampToValueAtTime(850, now + 0.15);
+            filter.frequency.exponentialRampToValueAtTime(220, now + 0.42);
+
+            const gain = this.ctx.createGain();
+            gain.gain.setValueAtTime(0.35, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(dest);
+            noise.start(now);
+        }
+
+        /**
+         * Blizzard Snow: Black Ice slick gliding tire hiss
+         */
+        playIceSkid() {
+            if (!this.ctx || !this.sfxEnabled) return;
+            const now = this.ctx.currentTime;
+            const dest = this.sfxGainNode || this.ctx.destination;
+
+            const bufSize = Math.floor(this.ctx.sampleRate * 0.30);
+            const buffer = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufSize, 0.4);
+            }
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.setValueAtTime(2400, now);
+            filter.Q.setValueAtTime(0.8, now);
+
+            const gain = this.ctx.createGain();
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.30);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(dest);
+            noise.start(now);
+        }
+
+        /**
+         * In-Run Bounty / Mission Complete fanfare chime
+         */
+        playBountyComplete() {
+            if (!this.ctx || !this.sfxEnabled) return;
+            const now = this.ctx.currentTime;
+            const dest = this.sfxGainNode || this.ctx.destination;
+
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+            notes.forEach((freq, idx) => {
+                const noteTime = now + idx * 0.08;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, noteTime);
+                gain.gain.setValueAtTime(0.24, noteTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.32);
+                osc.connect(gain);
+                gain.connect(dest);
+                osc.start(noteTime);
+                osc.stop(noteTime + 0.34);
+            });
+        }
+
+        /**
+         * Burnout / Takedown Crash chord for wrecking cop or road-rage cars
+         */
+        playTakedown() {
+            if (!this.ctx || !this.sfxEnabled) return;
+            const now = this.ctx.currentTime;
+            const dest = this.sfxGainNode || this.ctx.destination;
+
+            // Sub-bass heavy drop
+            const sub = this.ctx.createOscillator();
+            const subGain = this.ctx.createGain();
+            sub.type = 'sine';
+            sub.frequency.setValueAtTime(160, now);
+            sub.frequency.exponentialRampToValueAtTime(32, now + 0.45);
+            subGain.gain.setValueAtTime(0.45, now);
+            subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
+            sub.connect(subGain);
+            subGain.connect(dest);
+            sub.start(now);
+            sub.stop(now + 0.50);
+
+            // Metallic crunch
+            this.playCrash(1.4);
+        }
+
+        /**
+         * Slipstream drafting suction whistle
+         */
+        playSlipstream() {
+            if (!this.ctx || !this.sfxEnabled) return;
+            const now = this.ctx.currentTime;
+            const dest = this.sfxGainNode || this.ctx.destination;
+
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(620, now);
+            osc.frequency.exponentialRampToValueAtTime(980, now + 0.18);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.20);
+            osc.connect(gain);
+            gain.connect(dest);
+            osc.start(now);
+            osc.stop(now + 0.22);
+        }
+
         playExplosion() {
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;

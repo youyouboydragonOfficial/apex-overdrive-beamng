@@ -83,6 +83,17 @@
         nextEtcDistance: 360,
         cameraPreset: 0,
         cameraDragYaw: 0.35,
+        heatLevel: 0,
+        bountyIndex: 0,
+        bountyProgress: 0,
+        bountiesCompleted: 0,
+        isDrifting: false,
+        driftMeters: 0,
+        driftPts: 0,
+        driftPressed: false,
+        slipstreamActive: false,
+        impactSlowMoTimer: 0,
+        onBlackIce: false,
         cameraDragPitch: 0.08,
         isMouseDragging: false,
         lastMouseX: 0,
@@ -1010,8 +1021,57 @@
             if (tooClose) return;
         }
 
-        const weights = ['SPIKE', 'BARREL', 'OIL', 'RAMP', 'RAMP', 'CONTAINER', 'REPAIR', 'REPAIR'];
-        const type = forcedType || weights[Math.floor(Math.random() * weights.length)];
+        let type = forcedType;
+        if (!type) {
+            const map = state.selectedMap || 'TOKYO';
+            const mapPools = {
+                TOKYO: ['ORVIS_CAMERA', 'RAMP', 'BARREL', 'OIL', 'REPAIR', 'RAMP'],
+                CANYON: ['BOULDER_FALL', 'RAMP', 'BARREL', 'SPIKE', 'REPAIR'],
+                SNOW: ['BLACK_ICE', 'RAMP', 'CONTAINER', 'REPAIR', 'BARREL'],
+                INFERNO: ['FLAME_VENT', 'BARREL', 'CRUSHER', 'CONCRETE_WALL', 'REPAIR'],
+                SHUTO_C1: ['CYBER_BOOST', 'TUNNEL_DELUGE', 'RAMP', 'CONTAINER', 'REPAIR'],
+                HAKONE: ['VALLEY_RAMP', 'SPIKE', 'RAMP', 'REPAIR', 'BARREL']
+            };
+            const pool = mapPools[map] || ['SPIKE', 'BARREL', 'OIL', 'RAMP', 'REPAIR'];
+            type = pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        if (type === 'ORVIS_CAMERA') {
+            const obj = ApexWorldBuilder.createOrvisGantry(zOffset);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        } else if (type === 'CYBER_BOOST') {
+            const obj = ApexWorldBuilder.createCyberBoostPad(zOffset);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        } else if (type === 'FLAME_VENT') {
+            const obj = ApexWorldBuilder.createFlameVentGantry(zOffset);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        } else if (type === 'BLACK_ICE') {
+            const obj = ApexWorldBuilder.createBlackIcePatch(zOffset);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        } else if (type === 'VALLEY_RAMP') {
+            const obj = ApexWorldBuilder.createValleyMegaRamp(zOffset);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        } else if (type === 'BOULDER_FALL') {
+            const obj = ApexWorldBuilder.createBoulderObstacle(zOffset);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        } else if (type === 'TUNNEL_DELUGE') {
+            const obj = ApexWorldBuilder.createTunnelDeluge(zOffset);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        }
 
         if (type === 'CRUSHER' || type === 'CONCRETE_WALL') {
             const sbObj = createSandboxObstacle(type, laneX, zOffset);
@@ -1432,6 +1492,93 @@
         }
     }
 
+
+    function triggerScreenFlash(color = 'rgba(255,255,255,0.7)') {
+        const el = document.getElementById('screen-flash-overlay');
+        if (!el) return;
+        el.style.backgroundColor = color;
+        el.style.opacity = '1';
+        setTimeout(() => { if (el) el.style.opacity = '0'; }, 180);
+    }
+
+    const BOUNTIES = [
+        {
+            id: 'NEAR_MISS',
+            title: '5連続ニアミスを達成せよ！',
+            target: 5,
+            type: 'NEAR_MISS',
+            rewardText: 'NOS全回復 ＆ +3,000 PTS',
+            grantReward: () => { state.nosFuel = 100; state.score += 3000; }
+        },
+        {
+            id: 'SPEED_OVER_350',
+            title: '時速350km/h以上で疾走せよ！',
+            target: 1,
+            type: 'SPEED',
+            rewardText: '無敵ハイパーシールド 6秒 ＆ +4,000 PTS',
+            grantReward: () => { state.invulnerableTimer = 6.0; state.score += 4000; }
+        },
+        {
+            id: 'OVERTAKE_TRUCKS',
+            title: '大型トラックを2台追い越せ！',
+            target: 2,
+            type: 'TRUCK',
+            rewardText: '車体軟体板金・サス完全修復 ＆ +3,500 PTS',
+            grantReward: () => { repairAllSoftBodyAndTires(false); state.score += 3500; }
+        },
+        {
+            id: 'MAP_GIMMICK',
+            title: 'マップ専用ギミックを突破せよ！',
+            target: 1,
+            type: 'GIMMICK',
+            rewardText: 'スーパーNOS ＆ +5,000 PTS',
+            grantReward: () => { state.nosFuel = 100; state.score += 5000; }
+        },
+        {
+            id: 'TAKEDOWN',
+            title: '煽り車またはパトカーを撃破せよ！',
+            target: 1,
+            type: 'TAKEDOWN',
+            rewardText: '無敵シールド ＆ +6,000 PTS',
+            grantReward: () => { state.invulnerableTimer = 5.0; state.score += 6000; }
+        },
+        {
+            id: 'DRIFT_100M',
+            title: '100mパワードリフトをキメろ！',
+            target: 1,
+            type: 'DRIFT',
+            rewardText: 'ボーナス +5,000 PTS ＆ NOS全開',
+            grantReward: () => { state.nosFuel = 100; state.score += 5000; }
+        }
+    ];
+
+    function advanceBounty(type, amount = 1) {
+        const current = BOUNTIES[state.bountyIndex % BOUNTIES.length];
+        if (!current || current.type !== type) return;
+        state.bountyProgress += amount;
+        updateBountyHUD();
+        if (state.bountyProgress >= current.target) {
+            current.grantReward();
+            state.bountiesCompleted++;
+            audio.playBountyComplete();
+            addFloatingNotification(`🏆 MISSION COMPLETE!! 【${current.title}】 達成!!`, 'text-yellow-300 font-black');
+            state.bountyIndex++;
+            state.bountyProgress = 0;
+            updateBountyHUD();
+        }
+    }
+
+    function updateBountyHUD() {
+        const current = BOUNTIES[state.bountyIndex % BOUNTIES.length];
+        if (!current) return;
+        const titleEl = document.getElementById('bounty-title');
+        const progEl = document.getElementById('bounty-progress');
+        const rewEl = document.getElementById('bounty-reward');
+        if (titleEl) titleEl.textContent = current.title;
+        if (progEl) progEl.textContent = `${Math.min(current.target, state.bountyProgress)} / ${current.target}`;
+        if (rewEl) rewEl.textContent = `報酬: ${current.rewardText}`;
+    }
+
     function updateStageHUDLabels() {
         const mapSpec = MAP_SPECS[state.selectedMap];
         const carSpec = CAR_SPECS[state.selectedCar];
@@ -1454,6 +1601,17 @@
             setBar('stat-bar-handling', carSpec.stats.handling);
             setBar('stat-bar-armor', carSpec.stats.armor);
             setBar('stat-bar-mass', carSpec.stats.mass);
+        }
+
+        const heatBadge = document.getElementById('dashcam-heat-badge');
+        const heatStars = document.getElementById('dashcam-heat-stars');
+        if (heatBadge && heatStars) {
+            if (state.heatLevel > 0) {
+                heatBadge.classList.remove('hidden');
+                heatStars.textContent = '⭐'.repeat(state.heatLevel);
+            } else {
+                heatBadge.classList.add('hidden');
+            }
         }
 
         const specName = document.getElementById('garage-car-title');
@@ -1664,9 +1822,13 @@
     function updateGamePhysics(rawDt) {
         if (!Number.isFinite(rawDt) || rawDt <= 0) return;
 
-        // Smooth Bullet-Time Slow-Motion scaling
-        const targetScale = state.slowMoActive ? 0.28 : 1.0;
-        state.timeScale = THREE.MathUtils.lerp(state.timeScale, targetScale, rawDt * 10);
+        // Smooth Bullet-Time & Impact Slow-Motion scaling
+        if (state.impactSlowMoTimer > 0) {
+            state.impactSlowMoTimer -= rawDt;
+        }
+        const isSlowMo = state.slowMoActive || (state.impactSlowMoTimer > 0);
+        const targetScale = isSlowMo ? (state.impactSlowMoTimer > 0 ? 0.22 : 0.28) : 1.0;
+        state.timeScale = THREE.MathUtils.lerp(state.timeScale, targetScale, rawDt * 12);
         const dt = rawDt * state.timeScale;
 
         physicsWorld.step(1 / 60, dt, 2);
@@ -1878,6 +2040,44 @@
                 playerCar.parts.doorR.mesh.rotation.y = 0.18 + Math.max(0, -state.playerVX * 0.03);
             }
 
+            // Handbrake Drift Check (KeyX, Space with high turn, or on-screen Drift button)
+            const isDriftKeyDown = keys.KeyX || state.driftPressed;
+            const isSteeringHard = Math.abs(state.playerVX) > 3.0 || isLeftPressed || isRightPressed;
+            if (isDriftKeyDown && isSteeringHard && state.speedKmh > 90) {
+                state.isDrifting = true;
+                const driftDelta = (state.speedKmh / 3.6) * dt;
+                state.driftMeters += driftDelta;
+                state.driftPts += Math.round(750 * dt);
+
+                if (particles.length < 40 && Math.random() < 0.35) {
+                    const rearPos = playerCar.root.position.clone().add(new THREE.Vector3((Math.random() - 0.5) * 1.5, 0.2, 1.8));
+                    spawnParticles(rearPos, 1, 'SMOKE');
+                }
+
+                const driftHud = document.getElementById('drift-hud');
+                const driftMetersEl = document.getElementById('drift-meters');
+                const driftPtsEl = document.getElementById('drift-pts');
+                if (driftHud) driftHud.classList.remove('hidden');
+                if (driftMetersEl) driftMetersEl.textContent = Math.round(state.driftMeters);
+                if (driftPtsEl) driftPtsEl.textContent = state.driftPts;
+            } else if (state.isDrifting) {
+                state.isDrifting = false;
+                const driftHud = document.getElementById('drift-hud');
+                if (driftHud) driftHud.classList.add('hidden');
+                if (state.driftMeters >= 30) {
+                    state.score += state.driftPts;
+                    audio.playOvertake();
+                    addFloatingNotification(`🔥 SUPER DRIFT!! +${state.driftPts} PTS (${Math.round(state.driftMeters)}m)`, 'text-amber-400 font-black');
+                    if (state.driftMeters >= 100) advanceBounty('DRIFT');
+                }
+                state.driftMeters = 0;
+                state.driftPts = 0;
+            }
+
+            if (state.speedKmh >= 350) {
+                advanceBounty('SPEED');
+            }
+
             if (state.spinOutTimer > 0) {
                 state.playerYaw = Math.sin(clock.elapsedTime * 16) * 0.32;
                 state.playerRoll = Math.cos(clock.elapsedTime * 16) * 0.08;
@@ -2034,6 +2234,203 @@
                 continue;
             }
 
+            // Map Gimmick 1: Tokyo Orvis Speed Radar Camera
+            if (trap.type === 'ORVIS_CAMERA') {
+                const dz = trap.mesh.position.z - playerCar.root.position.z;
+                if (state.mode === 'PLAYING' && !trap.triggered && Math.abs(dz) < 2.5) {
+                    trap.triggered = true;
+                    let closestLane = 0;
+                    let minD = 999;
+                    LANE_CENTERS.forEach((lx, idx) => {
+                        const d = Math.abs(state.playerX - lx);
+                        if (d < minD) { minD = d; closestLane = idx; }
+                    });
+
+                    const isHeadlightJammed = (playerCar.headlightL && playerCar.headlightL.intensity > 4.5);
+                    const isSafeLane = (closestLane === trap.safeLane);
+
+                    if (isSafeLane || isHeadlightJammed) {
+                        audio.playOrvisFlash(true);
+                        triggerScreenFlash('rgba(34, 211, 238, 0.45)');
+                        state.score += 2500;
+                        state.nosFuel = 100;
+                        addFloatingNotification(isHeadlightJammed ? '⚡ パッシング目眩ましでオービス無効化!! +2,500 PTS' : '🛡️ オービスブラインド車線突破!! +2,500 PTS', 'text-cyan-300 font-black');
+                        advanceBounty('GIMMICK');
+                    } else if (state.speedKmh > 230) {
+                        audio.playOrvisFlash(false);
+                        triggerScreenFlash('rgba(239, 68, 68, 0.65)');
+                        state.heatLevel = Math.min(5, state.heatLevel + 1);
+                        addFloatingNotification(`📸 オービス速度違反検知!! ${Math.round(state.speedKmh)}km/h (手配度UP ★)`, 'text-red-500 font-black');
+                        spawnTrafficVehicle(-140);
+                    }
+                }
+                if (trap.mesh.position.z > 28) {
+                    scene.remove(trap.mesh);
+                    roadTraps.splice(i, 1);
+                }
+                continue;
+            }
+
+            // Map Gimmick 2: Shuto C1 Tunnel Cyber Boost Pad
+            if (trap.type === 'CYBER_BOOST') {
+                const dz = trap.mesh.position.z - playerCar.root.position.z;
+                const dx = trap.mesh.position.x - state.playerX;
+                if (state.mode === 'PLAYING' && !trap.triggered && Math.abs(dz) < 3.8 && Math.abs(dx) < 2.5 && state.playerY < 0.8) {
+                    trap.triggered = true;
+                    audio.playCyberBoost();
+                    triggerScreenFlash('rgba(6, 182, 212, 0.4)');
+                    state.speedKmh = Math.min(460, state.speedKmh + 130);
+                    state.nosFuel = 100;
+                    state.score += 2000;
+                    addFloatingNotification('⚡ CYBER HYPER BOOST!! +130km/h ＆ NOS全開!!', 'text-cyan-300 font-black');
+                    advanceBounty('GIMMICK');
+                }
+                if (trap.mesh.position.z > 28) {
+                    scene.remove(trap.mesh);
+                    roadTraps.splice(i, 1);
+                }
+                continue;
+            }
+
+            // Map Gimmick 3: Inferno High-Pressure Flaming Vent
+            if (trap.type === 'FLAME_VENT') {
+                trap.cycleTimer = (trap.cycleTimer || 0) + dt;
+                trap.isFlaming = (trap.cycleTimer % 4.5) < 2.0;
+                if (trap.flameMesh) trap.flameMesh.visible = trap.isFlaming;
+                if (trap.coreFlameMesh) trap.coreFlameMesh.visible = trap.isFlaming;
+
+                const dz = trap.mesh.position.z - playerCar.root.position.z;
+                const dx = trap.centerX - state.playerX;
+                if (state.mode === 'PLAYING' && !trap.triggered && Math.abs(dz) < 2.2 && Math.abs(dx) < 3.2) {
+                    trap.triggered = true;
+                    if (trap.isFlaming) {
+                        audio.playFlameRoar();
+                        triggerScreenFlash('rgba(249, 115, 22, 0.5)');
+                        applySoftBodyCarDamage(22, 0, -1.8);
+                        state.speedKmh = Math.max(state.minSpeedKmh, state.speedKmh - 35);
+                        addFloatingNotification('🔥 高圧火柱直撃!! フロント熱変形ダメージ!', 'text-red-500 font-bold');
+                    } else {
+                        audio.playSlipstream();
+                        state.nosFuel = 100;
+                        state.score += 2000;
+                        addFloatingNotification('🔥 火柱タイミング突破!! NOS完全全開過給!!', 'text-amber-400 font-black');
+                        advanceBounty('GIMMICK');
+                    }
+                }
+                if (trap.mesh.position.z > 28) {
+                    scene.remove(trap.mesh);
+                    roadTraps.splice(i, 1);
+                }
+                continue;
+            }
+
+            // Map Gimmick 4: Snow Black Ice Slick Sheet
+            if (trap.type === 'BLACK_ICE') {
+                const dz = trap.mesh.position.z - playerCar.root.position.z;
+                const dx = trap.mesh.position.x - state.playerX;
+                if (state.mode === 'PLAYING' && Math.abs(dz) < 14.0 && Math.abs(dx) < 8.2 && state.playerY < 0.6) {
+                    state.onBlackIce = true;
+                    audio.playIceSkid();
+                    state.playerVX += (Math.random() - 0.5) * 8.0 * dt;
+                    if (!trap.announced) {
+                        trap.announced = true;
+                        addFloatingNotification('🧊 ブラックアイス突入！極低フリクション!', 'text-cyan-200 font-bold');
+                    }
+                } else if (trap.announced && !trap.cleared && dz > 14.0) {
+                    trap.cleared = true;
+                    state.score += 2000;
+                    addFloatingNotification('🧊 凍結路走破!! アイスドリフトボーナス +2,000 PTS', 'text-cyan-300 font-bold');
+                    advanceBounty('GIMMICK');
+                }
+                if (trap.mesh.position.z > 35) {
+                    scene.remove(trap.mesh);
+                    roadTraps.splice(i, 1);
+                }
+                continue;
+            }
+
+            // Map Gimmick 5: Hakone Valley Mega-Ramp Overlook
+            if (trap.type === 'VALLEY_RAMP') {
+                const dz = trap.mesh.position.z - playerCar.root.position.z;
+                const dx = trap.mesh.position.x - state.playerX;
+                if (state.mode === 'PLAYING' && !trap.triggered && Math.abs(dz) < 3.2 && Math.abs(dx) < 2.5) {
+                    trap.triggered = true;
+                    state.playerVY = Math.min(22.0, 14.0 + (state.speedKmh / 30));
+                    state.playerY = 0.5;
+                    state.impactSlowMoTimer = 0.75;
+                    state.nosFuel = 100;
+                    const jumpBonus = Math.round(3500 * lvlSpec.scoreMult);
+                    state.score += jumpBonus;
+                    audio.playCyberBoost();
+                    addFloatingNotification(`🍁 CANYON AIR FLIGHT!! +${jumpBonus} PTS & 超大空飛翔!!`, 'text-amber-300 font-black');
+                    advanceBounty('GIMMICK');
+                }
+                if (trap.mesh.position.z > 28) {
+                    scene.remove(trap.mesh);
+                    roadTraps.splice(i, 1);
+                }
+                continue;
+            }
+
+            // Map Gimmick 6: Canyon Boulder Rockslide
+            if (trap.type === 'BOULDER_FALL') {
+                trap.mesh.position.x += trap.vx * dt;
+                trap.vy -= 24.0 * dt;
+                trap.mesh.position.y += trap.vy * dt;
+                if (trap.mesh.position.y <= trap.radius) {
+                    trap.mesh.position.y = trap.radius;
+                    trap.vy = -trap.vy * 0.45;
+                }
+                trap.rockMesh.rotation.x += 8.0 * dt;
+                trap.rockMesh.rotation.z += trap.vx * 0.5 * dt;
+
+                const dz = trap.mesh.position.z - playerCar.root.position.z;
+                const dx = trap.mesh.position.x - state.playerX;
+
+                if (state.mode === 'PLAYING' && !trap.shattered && Math.abs(dz) < 2.5 && Math.abs(dx) < 2.4 && state.playerY < 1.6) {
+                    trap.shattered = true;
+                    audio.playCrash(1.3);
+                    spawnPhysicalShatterPieces(trap.mesh.position.clone(), 8, 0x9a3412, 16);
+                    applySoftBodyCarDamage(35, dx * 0.5, -2.0);
+                    state.speedKmh = Math.max(state.minSpeedKmh, state.speedKmh * 0.6);
+                    state.impactSlowMoTimer = 0.5;
+                    state.playerVX += (dx >= 0 ? -1 : 1) * 8.5;
+                    addFloatingNotification('🪨 崩落巨石に激突!! フロント大破!', 'text-red-500 font-black');
+                    scene.remove(trap.mesh);
+                    roadTraps.splice(i, 1);
+                    continue;
+                } else if (!trap.evaded && !trap.shattered && dz > -4 && dz < 4 && Math.abs(dx) < 4.2) {
+                    trap.evaded = true;
+                    state.score += 1500;
+                    addFloatingNotification('🪨 崩落巨石を紙一重で回避!! +1,500 PTS', 'text-amber-300 font-bold');
+                    advanceBounty('GIMMICK');
+                }
+
+                if (trap.mesh.position.z > 28 || Math.abs(trap.mesh.position.x) > (ROAD_WIDTH / 2 + 10)) {
+                    scene.remove(trap.mesh);
+                    roadTraps.splice(i, 1);
+                }
+                continue;
+            }
+
+            // Map Gimmick 7: Shuto C1 Tunnel Fire Deluge Mist
+            if (trap.type === 'TUNNEL_DELUGE') {
+                const dz = trap.mesh.position.z - playerCar.root.position.z;
+                if (state.mode === 'PLAYING' && !trap.triggered && Math.abs(dz) < 2.5) {
+                    trap.triggered = true;
+                    repairAllSoftBodyAndTires(false);
+                    state.score += 1500;
+                    audio.playNosRoar();
+                    addFloatingNotification('💧 トンネル防災ミスト通過！車体冷却＆耐久完全修復!', 'text-sky-300 font-black');
+                    advanceBounty('GIMMICK');
+                }
+                if (trap.mesh.position.z > 28) {
+                    scene.remove(trap.mesh);
+                    roadTraps.splice(i, 1);
+                }
+                continue;
+            }
+
             if (trap.type === 'ETC_PLAZA') {
                 const dz = trap.mesh.position.z - playerCar.root.position.z;
                 trap.laneConfigs.forEach(lc => {
@@ -2168,6 +2565,7 @@
             spawnTrafficVehicle(-160 - Math.random() * 85);
         }
 
+        let hasAnySlipstream = false;
         for (let i = trafficCars.length - 1; i >= 0; i--) {
             const tc = trafficCars[i];
             const relativeSpeedMs = (state.speedKmh - tc.speedKmh) / 3.6;
@@ -2175,6 +2573,11 @@
             if (state.mode === 'PLAYING' && !tc.hitByPlayer) {
                 const dz = tc.mesh.position.z - playerCar.root.position.z;
                 const dx = state.playerX - tc.mesh.position.x;
+
+                // Slipstream drafting detection
+                if (!tc.isWrongWay && dz < -3.5 && dz > -24 && Math.abs(dx) < 2.4 && state.speedKmh > 120) {
+                    hasAnySlipstream = true;
+                }
 
                 if (tc.type === 'ROAD_RAGE') {
                     if (tc.hazardLights) tc.hazardLights.visible = Math.floor(clock.elapsedTime * 10) % 2 === 0;
@@ -2290,8 +2693,18 @@
                         if (tc.isWrongWay) {
                             addFloatingNotification('💥 逆走車と正面衝突!! 両車のフロントが軟体圧壊!', 'text-red-500');
                         } else if (tc.type === 'ROAD_RAGE') {
-                            addFloatingNotification('💥 煽り運転車を後方からプッシュ撃破!! +500 PTS', 'text-fuchsia-300');
-                            state.score += 500;
+                            audio.playTakedown();
+                            state.impactSlowMoTimer = 0.55;
+                            addFloatingNotification('💥 煽り運転車をプッシュ撃破!! +1,500 PTS', 'text-fuchsia-300 font-black');
+                            state.score += 1500;
+                            advanceBounty('TAKEDOWN');
+                        } else if (tc.type === 'POLICE') {
+                            audio.playTakedown();
+                            state.impactSlowMoTimer = 0.55;
+                            state.score += 2500;
+                            state.heatLevel = Math.max(0, state.heatLevel - 1);
+                            addFloatingNotification('🚓 POLICE TAKEDOWN!! +2,500 PTS (手配度減少)', 'text-red-400 font-black');
+                            advanceBounty('TAKEDOWN');
                         }
 
                         tc.vz = (-20 - (relKmh * 0.09)) * massAdvantage;
@@ -2336,6 +2749,8 @@
                         state.score += bonus;
                         audio.playOvertake();
                         addFloatingNotification(`⚡ NEAR MISS OVERTAKE! +${bonus} (${state.combo}x)`, 'text-amber-300');
+                        advanceBounty('NEAR_MISS');
+                        if (tc.type === 'TRUCK') advanceBounty('TRUCK');
                     } else {
                         state.score += Math.round(160 * lvlSpec.scoreMult);
                         audio.playOvertake();
@@ -2350,6 +2765,25 @@
         }
 
         updateSpilledHazards(dt, playerMetersPerSec);
+
+        // Slipstream Boost Handling
+        if (hasAnySlipstream && state.mode === 'PLAYING') {
+            state.speedKmh = Math.min(carSpec.maxSpeed + 35, state.speedKmh + 38 * dt);
+            const slipHud = document.getElementById('slipstream-hud');
+            if (slipHud && slipHud.classList.contains('hidden')) {
+                slipHud.classList.remove('hidden');
+                audio.playSlipstream();
+            }
+            state.slipstreamActive = true;
+        } else {
+            if (state.slipstreamActive) {
+                state.slipstreamActive = false;
+                const slipHud = document.getElementById('slipstream-hud');
+                if (slipHud) slipHud.classList.add('hidden');
+                state.score += 800;
+                addFloatingNotification('💨 SLIPSTREAM SLINGSHOT!! +800 PTS', 'text-cyan-300 font-bold');
+            }
+        }
 
         updateCameraTransform(rawDt, speedRatio);
         audio.updateEngine(state.speedKmh, isAccelPressed || state.nosActive, state.mode === 'PLAYING', state.selectedCar, state.timeScale);
@@ -2416,6 +2850,13 @@
         state.playerX = LANE_CENTERS[2];
         state.playerY = 0;
         state.playerVY = 0;
+        state.heatLevel = 0;
+        state.bountyProgress = 0;
+        state.impactSlowMoTimer = 0;
+        state.isDrifting = false;
+        state.driftMeters = 0;
+        state.driftPts = 0;
+        updateBountyHUD();
         rebuildPlayerCar();
         applyMapTheme(state.selectedMap);
 
@@ -2634,6 +3075,7 @@
         bindControlBtn('ctrl-up', 'ArrowUp');
         bindControlBtn('ctrl-down', 'ArrowDown');
         bindControlBtn('ctrl-nos', 'Space');
+        bindControlBtn('ctrl-drift', 'KeyX');
         const passBtn = document.getElementById('ctrl-pass');
         if (passBtn) passBtn.addEventListener('click', () => triggerPlayerHornAndFlash(true));
         const hazardBtn = document.getElementById('ctrl-hazard');
