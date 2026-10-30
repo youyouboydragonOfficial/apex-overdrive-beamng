@@ -1,4 +1,4 @@
-# 🏎️ APEX OVERDRIVE: BeamNG Soft-Body Physics Edition (v2.7.0)
+# 🏎️ Crashoria: Ultimate Road Adventure: BeamNG Soft-Body Physics Edition (v2.7.0)
 
 **超リアル軟体メッシュ変形・全5難易度レベル完全維持・ショールーム軟体クラッシュ試演・パッシング連打心理リアクション＆高齢者パニック急制動・煽り運転逆上AI・ドラレコ常時録画HUD搭載！6車線メガハイウェイ・ビークルシミュレーター（Windows デスクトップアプリ版）**
 
@@ -91,5 +91,5 @@
 ## 📦 ダウンロード＆実行方法（Windows 64-bit）
 
 GitHub Releases からダウンロード可能です：
-- **`ApexOverdrive-BeamNG-Portable-v2.7.0.exe`**: インストール不要。ダブルクリックですぐに起動可能！
-- **`ApexOverdrive-BeamNG-Setup-v2.7.0.exe`**: デスクトップショートカット作成インストーラー
+- **`Crashoria-Ultimate-Road-Adventure-Portable-v3.0.0.exe`**: インストール不要。ダブルクリックですぐに起動可能！
+- **`Crashoria-Ultimate-Road-Adventure-Setup-v3.0.0.exe`**: デスクトップショートカット作成インストーラー

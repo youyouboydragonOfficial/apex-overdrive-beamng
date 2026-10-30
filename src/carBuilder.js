@@ -1,5 +1,5 @@
 /**
- * APEX OVERDRIVE: BeamNG Soft-Body Physics Edition
+ * Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition
  * High-Polygon Sculpted Vehicle Builder & Real-Time Vertex Soft-Body Deformation Engine
  */
 
@@ -1490,7 +1490,17 @@
         };
     }
 
-    global.ApexCarBuilder = {
+    global.CrashoriaCarBuilder = {
+        CAR_SPECS,
+        buildSculptedPlayerCar,
+        buildSculptedTrafficVehicle,
+        deformMeshAtPoint,
+        resetDeformableMesh,
+        deformNodeBeamSkeleton,
+        resetNodeBeamSkeleton
+    };
+    global.ApexCarBuilder = global.CrashoriaCarBuilder;
+    const _dummyCarBuilder = {
         CAR_SPECS,
         buildSculptedPlayerCar,
         buildSculptedTrafficVehicle,

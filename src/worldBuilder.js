@@ -1,5 +1,5 @@
 /**
- * APEX OVERDRIVE: BeamNG Soft-Body Physics Edition
+ * Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition
  * 3D Highway World, Procedural PBR Textures, Traps, ETC Toll Plaza, Sandbox Obstacles & Finish Gate Builder
  */
 
@@ -666,7 +666,26 @@
         };
     }
 
-        global.ApexWorldBuilder = {
+        global.CrashoriaWorldBuilder = {
+        ROAD_WIDTH,
+        LANE_CENTERS,
+        HIGHWAY_SEGMENT_LENGTH,
+        MAP_SPECS,
+        LEVEL_SPECS,
+        createProceduralRoadTexture,
+        createProceduralEnvTexture,
+        createFinishGoalArch,
+        createSandboxObstacle,
+        createOrvisGantry,
+        createCyberBoostPad,
+        createFlameVentGantry,
+        createBlackIcePatch,
+        createValleyMegaRamp,
+        createBoulderObstacle,
+        createTunnelDeluge
+    };
+    global.ApexWorldBuilder = global.CrashoriaWorldBuilder;
+    const _dummyWorldBuilder = {
         ROAD_WIDTH,
         LANE_CENTERS,
         HIGHWAY_SEGMENT_LENGTH,

@@ -1,7 +1,7 @@
 {
-  "name": "apex-overdrive-beamng",
+  "name": "crashoria-ultimate-road-adventure",
   "version": "3.0.0",
-  "description": "APEX OVERDRIVE: BeamNG Soft-Body Physics Edition v3.0 - 全6マップ固有ギミック（首都高オービス・巨石崩落・ブラックアイス・高圧火柱・超電導加速・展望メガジャンプ）・バウンティ指令・スリップストリーム・パワードリフト・警察追跡・キルカメラ Windows App",
+  "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.0 - 全6マップ固有ギミック（首都高オービス・巨石崩落・ブラックアイス・高圧火柱・超電導加速・展望メガジャンプ）・バウンティ指令・スリップストリーム・パワードリフト・警察追跡・キルカメラ Windows App",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -11,8 +11,8 @@
   "author": "youyouboydragonOfficial",
   "license": "MIT",
   "build": {
-    "appId": "com.apexoverdrive.beamng.edition",
-    "productName": "ApexOverdriveBeamNG",
+    "appId": "com.crashoria.ultimate.road.adventure",
+    "productName": "CrashoriaUltimateRoadAdventure",
     "directories": {
       "output": "dist"
     },
@@ -31,10 +31,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "artifactName": "ApexOverdrive-BeamNG-Setup-v3.0.0.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.0.0.exe"
     },
     "portable": {
-      "artifactName": "ApexOverdrive-BeamNG-Portable-v3.0.0.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.0.0.exe"
     }
   },
   "devDependencies": {

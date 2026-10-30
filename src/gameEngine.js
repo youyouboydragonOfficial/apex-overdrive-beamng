@@ -1,5 +1,5 @@
 /**
- * APEX OVERDRIVE: BeamNG Soft-Body Physics Edition
+ * Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition
  * Core Physics Simulation, Soft-Body Crash Handler, Smart Escape-Corridor Spawner & UI Controller
  */
 
@@ -14,7 +14,7 @@
         resetDeformableMesh,
         deformNodeBeamSkeleton,
         resetNodeBeamSkeleton
-    } = global.ApexCarBuilder;
+    } = (global.CrashoriaCarBuilder || global.ApexCarBuilder);
 
     const {
         ROAD_WIDTH,
@@ -26,14 +26,15 @@
         createProceduralEnvTexture,
         createFinishGoalArch,
         createSandboxObstacle
-    } = global.ApexWorldBuilder;
+    } = (global.CrashoriaWorldBuilder || global.ApexWorldBuilder);
+    const WorldBuilder = (global.CrashoriaWorldBuilder || global.ApexWorldBuilder);
 
     const audio = new global.RacingAudioEngine();
 
     // Load cleared levels from localStorage
     let clearedLevels = {};
     try {
-        clearedLevels = JSON.parse(localStorage.getItem('apex_beamng_cleared') || '{}');
+        clearedLevels = JSON.parse(localStorage.getItem('crashoria_cleared') || localStorage.getItem('apex_beamng_cleared') || '{}');
     } catch (e) {
         clearedLevels = {};
     }
@@ -1037,37 +1038,37 @@
         }
 
         if (type === 'ORVIS_CAMERA') {
-            const obj = ApexWorldBuilder.createOrvisGantry(zOffset);
+            const obj = WorldBuilder.createOrvisGantry(zOffset);
             scene.add(obj.mesh);
             roadTraps.push(obj);
             return;
         } else if (type === 'CYBER_BOOST') {
-            const obj = ApexWorldBuilder.createCyberBoostPad(zOffset);
+            const obj = WorldBuilder.createCyberBoostPad(zOffset);
             scene.add(obj.mesh);
             roadTraps.push(obj);
             return;
         } else if (type === 'FLAME_VENT') {
-            const obj = ApexWorldBuilder.createFlameVentGantry(zOffset);
+            const obj = WorldBuilder.createFlameVentGantry(zOffset);
             scene.add(obj.mesh);
             roadTraps.push(obj);
             return;
         } else if (type === 'BLACK_ICE') {
-            const obj = ApexWorldBuilder.createBlackIcePatch(zOffset);
+            const obj = WorldBuilder.createBlackIcePatch(zOffset);
             scene.add(obj.mesh);
             roadTraps.push(obj);
             return;
         } else if (type === 'VALLEY_RAMP') {
-            const obj = ApexWorldBuilder.createValleyMegaRamp(zOffset);
+            const obj = WorldBuilder.createValleyMegaRamp(zOffset);
             scene.add(obj.mesh);
             roadTraps.push(obj);
             return;
         } else if (type === 'BOULDER_FALL') {
-            const obj = ApexWorldBuilder.createBoulderObstacle(zOffset);
+            const obj = WorldBuilder.createBoulderObstacle(zOffset);
             scene.add(obj.mesh);
             roadTraps.push(obj);
             return;
         } else if (type === 'TUNNEL_DELUGE') {
-            const obj = ApexWorldBuilder.createTunnelDeluge(zOffset);
+            const obj = WorldBuilder.createTunnelDeluge(zOffset);
             scene.add(obj.mesh);
             roadTraps.push(obj);
             return;
@@ -2920,6 +2921,7 @@
         state.mode = 'STAGECLEAR';
         clearedLevels[state.selectedLevel] = true;
         try {
+            localStorage.setItem('crashoria_cleared', JSON.stringify(clearedLevels));
             localStorage.setItem('apex_beamng_cleared', JSON.stringify(clearedLevels));
         } catch (e) {}
 
