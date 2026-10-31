@@ -1,5 +1,5 @@
 /**
- * Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.1.0
+ * Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.1.1
  * Core Physics Simulation, Soft-Body Crash Handler, Smart Escape-Corridor Spawner & UI Controller
  */
 
@@ -93,6 +93,7 @@
         driftMeters: 0,
         driftPts: 0,
         driftPressed: false,
+        nosPressed: false,
         pursuitEscapeProgress: 0,
         slipstreamActive: false,
         impactSlowMoTimer: 0,
@@ -112,7 +113,11 @@
         KeyD: false,
         KeyW: false,
         KeyS: false,
-        Space: false
+        Space: false,
+        ShiftLeft: false,
+        ShiftRight: false,
+        KeyN: false,
+        KeyX: false
     };
 
     let scene, camera, renderer, clock;
@@ -1990,11 +1995,13 @@
         const isLeftPressed = keys.ArrowLeft || keys.KeyA;
         const isRightPressed = keys.ArrowRight || keys.KeyD;
 
+        const isNosInputActive = keys.Space || keys.ShiftLeft || keys.ShiftRight || keys.KeyN || state.nosPressed;
+
         if (state.mode === 'PLAYING') {
             const prevSpeed = state.speedKmh;
 
-            // NOS activation check
-            state.nosActive = keys.Space && state.nosFuel > 1;
+            // NOS activation check (Space, Shift, N, or on-screen button)
+            state.nosActive = isNosInputActive && state.nosFuel > 1;
             if (state.nosActive) {
                 state.nosFuel = Math.max(0, state.nosFuel - 26 * dt);
                 audio.playNosRoar();
@@ -2086,13 +2093,16 @@
 
             if (steerInput !== 0) {
                 const driftSteerMult = (isDriftKeyDown && canInitiateDrift) ? 1.55 : 1.0;
-                state.playerVX += steerInput * carSpec.steerPower * driftSteerMult * mapSpec.grip * airControlFactor * dt;
+                const nosSteerMult = state.nosActive ? 1.85 : 1.0;
+                const speedSteerMult = 1.0 + Math.max(0, (state.speedKmh - 120) / 120) * 0.85;
+                const totalSteerPower = carSpec.steerPower * driftSteerMult * nosSteerMult * speedSteerMult * mapSpec.grip * airControlFactor;
+                state.playerVX += steerInput * totalSteerPower * dt;
             } else {
                 const damping = mapSpec.grip < 0.8 ? 0.14 : (isDriftKeyDown ? 0.08 : 0.035);
                 state.playerVX *= Math.pow(damping, dt);
             }
 
-            const maxVX = (isDriftKeyDown && canInitiateDrift) ? 23.0 : 17.0;
+            const maxVX = (isDriftKeyDown && canInitiateDrift) ? 26.0 : (state.nosActive ? 25.0 : 19.0);
             state.playerVX = THREE.MathUtils.clamp(state.playerVX, -maxVX, maxVX);
             state.lateralG = ((state.playerVX - prevVX) / Math.max(0.01, dt * 9.81));
             state.playerX += (state.playerVX + tireDriftBias) * dt;
@@ -2454,8 +2464,9 @@
                             state.nosFuel = 100;
                             if (tc.type === 'POLICE') {
                                 state.heatLevel = Math.max(0, state.heatLevel - 1);
+                                state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 35.0);
                                 updateHUD();
-                                addFloatingNotification('🔥 TRAP TAKEDOWN: 高圧火柱でパトカー炎上撃破!! +4,000 PTS', 'text-red-400 font-black');
+                                addFloatingNotification('🔥 TRAP TAKEDOWN: 高圧火柱でパトカー炎上撃破!! +4,000 PTS (逃走メーター +35%)', 'text-red-400 font-black');
                             } else {
                                 addFloatingNotification('🔥 TRAP TAKEDOWN: 高圧火柱で車両炎上撃破!! +4,000 PTS', 'text-red-400 font-black');
                             }
@@ -2722,8 +2733,9 @@
                         state.nosFuel = 100;
                         if (tc.type === 'POLICE') {
                             state.heatLevel = Math.max(0, state.heatLevel - 1);
+                            state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 35.0);
                             updateHUD();
-                            addFloatingNotification('💥 TRAP TAKEDOWN: 爆発ドラム缶でパトカー撃破!! +4,000 PTS', 'text-amber-400 font-black');
+                            addFloatingNotification('💥 TRAP TAKEDOWN: 爆発ドラム缶でパトカー撃破!! +4,000 PTS (逃走メーター +35%)', 'text-amber-400 font-black');
                         } else {
                             addFloatingNotification('💥 TRAP TAKEDOWN: ドラム缶で車両撃破!! +4,000 PTS', 'text-amber-400 font-black');
                         }
@@ -2743,8 +2755,9 @@
                         state.nosFuel = 100;
                         if (tc.type === 'POLICE') {
                             state.heatLevel = Math.max(0, state.heatLevel - 1);
+                            state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 35.0);
                             updateHUD();
-                            addFloatingNotification('⛓️ TRAP TAKEDOWN: スパイクでパトカーのタイヤ破裂・スピン撃破!! +3,500 PTS', 'text-yellow-300 font-black');
+                            addFloatingNotification('⛓️ TRAP TAKEDOWN: スパイクでパトカーのタイヤ破裂・スピン撃破!! +3,500 PTS (逃走メーター +35%)', 'text-yellow-300 font-black');
                         } else {
                             addFloatingNotification('⛓️ TRAP TAKEDOWN: スパイクで車両スピン撃破!! +3,500 PTS', 'text-yellow-300 font-black');
                         }
@@ -2759,8 +2772,9 @@
                         state.score += 3000;
                         if (tc.type === 'POLICE') {
                             state.heatLevel = Math.max(0, state.heatLevel - 1);
+                            state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 35.0);
                             updateHUD();
-                            addFloatingNotification('💧 TRAP TAKEDOWN: オイルスリップでパトカー激突大破!! +3,000 PTS', 'text-purple-300 font-black');
+                            addFloatingNotification('💧 TRAP TAKEDOWN: オイルスリップでパトカー激突大破!! +3,000 PTS (逃走メーター +35%)', 'text-purple-300 font-black');
                         } else {
                             addFloatingNotification('💧 TRAP TAKEDOWN: オイルスリップで車両大破!! +3,000 PTS', 'text-purple-300 font-black');
                         }
@@ -2775,8 +2789,9 @@
                         state.score += 4500;
                         if (tc.type === 'POLICE') {
                             state.heatLevel = Math.max(0, state.heatLevel - 1);
+                            state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 35.0);
                             updateHUD();
-                            addFloatingNotification('⚙️ TRAP TAKEDOWN: 障害物防壁でパトカー完全圧壊!! +4,500 PTS', 'text-fuchsia-400 font-black');
+                            addFloatingNotification('⚙️ TRAP TAKEDOWN: 障害物防壁でパトカー完全圧壊!! +4,500 PTS (逃走メーター +35%)', 'text-fuchsia-400 font-black');
                         } else {
                             addFloatingNotification('⚙️ TRAP TAKEDOWN: 障害物防壁で車両完全圧壊!! +4,500 PTS', 'text-fuchsia-400 font-black');
                         }
@@ -2875,28 +2890,62 @@
         }
 
         // Pursuit Escape Progress Tracking
-        if (state.heatLevel > 0 && state.mode === 'PLAYING') {
-            const activeChasingPolice = trafficCars.filter(c => c.type === 'POLICE' && c.isChasing && !c.hitByPlayer);
-            const closestPoliceDist = activeChasingPolice.reduce((minD, c) => {
-                const d = Math.abs(c.mesh.position.z - playerCar.root.position.z);
-                return Math.min(minD, d);
-            }, 999);
+        const activeChasingPolice = trafficCars.filter(c => c.type === 'POLICE' && c.isChasing && !c.hitByPlayer);
+        const hasPoliceChasing = activeChasingPolice.length > 0;
 
-            const isEscaping = activeChasingPolice.length === 0 || closestPoliceDist > 45;
-            if (isEscaping) {
-                state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 24.0 * dt);
-            } else {
-                state.pursuitEscapeProgress = Math.max(0, (state.pursuitEscapeProgress || 0) - 16.0 * dt);
-            }
-
+        if ((state.heatLevel > 0 || hasPoliceChasing) && state.mode === 'PLAYING') {
             const pursuitHud = document.getElementById('police-pursuit-hud');
             const escapeText = document.getElementById('police-escape-text');
             const escapeBar = document.getElementById('police-escape-bar');
-            if (pursuitHud) {
-                pursuitHud.classList.remove('hidden');
-                if (escapeText) escapeText.textContent = `逃走メーター: ${Math.round(state.pursuitEscapeProgress)}%`;
-                if (escapeBar) escapeBar.style.width = `${state.pursuitEscapeProgress}%`;
+            const statusBadge = document.getElementById('police-pursuit-status-badge');
+
+            if (pursuitHud) pursuitHud.classList.remove('hidden');
+
+            let closestPoliceDist = 999;
+            let anyBlinded = false;
+            let openingDistance = false;
+
+            activeChasingPolice.forEach(c => {
+                const dz = c.mesh.position.z - playerCar.root.position.z;
+                const d = Math.abs(dz);
+                if (d < closestPoliceDist) {
+                    closestPoliceDist = d;
+                }
+                if (c.blindTimer > 0) anyBlinded = true;
+                // Check if distance is opening behind player
+                if (dz > 0 && (state.speedKmh > c.speedKmh + 15 || dz > 35)) {
+                    openingDistance = true;
+                }
+            });
+
+            const isEscaping = !hasPoliceChasing || anyBlinded || (closestPoliceDist > 26 && (openingDistance || closestPoliceDist > 42));
+
+            if (anyBlinded) {
+                // High-beam flash [F] blinding effect - fast escape progression!
+                state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 32.0 * dt);
+                if (statusBadge) {
+                    statusBadge.className = 'text-cyan-400 flex items-center gap-1.5 font-bold animate-pulse';
+                    statusBadge.innerHTML = '<i class="fa-solid fa-bolt"></i> ⚡ 目眩まし効果中! (視界喪失中)';
+                }
+            } else if (isEscaping) {
+                // Accelerating away or distant
+                state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 26.0 * dt);
+                if (statusBadge) {
+                    statusBadge.className = 'text-emerald-400 flex items-center gap-1.5 font-bold';
+                    const distLabel = hasPoliceChasing ? `(後方 ${Math.round(closestPoliceDist)}m 離脱中)` : '(追跡圏外)';
+                    statusBadge.innerHTML = `<i class="fa-solid fa-angles-right"></i> 💨 逃走中! ${distLabel}`;
+                }
+            } else {
+                // Police is right behind and closing in - reduce gauge slowly
+                state.pursuitEscapeProgress = Math.max(0, (state.pursuitEscapeProgress || 0) - 12.0 * dt);
+                if (statusBadge) {
+                    statusBadge.className = 'text-red-400 flex items-center gap-1.5 font-bold animate-pulse';
+                    statusBadge.innerHTML = `<i class="fa-solid fa-car-burst"></i> 🚨 追跡接近中! (車間 ${Math.round(closestPoliceDist)}m - 加速で離脱せよ!)`;
+                }
             }
+
+            if (escapeText) escapeText.textContent = `逃走メーター: ${Math.round(state.pursuitEscapeProgress)}%`;
+            if (escapeBar) escapeBar.style.width = `${state.pursuitEscapeProgress}%`;
 
             if (state.pursuitEscapeProgress >= 100) {
                 state.pursuitEscapeProgress = 0;
@@ -2911,7 +2960,9 @@
                         c.speedKmh = 135;
                     }
                 });
-                if (pursuitHud) pursuitHud.classList.add('hidden');
+                if (state.heatLevel === 0 && pursuitHud) {
+                    pursuitHud.classList.add('hidden');
+                }
             }
         } else {
             const pursuitHud = document.getElementById('police-pursuit-hud');
@@ -3103,8 +3154,9 @@
                             state.nosFuel = 100;
                             if (tc.type === 'POLICE') {
                                 state.heatLevel = Math.max(0, state.heatLevel - 1);
+                                state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 35.0);
                                 updateHUD();
-                                addFloatingNotification('🛡️💥 ハザード防壁カウンター発動!! 後続パトカーを返り討ち撃破!! +4,000 PTS', 'text-amber-400 font-black');
+                                addFloatingNotification('🛡️💥 ハザード防壁カウンター発動!! 後続パトカーを返り討ち撃破!! +4,000 PTS (逃走メーター +35%)', 'text-amber-400 font-black');
                             } else {
                                 addFloatingNotification('🛡️💥 ハザード防壁カウンター発動!! 後続車両を返り討ち撃破!! +4,000 PTS', 'text-amber-400 font-black');
                             }
@@ -3230,10 +3282,11 @@
                 }
             }
 
-            const maxBehindZ = (tc.type === 'POLICE' && tc.isChasing) ? 55 : 28;
+            const maxBehindZ = (tc.type === 'POLICE' && tc.isChasing) ? 140 : 28;
             if (tc.mesh.position.z > maxBehindZ || tc.mesh.position.z < -260) {
-                if (tc.type === 'POLICE' && tc.isChasing && tc.mesh.position.z > maxBehindZ) {
-                    addFloatingNotification('💨 パトカーを完全に振り切った!! (追跡ロスト)', 'text-emerald-300 font-bold');
+                if (tc.type === 'POLICE' && tc.isChasing && tc.mesh.position.z > 80) {
+                    state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 35.0);
+                    addFloatingNotification('💨 パトカーを完全に引き離した!! (逃走メーター +35%)', 'text-emerald-300 font-bold');
                 }
                 scene.remove(tc.mesh);
                 trafficCars.splice(i, 1);
@@ -3502,7 +3555,11 @@
                     KeyW: 'ctrl-up',
                     ArrowDown: 'ctrl-down',
                     KeyS: 'ctrl-down',
-                    Space: 'ctrl-nos'
+                    Space: 'ctrl-nos',
+                    ShiftLeft: 'ctrl-nos',
+                    ShiftRight: 'ctrl-nos',
+                    KeyN: 'ctrl-nos',
+                    KeyX: 'ctrl-drift'
                 };
                 const btn = document.getElementById(btnMap[code]);
                 if (btn) btn.classList.toggle('active-key', isPressed);
@@ -3510,14 +3567,14 @@
         };
 
         window.addEventListener('keydown', (e) => {
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'ShiftLeft', 'ShiftRight', 'KeyN', 'KeyX'].includes(e.code)) {
                 e.preventDefault();
             }
             setKeyState(e.code, true);
 
             if (e.code === 'KeyC') cycleCameraView();
             if (e.code === 'KeyV') toggleBeamSkeleton();
-            if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') toggleSlowMotion();
+            if (e.code === 'KeyT') toggleSlowMotion();
             if (e.code === 'KeyR') repairAllSoftBodyAndTires(false);
             if (e.code === 'KeyF') triggerPlayerHornAndFlash(true);
             if (e.code === 'KeyH') triggerPlayerHornAndFlash(false);
@@ -3538,25 +3595,34 @@
             setKeyState(e.code, false);
         });
 
-        const bindControlBtn = (btnId, keyCode) => {
+        const bindControlBtn = (btnId, keyCode, customStateProp) => {
             const btn = document.getElementById(btnId);
             if (!btn) return;
-            const press = (e) => { e.preventDefault(); setKeyState(keyCode, true); };
-            const release = (e) => { e.preventDefault(); setKeyState(keyCode, false); };
+            const press = (e) => {
+                e.preventDefault();
+                setKeyState(keyCode, true);
+                if (customStateProp) state[customStateProp] = true;
+            };
+            const release = (e) => {
+                e.preventDefault();
+                setKeyState(keyCode, false);
+                if (customStateProp) state[customStateProp] = false;
+            };
 
             btn.addEventListener('mousedown', press);
             btn.addEventListener('mouseup', release);
             btn.addEventListener('mouseleave', release);
             btn.addEventListener('touchstart', press, { passive: false });
             btn.addEventListener('touchend', release, { passive: false });
+            btn.addEventListener('touchcancel', release, { passive: false });
         };
 
         bindControlBtn('ctrl-left', 'ArrowLeft');
         bindControlBtn('ctrl-right', 'ArrowRight');
         bindControlBtn('ctrl-up', 'ArrowUp');
         bindControlBtn('ctrl-down', 'ArrowDown');
-        bindControlBtn('ctrl-nos', 'Space');
-        bindControlBtn('ctrl-drift', 'KeyX');
+        bindControlBtn('ctrl-nos', 'Space', 'nosPressed');
+        bindControlBtn('ctrl-drift', 'KeyX', 'driftPressed');
         const passBtn = document.getElementById('ctrl-pass');
         if (passBtn) passBtn.addEventListener('click', () => triggerPlayerHornAndFlash(true));
         const hazardBtn = document.getElementById('ctrl-hazard');

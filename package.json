@@ -1,7 +1,7 @@
 {
   "name": "crashoria-ultimate-road-adventure",
-  "version": "3.1.0",
-  "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.1.0 - 警察追跡バランス刷新＆トラップ撃破（ドラム缶・落石・スパイク破壊可能）・逃走メーター・パッシング目眩まし・ハザード緊急エアブレーキ＆リア防壁カウンター・ドリフトミニターボ加速",
+  "version": "3.1.1",
+  "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.1.1 - 警察追跡逃走システム完全刷新＆リアルタイム距離HUD・加速ニトロ同時操舵ロック解消＆キーボードゴースト対策（Shift/N/Space両対応）・パトカー追跡距離拡張140m",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -31,10 +31,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.1.0.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.1.1.exe"
     },
     "portable": {
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.1.0.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.1.1.exe"
     }
   },
   "devDependencies": {
