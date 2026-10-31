@@ -740,6 +740,44 @@
             osc.stop(now + 0.22);
         }
 
+        /**
+         * Authentic Highway Patrol Police Wailing Siren
+         */
+        playPoliceSiren(intensity = 1.0) {
+            if (!this.ctx || !this.sfxEnabled) return;
+            const now = this.ctx.currentTime;
+            if (this.lastSirenTime && (now - this.lastSirenTime < 0.65)) return;
+            this.lastSirenTime = now;
+
+            const dest = this.sfxGainNode || this.ctx.destination;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = 'sawtooth';
+            const f1 = 640;
+            const f2 = 980;
+            osc.frequency.setValueAtTime(f1, now);
+            osc.frequency.linearRampToValueAtTime(f2, now + 0.32);
+            osc.frequency.linearRampToValueAtTime(f1, now + 0.64);
+
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(1450, now);
+            filter.Q.setValueAtTime(2.0, now);
+
+            const safeInt = Math.max(0.05, Math.min(1.0, intensity));
+            const vol = 0.16 * safeInt;
+            gain.gain.setValueAtTime(vol, now);
+            gain.gain.setValueAtTime(vol, now + 0.58);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.66);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(dest);
+            osc.start(now);
+            osc.stop(now + 0.68);
+        }
+
         playExplosion() {
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;

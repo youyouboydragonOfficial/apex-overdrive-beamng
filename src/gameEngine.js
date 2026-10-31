@@ -126,6 +126,7 @@
     let spilledHazards = [];
     let detachedDebris = [];
     let particles = [];
+    let policeDispatchTimer = 5.0;
 
     const sharedGeos = {
         spark: null,
@@ -830,7 +831,7 @@
      * Guarantees at least 2 lanes remain completely clear in any 52m Z-slice so high levels (Lv.4/Lv.5)
      * never create an unavoidable wall of cars!
      */
-    function spawnTrafficVehicle(zOffset = -185) {
+    function spawnTrafficVehicle(zOffset = -185, forcedType = null) {
         // Count how many lanes are already occupied within 52 meters of zOffset
         const blockedLanesAtZ = new Set();
         trafficCars.forEach(tc => {
@@ -858,15 +859,19 @@
         const laneX = LANE_CENTERS[laneIndex];
 
         const lvlSpec = LEVEL_SPECS[state.selectedLevel] || LEVEL_SPECS[2];
-        const roll = Math.random();
-        let type;
-        if (roll < lvlSpec.wrongWayChance) {
-            type = 'WRONG_WAY';
-        } else if (roll < lvlSpec.wrongWayChance + lvlSpec.rageChance) {
-            type = 'ROAD_RAGE';
-        } else {
-            const normalTypes = ['SEDAN', 'SUV', 'TRUCK', 'POLICE', 'SPORTS'];
-            type = normalTypes[Math.floor(Math.random() * normalTypes.length)];
+        let type = forcedType;
+        if (!type) {
+            const roll = Math.random();
+            if (roll < lvlSpec.wrongWayChance) {
+                type = 'WRONG_WAY';
+            } else if (roll < lvlSpec.wrongWayChance + lvlSpec.rageChance) {
+                type = 'ROAD_RAGE';
+            } else if (state.heatLevel > 0 && Math.random() < (0.28 + state.heatLevel * 0.12)) {
+                type = 'POLICE';
+            } else {
+                const normalTypes = ['SEDAN', 'SUV', 'TRUCK', 'POLICE', 'SPORTS'];
+                type = normalTypes[Math.floor(Math.random() * normalTypes.length)];
+            }
         }
 
         const colors = [0x3b82f6, 0x10b981, 0xf59e0b, 0xe2e8f0, 0x64748b, 0x8b5cf6, 0xec4899];
@@ -893,6 +898,13 @@
             speedKmh = (108 + Math.random() * 40) * lvlSpec.trafficSpeedMult;
         } else if (type === 'TRUCK') {
             speedKmh = (58 + Math.random() * 25) * lvlSpec.trafficSpeedMult;
+        } else if (type === 'POLICE') {
+            if (zOffset > 0) {
+                // Roar up from behind to catch up with player!
+                speedKmh = Math.max(state.speedKmh + 35, 290);
+            } else {
+                speedKmh = (118 + Math.random() * 45) * lvlSpec.trafficSpeedMult;
+            }
         }
 
         group.position.set(laneX, 0, zOffset);
@@ -921,7 +933,9 @@
             cargoType: built.cargoType || truckCargoType,
             cargoSpilled: false,
             brakeTestTriggered: false,
-            evasionTriggered: false
+            evasionTriggered: false,
+            isChasing: (type === 'POLICE' && (state.heatLevel > 0 || zOffset > 0)),
+            policeAlerted: false
         });
     }
 
@@ -1197,7 +1211,13 @@
                 const escapeDir = tc.mesh.position.x > 0 ? -1 : 1;
                 tc.vx += escapeDir * 11.2;
                 tc.laneIndex = Math.max(0, Math.min(5, tc.laneIndex + escapeDir));
-                if (tc.type === 'ROAD_RAGE') {
+                if (tc.type === 'POLICE') {
+                    tc.isChasing = true;
+                    state.heatLevel = Math.min(5, state.heatLevel + 1);
+                    updateHUD();
+                    audio.playPoliceSiren(1.0);
+                    addFloatingNotification('🚨 パトカーへのパッシング威嚇で警察激怒!! (手配度UP ★)', 'text-red-500 font-black');
+                } else if (tc.type === 'ROAD_RAGE') {
                     addFloatingNotification('💢 煽り車がパッシング威嚇に驚いて退避！', 'text-amber-400 font-bold');
                 } else if (tc.type === 'WRONG_WAY') {
                     addFloatingNotification('⚠️ 逆走高齢車が警笛に慌てて減速！', 'text-yellow-300 font-bold');
@@ -2566,6 +2586,32 @@
             spawnTrafficVehicle(-160 - Math.random() * 85);
         }
 
+        // Active Police Interceptor Dispatcher when Wanted (heatLevel > 0)
+        if (state.heatLevel > 0 && state.mode === 'PLAYING') {
+            policeDispatchTimer -= dt;
+            const activePolice = trafficCars.filter(c => c.type === 'POLICE');
+            const maxPoliceAllowed = Math.min(3, state.heatLevel);
+            if (policeDispatchTimer <= 0 && activePolice.length < maxPoliceAllowed) {
+                policeDispatchTimer = Math.max(4.5, 9.5 - state.heatLevel * 1.2);
+                const spawnBehind = Math.random() < 0.65;
+                const spawnZ = spawnBehind ? 24 : -165;
+                spawnTrafficVehicle(spawnZ, 'POLICE');
+                audio.playPoliceSiren(1.0);
+                addFloatingNotification(
+                    spawnBehind ? '🚨 追跡急行!! 後方からパトカー接近中!!' : '🚨 警告!! 前方に警察インターセプター配備!!',
+                    'text-red-500 font-black'
+                );
+            }
+        }
+
+        // Speed Violation Radar Detection during high speed cruise
+        if (state.speedKmh > 290 && Math.random() < 0.0025 && state.heatLevel === 0 && state.mode === 'PLAYING') {
+            state.heatLevel = 1;
+            updateHUD();
+            audio.playPoliceSiren(0.85);
+            addFloatingNotification('🚨 超高速危険走行を検知!! 警察が緊急追跡開始 (手配度 ★)', 'text-red-500 font-black');
+        }
+
         let hasAnySlipstream = false;
         for (let i = trafficCars.length - 1; i >= 0; i--) {
             const tc = trafficCars[i];
@@ -2628,6 +2674,51 @@
 
                     if (shouldSpill) {
                         triggerTruckCargoSpill(tc);
+                    }
+                } else if (tc.type === 'POLICE') {
+                    const isChasing = tc.isChasing || (state.heatLevel > 0) || (dz > -70 && dz < 40 && state.speedKmh > 230);
+                    if (isChasing) {
+                        tc.isChasing = true;
+                        if (state.heatLevel === 0) {
+                            state.heatLevel = 1;
+                            updateHUD();
+                        }
+
+                        // 1. Rapid alternate flashing red & blue LED strobe siren bar (14Hz)
+                        if (tc.sirenBar && tc.sirenBar.children && tc.sirenBar.children.length >= 2) {
+                            const flashStep = Math.floor(clock.elapsedTime * 14) % 4;
+                            tc.sirenBar.children[0].visible = (flashStep === 0 || flashStep === 1);
+                            tc.sirenBar.children[1].visible = (flashStep === 2 || flashStep === 3);
+                        }
+
+                        // 2. Play proximity wailing police siren audio
+                        const dist = Math.abs(dz);
+                        if (dist < 75) {
+                            const intensity = 1.0 - (dist / 75);
+                            audio.playPoliceSiren(intensity);
+                        }
+
+                        // 3. Pursuit acceleration & steering AI
+                        if (dz > 0) {
+                            // Police is behind player -> Accelerate hard to catch up and ram!
+                            tc.speedKmh = Math.min(415, Math.max(tc.speedKmh, state.speedKmh + 30));
+                            const steerDir = Math.sign(dx);
+                            tc.vx += steerDir * 14.0 * dt;
+                            tc.vx = THREE.MathUtils.clamp(tc.vx, -7.0, 7.0);
+                            tc.mesh.rotation.y = -tc.vx * 0.024;
+                        } else if (dz > -65) {
+                            // Police is ahead of player -> Intercept, match speed, and block/box player in!
+                            tc.speedKmh = Math.max(90, Math.min(tc.speedKmh, state.speedKmh + (dz < -18 ? -12 : 6)));
+                            const steerDir = Math.sign(dx);
+                            tc.vx += steerDir * 15.0 * dt;
+                            tc.vx = THREE.MathUtils.clamp(tc.vx, -7.5, 7.5);
+                            tc.mesh.rotation.y = -tc.vx * 0.025;
+                        }
+
+                        if (!tc.policeAlerted && dz > -85 && dz < 45) {
+                            tc.policeAlerted = true;
+                            addFloatingNotification('🚨 警告!! パトカーがサイレンを鳴らし緊急追跡中!! ([X]ドリフトまたは体当たりで撃破せよ)', 'text-red-500 font-black');
+                        }
                     }
                 }
             }
@@ -2701,11 +2792,17 @@
                             advanceBounty('TAKEDOWN');
                         } else if (tc.type === 'POLICE') {
                             audio.playTakedown();
-                            state.impactSlowMoTimer = 0.55;
-                            state.score += 2500;
+                            state.impactSlowMoTimer = 0.60;
+                            state.score += 3500;
+                            state.nosFuel = 100;
                             state.heatLevel = Math.max(0, state.heatLevel - 1);
-                            addFloatingNotification('🚓 POLICE TAKEDOWN!! +2,500 PTS (手配度減少)', 'text-red-400 font-black');
+                            updateHUD();
+                            addFloatingNotification('🚓💥 POLICE TAKEDOWN!! パトカー撃破! +3,500 PTS ＆ 手配度低下!', 'text-red-400 font-black');
                             advanceBounty('TAKEDOWN');
+                        } else if (state.speedKmh > 115 && state.heatLevel < 5 && Math.random() < 0.45) {
+                            state.heatLevel = Math.min(5, state.heatLevel + 1);
+                            updateHUD();
+                            addFloatingNotification(`🚨 事故多発で指名手配!! (手配度UP ${'★'.repeat(state.heatLevel)})`, 'text-red-400 font-bold');
                         }
 
                         tc.vz = (-20 - (relKmh * 0.09)) * massAdvantage;
@@ -2759,7 +2856,11 @@
                 }
             }
 
-            if (tc.mesh.position.z > 28 || tc.mesh.position.z < -250) {
+            const maxBehindZ = (tc.type === 'POLICE' && tc.isChasing) ? 55 : 28;
+            if (tc.mesh.position.z > maxBehindZ || tc.mesh.position.z < -260) {
+                if (tc.type === 'POLICE' && tc.isChasing && tc.mesh.position.z > maxBehindZ) {
+                    addFloatingNotification('💨 パトカーを完全に振り切った!! (追跡ロスト)', 'text-emerald-300 font-bold');
+                }
                 scene.remove(tc.mesh);
                 trafficCars.splice(i, 1);
             }
@@ -2851,7 +2952,8 @@
         state.playerX = LANE_CENTERS[2];
         state.playerY = 0;
         state.playerVY = 0;
-        state.heatLevel = 0;
+        state.heatLevel = (state.selectedLevel >= 5 ? 2 : (state.selectedLevel >= 4 ? 1 : 0));
+        policeDispatchTimer = (state.heatLevel > 0 ? 3.0 : 6.0);
         state.bountyProgress = 0;
         state.impactSlowMoTimer = 0;
         state.isDrifting = false;
@@ -3217,6 +3319,16 @@
         bindSandboxSpawn('sb-spawn-wall', 'CONCRETE_WALL');
         bindSandboxSpawn('sb-spawn-ramp', 'RAMP');
         bindSandboxSpawn('sb-spawn-barrel', 'BARREL');
+        const sbPolice = document.getElementById('sb-spawn-police');
+        if (sbPolice) {
+            sbPolice.addEventListener('click', () => {
+                state.heatLevel = Math.max(1, Math.min(5, state.heatLevel + 1));
+                updateHUD();
+                spawnTrafficVehicle(22, 'POLICE');
+                audio.playPoliceSiren(1.0);
+                addFloatingNotification(`🚨 パトカー緊急追跡発令!! (手配度 ${'★'.repeat(state.heatLevel)})`, 'text-red-500 font-black');
+            });
+        }
 
         const sbRepairBtn = document.getElementById('sb-btn-repair');
         if (sbRepairBtn) sbRepairBtn.addEventListener('click', () => repairAllSoftBodyAndTires(true));

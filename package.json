@@ -1,7 +1,7 @@
 {
   "name": "crashoria-ultimate-road-adventure",
-  "version": "3.0.0",
-  "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.0 - 全6マップ固有ギミック（首都高オービス・巨石崩落・ブラックアイス・高圧火柱・超電導加速・展望メガジャンプ）・バウンティ指令・スリップストリーム・パワードリフト・警察追跡・キルカメラ Windows App",
+  "version": "3.0.1",
+  "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.0.1 - 本格警察追跡AI（サイレン音響・赤青LEDストロボ・背後急行＆前方インターセプター）・全6マップ固有ギミック・バウンティ指令・スリップストリーム・パワードリフト・キルカメラ Windows App",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -31,10 +31,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.0.0.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.0.1.exe"
     },
     "portable": {
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.0.0.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.0.1.exe"
     }
   },
   "devDependencies": {
