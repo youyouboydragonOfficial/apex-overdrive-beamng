@@ -113,6 +113,176 @@
             sceneryColor: 0xb45309,
             grip: 0.94,
             weatherType: 'LEAVES'
+        },
+        RAINY_OSAKA: {
+            id: 'RAINY_OSAKA',
+            name: '雨の阪神高速環状',
+            sub: 'RAINY ELEVATED HIGHWAY',
+            info: '路面グリップ: 85% (ウェット路面) | 視界: ネオン雨夜景 | ハイドロプレーニング注意',
+            gimmickName: 'ハイドロ水たまりスリップ ＆ 高速工事規制',
+            gimmickTag: '🌊 HYDROPLANE PUDDLES',
+            gimmickDesc: '深い水たまりで猛烈スリップ！カウンターステアと適切な減速で駆け抜けろ',
+            skyColor: 0x060b14,
+            fogColor: 0x081324,
+            fogDensity: 0.0055,
+            roadTint: 0x94a3b8,
+            barrierColor: 0x1e293b,
+            sceneryColor: 0x0284c7,
+            grip: 0.85,
+            weatherType: 'RAIN'
+        },
+        GERMAN_AUTOBAHN: {
+            id: 'GERMAN_AUTOBAHN',
+            name: 'アウトバーン速度無制限区間',
+            sub: 'GERMAN SPEED CORRIDOR',
+            info: '路面グリップ: 100% | 視界: 曇天高速 | 超長距離ストレート',
+            gimmickName: '移動式オービス取締 ＆ 重量級長距離トレーラー',
+            gimmickTag: '📸 SPEED RADAR TRAPS',
+            gimmickDesc: '240km/h超でオービス検知！ドラフティングかパッシングで突破せよ',
+            skyColor: 0x1f2937,
+            fogColor: 0x374151,
+            fogDensity: 0.0040,
+            roadTint: 0xffffff,
+            barrierColor: 0x4b5563,
+            sceneryColor: 0x111827,
+            grip: 1.0,
+            weatherType: 'OVERCAST'
+        },
+        NEON_VEGAS: {
+            id: 'NEON_VEGAS',
+            name: 'ラスベガス・カジノストリップ',
+            sub: 'GLITTERING STRIP NIGHT',
+            info: '路面グリップ: 98% | 視界: 煌めくカジノネオン | メガハイウェイ',
+            gimmickName: '近未来レーザーセキュリティ ＆ ジャックポット加速',
+            gimmickTag: '✨ CASINO LASER GATES',
+            gimmickDesc: 'レーザーゲート接触で電磁ノイズ！ハイパージャンプ台で屋根上を飛び越えろ',
+            skyColor: 0x1a0529,
+            fogColor: 0x2e0854,
+            fogDensity: 0.0045,
+            roadTint: 0xf5d0fe,
+            barrierColor: 0xa855f7,
+            sceneryColor: 0xf43f5e,
+            grip: 0.98,
+            weatherType: 'NONE'
+        },
+        SUNSET_MIAMI: {
+            id: 'SUNSET_MIAMI',
+            name: 'マイアミ・オーシャンコースト',
+            sub: 'TROPICAL COASTAL EXPRESS',
+            info: '路面グリップ: 96% | 視界: 茜色の夕陽＆パームツリー | 海上連絡橋',
+            gimmickName: '海上大突風 ＆ コーストジャンプブリッジ',
+            gimmickTag: '🌴 TROPICAL GUST & RAMP',
+            gimmickDesc: '海風による激しい横揺れ！海上ジャンプ台で波しぶきを跳び越えろ',
+            skyColor: 0x3b122d,
+            fogColor: 0x581c3f,
+            fogDensity: 0.0045,
+            roadTint: 0xfecdd3,
+            barrierColor: 0xdb2777,
+            sceneryColor: 0x06b6d4,
+            grip: 0.96,
+            weatherType: 'NONE'
+        },
+        VOLCANO_CALDERA: {
+            id: 'VOLCANO_CALDERA',
+            name: 'マグマ灼熱カルデラロード',
+            sub: 'ACTIVE VOLCANIC CORRIDOR',
+            info: '路面グリップ: 88% | 視界: 立ち上る噴煙＆赤熱マグマ | 危険地帯',
+            gimmickName: '路面マグマ地割れ ＆ 熱噴流ブースト',
+            gimmickTag: '🌋 LAVA FISSURES & PLUMES',
+            gimmickDesc: '路面に裂けたマグマ地割れをジャンプで飛び越えろ！熱噴流に乗ればNOS全回復',
+            skyColor: 0x1c0505,
+            fogColor: 0x3b0a0a,
+            fogDensity: 0.0058,
+            roadTint: 0xf87171,
+            barrierColor: 0x7f1d1d,
+            sceneryColor: 0x450a0a,
+            grip: 0.88,
+            weatherType: 'EMBER'
+        },
+        MONACO_GP: {
+            id: 'MONACO_GP',
+            name: 'モナコ海岸トンネル＆マリーナ',
+            sub: 'RIVIERA GRAND PRIX COAST',
+            info: '路面グリップ: 100% | 視界: 地中海マリーナ＆クリフトンネル | 連続コーナー',
+            gimmickName: 'シケイン減速トラップ ＆ 展望ジャンプ',
+            gimmickTag: '⚓ MARINA CHICANE & JUMP',
+            gimmickDesc: '豪華クルーザーを望む海沿いトンネル！超高速シケインをドリフトで抜けろ',
+            skyColor: 0x082f49,
+            fogColor: 0x0c4a6e,
+            fogDensity: 0.0042,
+            roadTint: 0xffffff,
+            barrierColor: 0xe11d48,
+            sceneryColor: 0x0284c7,
+            grip: 1.0,
+            weatherType: 'NONE'
+        },
+        FOGGY_SILENT: {
+            id: 'FOGGY_SILENT',
+            name: '濃霧の樹海サイレントハイウェイ',
+            sub: 'MYSTERIOUS DEEP FOREST',
+            info: '路面グリップ: 90% | 視界: 濃霧50m (パッシング推奨) | 静寂ハイウェイ',
+            gimmickName: 'サプライズ巨石落石 ＆ 霧中ゴーストトラップ',
+            gimmickTag: '🌫️ DEEP FOG AMBUSH',
+            gimmickDesc: '視界わずか50mの極限緊張！パッシング[F]で前方の障害物を照らし出せ',
+            skyColor: 0x091410,
+            fogColor: 0x13231c,
+            fogDensity: 0.0085,
+            roadTint: 0x6ee7b7,
+            barrierColor: 0x064e3b,
+            sceneryColor: 0x022c22,
+            grip: 0.90,
+            weatherType: 'FOG'
+        },
+        AURORA_NORDIC: {
+            id: 'AURORA_NORDIC',
+            name: '北欧オーロラ＆フィヨルド雪氷路',
+            sub: 'GLACIAL FJORD AURORA',
+            info: '路面グリップ: 74% (氷結路面) | 視界: 夜空に揺らめく極光 | 氷河大橋',
+            gimmickName: '超低μブラックアイス ＆ 氷柱トラップ',
+            gimmickTag: '🌌 AURORA BLACK ICE',
+            gimmickDesc: 'エメラルド色のオーロラの下を疾走！ツルツル氷結路はドリフトで切り抜けろ',
+            skyColor: 0x031518,
+            fogColor: 0x06282d,
+            fogDensity: 0.0052,
+            roadTint: 0xa5f3fc,
+            barrierColor: 0x0891b2,
+            sceneryColor: 0x164e63,
+            grip: 0.74,
+            weatherType: 'SNOW'
+        },
+        DUBAI_GOLDEN: {
+            id: 'DUBAI_GOLDEN',
+            name: 'ドバイ黄金超高層ハイウェイ',
+            sub: 'FUTURISTIC GOLDEN METROPOLIS',
+            info: '路面グリップ: 100% | 視界: 黄金色に輝く超高層摩天楼 | メガロード',
+            gimmickName: '超電導ハイパー加速パッド ＆ ゴールドゲート',
+            gimmickTag: '⚡ DUAL HYPER BOOST PADS',
+            gimmickDesc: '連続ハイパー加速パッドを踏み抜け！時速450km/hの異次元領域へ突入',
+            skyColor: 0x1c1204,
+            fogColor: 0x362106,
+            fogDensity: 0.0042,
+            roadTint: 0xfef08a,
+            barrierColor: 0xca8a04,
+            sceneryColor: 0xa16207,
+            grip: 1.0,
+            weatherType: 'NONE'
+        },
+        KYOTO_CHERRY: {
+            id: 'KYOTO_CHERRY',
+            name: '京都・夜桜吹雪と古都ネオン街道',
+            sub: 'HISTORIC MOONLIT SAKURA',
+            info: '路面グリップ: 95% | 視界: 舞い散る桜吹雪＆古都行灯 | 風流高速',
+            gimmickName: '朱色大鳥居ゲート ＆ 桜吹雪ブラインド',
+            gimmickTag: '🌸 SAKURA TORII GATES',
+            gimmickDesc: '大鳥居ゲート通過でボーナス獲得！視界を遮る桜吹雪をパッシングで切り裂け',
+            skyColor: 0x16071d,
+            fogColor: 0x2d0f3b,
+            fogDensity: 0.0050,
+            roadTint: 0xfbcfe8,
+            barrierColor: 0x9d174d,
+            sceneryColor: 0x831843,
+            grip: 0.95,
+            weatherType: 'LEAVES'
         }
     };
 
@@ -666,7 +836,190 @@
         };
     }
 
-        global.CrashoriaWorldBuilder = {
+    
+    function createHydroPuddle(zOffset = -185, laneIndex = null) {
+        if (laneIndex === null) laneIndex = Math.floor(Math.random() * 6);
+        const laneX = LANE_CENTERS[laneIndex];
+        const group = new THREE.Group();
+
+        const puddleGeo = new THREE.CircleGeometry(2.35, 20);
+        const puddleMat = new THREE.MeshBasicMaterial({
+            color: 0x38bdf8,
+            transparent: true,
+            opacity: 0.72,
+            side: THREE.DoubleSide
+        });
+        const puddleMesh = new THREE.Mesh(puddleGeo, puddleMat);
+        puddleMesh.rotation.x = -Math.PI / 2;
+        puddleMesh.position.y = 0.04;
+        group.add(puddleMesh);
+
+        // Water Ripple Rings
+        const ringGeo = new THREE.RingGeometry(1.6, 1.85, 20);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0xe0f2fe, transparent: true, opacity: 0.55, side: THREE.DoubleSide });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = 0.05;
+        group.add(ring);
+
+        group.position.set(laneX, 0, zOffset);
+        return {
+            mesh: group,
+            type: 'HYDRO_PUDDLE',
+            laneIndex,
+            width: 4.8,
+            length: 4.8,
+            triggered: false
+        };
+    }
+
+    function createLaserSecurityGrid(zOffset = -185) {
+        const group = new THREE.Group();
+        const archMat = new THREE.MeshStandardMaterial({ color: 0x1e1b4b, metalness: 0.9, roughness: 0.2 });
+
+        [-ROAD_WIDTH / 2 + 0.5, ROAD_WIDTH / 2 - 0.5].forEach(px => {
+            const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.8, 8.2, 0.8), archMat);
+            pillar.position.set(px, 4.1, 0);
+            group.add(pillar);
+        });
+
+        const topBeam = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH + 1.2, 1.2, 1.4), archMat);
+        topBeam.position.set(0, 7.8, 0);
+        group.add(topBeam);
+
+        const safeLane = Math.floor(Math.random() * 6);
+        LANE_CENTERS.forEach((lx, idx) => {
+            const isSafe = (idx === safeLane);
+            const beamGeo = new THREE.CylinderGeometry(0.06, 0.06, 7.2, 8);
+            const beamMat = new THREE.MeshBasicMaterial({
+                color: isSafe ? 0x10b981 : 0xef4444,
+                transparent: true,
+                opacity: 0.85
+            });
+            const beamMesh = new THREE.Mesh(beamGeo, beamMat);
+            beamMesh.position.set(lx, 3.8, 0);
+            group.add(beamMesh);
+
+            const emitter = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.2, 12), new THREE.MeshBasicMaterial({ color: isSafe ? 0x10b981 : 0xef4444 }));
+            emitter.position.set(lx, 7.2, 0);
+            group.add(emitter);
+        });
+
+        group.position.set(0, 0, zOffset);
+        return {
+            mesh: group,
+            type: 'LASER_GRID',
+            width: ROAD_WIDTH,
+            length: 2.2,
+            safeLane,
+            triggered: false
+        };
+    }
+
+    function createMoltenLavaCrack(zOffset = -185, laneIndex = null) {
+        if (laneIndex === null) laneIndex = Math.floor(Math.random() * 6);
+        const laneX = LANE_CENTERS[laneIndex];
+        const group = new THREE.Group();
+
+        const fissureGeo = new THREE.PlaneGeometry(4.2, 6.5, 4, 6);
+        const fissureMat = new THREE.MeshBasicMaterial({
+            color: 0xef4444,
+            transparent: true,
+            opacity: 0.85,
+            side: THREE.DoubleSide
+        });
+        const fissure = new THREE.Mesh(fissureGeo, fissureMat);
+        fissure.rotation.x = -Math.PI / 2;
+        fissure.position.y = 0.04;
+        group.add(fissure);
+
+        // Glowing core lava strip
+        const coreGeo = new THREE.PlaneGeometry(1.6, 5.8);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        core.rotation.x = -Math.PI / 2;
+        core.position.y = 0.05;
+        group.add(core);
+
+        group.position.set(laneX, 0, zOffset);
+        return {
+            mesh: group,
+            type: 'LAVA_CRACK',
+            laneIndex,
+            width: 4.2,
+            length: 6.5,
+            triggered: false
+        };
+    }
+
+    function createToriiArchGate(zOffset = -185) {
+        const group = new THREE.Group();
+        const vermilionMat = new THREE.MeshStandardMaterial({ color: 0xd92626, roughness: 0.4 });
+        const blackMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.3 });
+
+        // Twin Torii Pillars
+        [-12, 12].forEach(px => {
+            const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.8, 9.2, 16), vermilionMat);
+            pillar.position.set(px, 4.6, 0);
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.1, 1.2, 16), blackMat);
+            base.position.set(px, 0.6, 0);
+            group.add(pillar, base);
+        });
+
+        // Top Curved Kasagi Lintels
+        const topKasagi = new THREE.Mesh(new THREE.BoxGeometry(28, 1.1, 1.4), blackMat);
+        topKasagi.position.set(0, 9.2, 0);
+        const nukiBeam = new THREE.Mesh(new THREE.BoxGeometry(26, 0.85, 1.0), vermilionMat);
+        nukiBeam.position.set(0, 7.6, 0);
+        group.add(topKasagi, nukiBeam);
+
+        // Hanging Japanese Lanterns
+        [-6, 6].forEach(lx => {
+            const lantern = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.9, 12), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+            lantern.position.set(lx, 6.8, 0);
+            group.add(lantern);
+        });
+
+        group.position.set(0, 0, zOffset);
+        return {
+            mesh: group,
+            type: 'TORII_GATE',
+            width: 26,
+            length: 3.5,
+            triggered: false
+        };
+    }
+
+    function createChicaneTireBarrier(zOffset = -185, laneIndex = null) {
+        if (laneIndex === null) laneIndex = Math.floor(Math.random() * 6);
+        const laneX = LANE_CENTERS[laneIndex];
+        const group = new THREE.Group();
+
+        const tireMat1 = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.5 });
+        const tireMat2 = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.5 });
+
+        for (let row = 0; row < 3; row++) {
+            for (let t = -1.2; t <= 1.2; t += 0.8) {
+                const mat = (Math.abs(t) < 0.5) ? tireMat1 : tireMat2;
+                const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.32, 12), mat);
+                tire.rotation.x = Math.PI / 2;
+                tire.position.set(t, 0.32 + row * 0.32, 0);
+                group.add(tire);
+            }
+        }
+
+        group.position.set(laneX, 0, zOffset);
+        return {
+            mesh: group,
+            type: 'CHICANE_BARRIER',
+            laneIndex,
+            width: 3.2,
+            length: 1.8,
+            triggered: false
+        };
+    }
+
+    global.CrashoriaWorldBuilder = {
         ROAD_WIDTH,
         LANE_CENTERS,
         HIGHWAY_SEGMENT_LENGTH,

@@ -199,14 +199,24 @@
             const rpmNormalized = Math.min(1, Math.max(0.15, (safeSpeed - minSpd) / (maxSpd - minSpd)));
 
             const pitchMap = {
+                FORMULA_APEX: 1.55,
                 PROTOTYPE: 1.35,
+                ROTARY_FD: 1.28,
                 DRIFT: 1.25,
                 PORSCHE_TURBO: 1.18,
+                HYPER_GT3: 1.16,
                 JDM: 1.12,
+                POLICE_INTERCEPTOR: 1.12,
+                EVO_IX: 1.10,
+                WRX_STI: 1.08,
+                DEVIL_Z: 1.05,
                 HYPER: 1.0,
+                CYBERTRUCK: 0.85,
                 HELLCAT: 0.78,
                 INTERCEPTOR: 0.76,
-                GOLIATH: 0.68
+                CHARGER_69: 0.72,
+                GOLIATH: 0.68,
+                DEKOTORA: 0.62
             };
             const pitchMultiplier = (pitchMap[carKey] || 1.0) * (0.55 + 0.45 * timeScale);
             const baseFreq = Math.min(340, Math.max(32, (42 + rpmNormalized * 118 + (safeSpeed * 0.17)) * pitchMultiplier));

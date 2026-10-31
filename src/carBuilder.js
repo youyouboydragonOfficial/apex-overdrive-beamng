@@ -159,6 +159,196 @@
             armorMultiplier: 1.45,
             profile: 'MUSCLE_WIDE',
             stats: { speed: 88, accel: 96, handling: 82, armor: 90, mass: 88 }
+        },
+        DEVIL_Z: {
+            id: 'DEVIL_Z',
+            name: 'S30Z WANGAN DEVIL',
+            category: 'JDM CLASSIC TWIN-TURBO',
+            desc: 'L28改3.1Lツインターボ搭載「湾岸の悪魔」。漆黒のミッドナイトブルーと超ロングノーズが生む超高速直進安定性。',
+            color: 0x0a1931,
+            accent: 0x0f172a,
+            rimColor: 0x71717a,
+            caliperColor: 0xeab308,
+            underglowColor: 0x3b82f6,
+            maxSpeed: 382,
+            accel: 114,
+            steerPower: 33.0,
+            massKg: 1180,
+            stiffness: 1.05,
+            armorMultiplier: 1.05,
+            profile: 'CLASSIC_LONGNOSE',
+            stats: { speed: 91, accel: 93, handling: 88, armor: 68, mass: 55 }
+        },
+        ROTARY_FD: {
+            id: 'ROTARY_FD',
+            name: 'RX-7 FD3S RE-SPEC',
+            category: 'ROTARY TWIN-TURBO AERO',
+            desc: '13B-REWシーケンシャルツインターボ＋フルエアロキット。超低重心＆前後50:50の理想的重量配分が生む異次元コーナリング。',
+            color: 0x2563eb,
+            accent: 0x0f172a,
+            rimColor: 0xd4af37,
+            caliperColor: 0xef4444,
+            underglowColor: 0x60a5fa,
+            maxSpeed: 364,
+            accel: 116,
+            steerPower: 37.0,
+            massKg: 1220,
+            stiffness: 1.10,
+            armorMultiplier: 1.08,
+            profile: 'ROTARY_AERO',
+            stats: { speed: 86, accel: 94, handling: 98, armor: 70, mass: 56 }
+        },
+        EVO_IX: {
+            id: 'EVO_IX',
+            name: 'LANCER EVO IX GSR',
+            category: 'RALLY-BRED 4WD MONSTER',
+            desc: '名機4G63 MIVECターボ＋スーパーAYC 4WD。雪道・雨天スリップ路面でも路面に爪を立てる無敵のトラクションと高速立ち上がり。',
+            color: 0xdc2626,
+            accent: 0x18181b,
+            rimColor: 0xf8fafc,
+            caliperColor: 0xca8a04,
+            underglowColor: 0xef4444,
+            maxSpeed: 356,
+            accel: 120,
+            steerPower: 36.0,
+            massKg: 1410,
+            stiffness: 1.25,
+            armorMultiplier: 1.22,
+            profile: 'RALLY_SEDAN',
+            stats: { speed: 84, accel: 96, handling: 96, armor: 85, mass: 68 }
+        },
+        WRX_STI: {
+            id: 'WRX_STI',
+            name: 'IMPREZA WRC LEGEND',
+            category: 'BOXER TURBO ALL-WHEEL-DRIVE',
+            desc: '水平対向EJ20ボクサーサウンドと伝統のWRブルー＋ゴールドホイール。大型WRCウイングによる強烈なダウンフォース。',
+            color: 0x1d4ed8,
+            accent: 0x172554,
+            rimColor: 0xeab308,
+            caliperColor: 0x16a34a,
+            underglowColor: 0x3b82f6,
+            maxSpeed: 354,
+            accel: 118,
+            steerPower: 35.5,
+            massKg: 1430,
+            stiffness: 1.24,
+            armorMultiplier: 1.20,
+            profile: 'WRC_WIDE',
+            stats: { speed: 83, accel: 95, handling: 95, armor: 84, mass: 69 }
+        },
+        CYBERTRUCK: {
+            id: 'CYBERTRUCK',
+            name: 'TITAN CYBER ARMOR EV',
+            category: 'EXTREME ARMORED ELECTRIC',
+            desc: '極厚ステンレス冷間圧延装甲＋トライモーターEV。3.3トンの超質量と電気瞬発トルクで、障害物トラップを破壊突破する鋼鉄の要塞。',
+            color: 0x94a3b8,
+            accent: 0x0f172a,
+            rimColor: 0x475569,
+            caliperColor: 0x06b6d4,
+            underglowColor: 0x38bdf8,
+            maxSpeed: 345,
+            accel: 125,
+            steerPower: 27.0,
+            massKg: 3300,
+            stiffness: 2.20,
+            armorMultiplier: 2.30,
+            profile: 'CYBER_ANGULAR',
+            stats: { speed: 79, accel: 98, handling: 76, armor: 100, mass: 100 }
+        },
+        FORMULA_APEX: {
+            id: 'FORMULA_APEX',
+            name: 'APEX F1 GRAND PRIX',
+            category: 'OPEN-WHEEL FORMULA RACER',
+            desc: '車重わずか640kgの本格フォーミュラカー。フロント＆リアの多段ウイングにより超高速350km/hでも吸い付くように旋回可能。',
+            color: 0x10b981,
+            accent: 0x064e3b,
+            rimColor: 0xf59e0b,
+            caliperColor: 0x10b981,
+            underglowColor: 0x34d399,
+            maxSpeed: 415,
+            accel: 136,
+            steerPower: 39.0,
+            massKg: 640,
+            stiffness: 0.85,
+            armorMultiplier: 0.85,
+            profile: 'OPEN_WHEEL_F1',
+            stats: { speed: 98, accel: 100, handling: 100, armor: 55, mass: 35 }
+        },
+        DEKOTORA: {
+            id: 'DEKOTORA',
+            name: 'TENKA-TOITSU DEKOTORA',
+            category: 'HEAVY CUSTOM ART TRUCK',
+            desc: 'ド派手な電飾アンドンと舟形バンパーを備えた日本の街道王デコトラ。他車を弾き飛ばす超装甲と、クラクションで周囲を威圧する圧倒的存在感。',
+            color: 0x7c2d12,
+            accent: 0xfacc15,
+            rimColor: 0xf8fafc,
+            caliperColor: 0xef4444,
+            underglowColor: 0xf43f5e,
+            maxSpeed: 315,
+            accel: 85,
+            steerPower: 24.0,
+            massKg: 4200,
+            stiffness: 2.40,
+            armorMultiplier: 2.50,
+            profile: 'HEAVY_DEKOTORA',
+            stats: { speed: 71, accel: 77, handling: 68, armor: 100, mass: 100 }
+        },
+        POLICE_INTERCEPTOR: {
+            id: 'POLICE_INTERCEPTOR',
+            name: 'PATROL INTERCEPTOR GT-R',
+            category: 'POLICE PURSUIT INTERCEPTOR',
+            desc: '高速隊公認の白黒ツートン警邏仕様。屋根の赤色散光警光灯を点滅させ、一般交通を蹴散らしながらターゲットを追い詰める追跡専用機。',
+            color: 0xf8fafc,
+            accent: 0x090d16,
+            rimColor: 0x1e293b,
+            caliperColor: 0x3b82f6,
+            underglowColor: 0xef4444,
+            maxSpeed: 376,
+            accel: 116,
+            steerPower: 34.5,
+            massKg: 1750,
+            stiffness: 1.30,
+            armorMultiplier: 1.35,
+            profile: 'POLICE_CRUISER',
+            stats: { speed: 88, accel: 94, handling: 92, armor: 88, mass: 80 }
+        },
+        CHARGER_69: {
+            id: 'CHARGER_69',
+            name: '1969 V8 HEMI CHARGER',
+            category: 'VINTAGE AMERICAN BLOWER MUSCLE',
+            desc: 'ボンネットを突き破る巨大スーパーチャージャースクープと爆音7.2L V8。低速からの暴力的なホイールスピンと圧倒的直線スピード。',
+            color: 0x1c1917,
+            accent: 0x78716c,
+            rimColor: 0xd4d4d8,
+            caliperColor: 0xf97316,
+            underglowColor: 0xf97316,
+            maxSpeed: 362,
+            accel: 124,
+            steerPower: 29.5,
+            massKg: 1980,
+            stiffness: 1.35,
+            armorMultiplier: 1.38,
+            profile: 'VINTAGE_MUSCLE',
+            stats: { speed: 87, accel: 97, handling: 80, armor: 88, mass: 86 }
+        },
+        HYPER_GT3: {
+            id: 'HYPER_GT3',
+            name: 'VALKYRIE GT3 PROTO',
+            category: 'HOMOLOGATED GT3 ENDURANCE',
+            desc: '巨大スワンネックGTウイング＆ワイドエアロフェンダーを纏う公認レーシングカー。驚異的なメカニカルグリップで高速コーナーを切り裂く。',
+            color: 0x4f46e5,
+            accent: 0x06b6d4,
+            rimColor: 0xf8fafc,
+            caliperColor: 0x06b6d4,
+            underglowColor: 0x6366f1,
+            maxSpeed: 398,
+            accel: 128,
+            steerPower: 38.0,
+            massKg: 1250,
+            stiffness: 1.15,
+            armorMultiplier: 1.10,
+            profile: 'GT3_RACE',
+            stats: { speed: 95, accel: 98, handling: 99, armor: 75, mass: 62 }
         }
     };
 
@@ -319,9 +509,10 @@
         const group = new THREE.Group();
         group.visible = false; // Toggled by user with 'V' or UI button
 
-        const isTall = profile === 'HEAVY_SUV' || profile === 'MUSCLE_ARMORED';
-        const roofY = isTall ? 1.32 : 1.08;
-        const beltY = isTall ? 0.78 : 0.66;
+        const isTall = profile === 'HEAVY_SUV' || profile === 'MUSCLE_ARMORED' || profile === 'CYBER_ANGULAR' || profile === 'HEAVY_DEKOTORA';
+        const isLow = profile === 'OPEN_WHEEL_F1' || profile === 'LMP_PROTOTYPE';
+        const roofY = isTall ? 1.42 : (isLow ? 0.88 : 1.08);
+        const beltY = isTall ? 0.82 : 0.66;
         const floorY = 0.28;
 
         // 28 Structural Nodes (Front Bumper -> Crumple Zone -> Firewall -> Cabin Cage -> Rear Subframe -> Rear Bumper)
@@ -626,10 +817,10 @@
     function buildSculptedPlayerCar(carKey, envTexture, customOptions = {}) {
         const spec = CAR_SPECS[carKey] || CAR_SPECS.HYPER;
         const profile = spec.profile;
-        const isSUV = profile === 'HEAVY_SUV';
-        const isArmored = profile === 'MUSCLE_ARMORED';
-        const isLMP = profile === 'LMP_PROTOTYPE';
-        const isWideDrift = profile === 'WIDEBODY_DRIFT';
+        const isSUV = profile === 'HEAVY_SUV' || profile === 'CYBER_ANGULAR' || profile === 'HEAVY_DEKOTORA';
+        const isArmored = profile === 'MUSCLE_ARMORED' || profile === 'CYBER_ANGULAR' || profile === 'HEAVY_DEKOTORA';
+        const isLMP = profile === 'LMP_PROTOTYPE' || profile === 'OPEN_WHEEL_F1' || profile === 'GT3_RACE';
+        const isWideDrift = profile === 'WIDEBODY_DRIFT' || profile === 'ROTARY_AERO' || profile === 'WRC_WIDE' || profile === 'GT3_RACE';
 
         const root = new THREE.Group();
         const chassisGroup = new THREE.Group();
@@ -824,6 +1015,30 @@
             deformableMeshes.push(sharkFin);
         }
 
+        if (profile === 'POLICE_CRUISER') {
+            const lightbar = new THREE.Group();
+            const barBase = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.08, 0.22), chromeMat);
+            const sirenL = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.12, 0.20), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+            sirenL.position.set(-0.24, 0.08, 0);
+            const sirenR = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.12, 0.20), new THREE.MeshBasicMaterial({ color: 0x3b82f6 }));
+            sirenR.position.set(0.24, 0.08, 0);
+            lightbar.add(barBase, sirenL, sirenR);
+            lightbar.position.set(0, 1.22, 0.15);
+            cabinGroup.add(lightbar);
+        } else if (profile === 'HEAVY_DEKOTORA') {
+            const dekoVisor = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.12, 0.68), chromeMat);
+            dekoVisor.position.set(0, 1.52, -0.68);
+            dekoVisor.rotation.x = -0.28;
+            const andonBox = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.28, 0.18), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+            andonBox.position.set(0, 1.66, -0.48);
+            cabinGroup.add(dekoVisor, andonBox);
+        } else if (profile === 'OPEN_WHEEL_F1') {
+            const halo = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.045, 8, 16, Math.PI), chromeMat);
+            halo.rotation.x = Math.PI / 2;
+            halo.position.set(0, 0.94, -0.15);
+            cabinGroup.add(halo);
+        }
+
         chassisGroup.add(cabinGroup);
 
         // =========================================================================
@@ -859,6 +1074,21 @@
             const intakeOpening = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.09, 0.08), new THREE.MeshBasicMaterial({ color: 0x0a0a0c }));
             intakeOpening.position.set(0, 0.12, -0.40);
             hoodGroup.add(scoop, intakeOpening);
+        } else if (profile === 'VINTAGE_MUSCLE') {
+            // Chrome Blower Supercharger with Red Butterflies
+            const blower = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.30, 0.68), chromeMat);
+            blower.position.set(0, 0.20, -0.05);
+            const scoopHead = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.15, 0.25), chromeMat);
+            scoopHead.position.set(0, 0.35, -0.30);
+            const bf1 = new THREE.Mesh(new THREE.CircleGeometry(0.045, 12), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+            bf1.position.set(-0.12, 0.35, -0.43);
+            const bf2 = bf1.clone(); bf2.position.x = 0;
+            const bf3 = bf1.clone(); bf3.position.x = 0.12;
+            hoodGroup.add(blower, scoopHead, bf1, bf2, bf3);
+        } else if (profile === 'WRC_WIDE') {
+            const wrcScoop = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.14, 0.52), carbonMat);
+            wrcScoop.position.set(0, 0.12, -0.12);
+            hoodGroup.add(wrcScoop);
         }
 
         hoodGroup.position.set(0, isSUV ? 0.90 : 0.72, -1.34);
@@ -1007,13 +1237,29 @@
             whaleLouver.rotation.x = -0.16;
             wingGroup.add(whaleMesh, whaleLip, whaleLouver);
             deformableMeshes.push(whaleMesh);
-        } else if (profile === 'MUSCLE_WIDE') {
-            // Aggressive Drag Ducktail Spoiler for Hellcat
+        } else if (profile === 'MUSCLE_WIDE' || profile === 'VINTAGE_MUSCLE' || profile === 'CLASSIC_LONGNOSE') {
             const ducktail = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.22, 0.10), carbonMat.clone());
             ducktail.position.set(0, 0.32, 0.25);
             ducktail.rotation.x = 0.35;
             wingGroup.add(ducktail);
             deformableMeshes.push(ducktail);
+        } else if (profile === 'GT3_RACE') {
+            const swanWing = new THREE.Mesh(new THREE.BoxGeometry(2.18, 0.06, 0.44), carbonMat.clone());
+            swanWing.position.set(0, 0.62, 0.20);
+            const snL = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.52, 0.26), carbonMat.clone());
+            snL.position.set(-0.58, 0.36, 0.14);
+            snL.rotation.x = -0.28;
+            const snR = snL.clone(); snR.position.x = 0.58;
+            wingGroup.add(swanWing, snL, snR);
+            deformableMeshes.push(swanWing);
+        } else if (profile === 'WRC_WIDE' || profile === 'RALLY_SEDAN') {
+            const wrcWing = new THREE.Mesh(new THREE.BoxGeometry(1.98, 0.07, 0.42), carbonMat.clone());
+            wrcWing.position.set(0, 0.46, 0.18);
+            const stL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.42, 0.22), carbonMat.clone());
+            stL.position.set(-0.62, 0.24, 0.10);
+            const stR = stL.clone(); stR.position.x = 0.62;
+            wingGroup.add(wrcWing, stL, stR);
+            deformableMeshes.push(wrcWing);
         } else {
             wingGroup.add(wingBlade, epL, epR, strutL, strutR);
         }

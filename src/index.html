@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.1.1</title>
+    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.2.0</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Bundled Offline Three.js r128 & Cannon.js 0.6.2 -->
@@ -196,6 +196,10 @@
                 </div>
             </div>
 
+            <button id="btn-police-toggle" class="game-btn px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 text-rose-300 border-rose-500/50" title="警察追跡機能 ON/OFF 切替 (Oキー)">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span id="police-toggle-label">🚨 警察: ON</span>
+            </button>
             <button id="btn-garage" class="game-btn px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 text-amber-300 border-amber-500/40" title="ショールーム＆設定画面">
                 <i class="fa-solid fa-warehouse"></i>
                 <span class="hidden xl:inline">ガレージ</span>
@@ -340,26 +344,23 @@
             </div>
         </div>
 
-        <!-- Bottom-Right Speedometer, Gear, NOS & G-Force Telemetry HUD -->
-        <div class="pointer-events-none absolute bottom-4 right-4 hud-glass px-4 py-2.5 rounded-2xl border border-sky-500/30 flex items-center gap-4 z-10">
-            <!-- Live G-Force Meter -->
-            <div class="hidden sm:flex flex-col items-center">
-                <div class="w-11 h-11 rounded-full bg-slate-950 border border-slate-700 relative flex items-center justify-center">
-                    <div class="w-5 h-5 rounded-full border border-slate-800"></div>
-                    <div id="gforce-dot" class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e] transition-transform duration-75"></div>
+        <!-- Bottom-Right Speedometer, Gear, NOS & In-Car GPS Car Navigation (カーナビ) -->
+        <div class="pointer-events-none absolute bottom-4 right-4 hud-glass p-2.5 rounded-2xl border border-sky-500/40 shadow-[0_0_20px_rgba(56,189,248,0.25)] flex items-center gap-3 z-10 backdrop-blur-md bg-slate-950/90">
+            <!-- In-Car GPS Car Navigation Tablet (カーナビゲーションユニット) -->
+            <div id="car-navi-unit" class="hidden sm:flex flex-col gap-1 w-40 sm:w-48 bg-slate-900/95 p-1.5 rounded-xl border border-cyan-500/50">
+                <div class="flex items-center justify-between text-[9px] font-bold text-cyan-300 px-0.5">
+                    <span class="flex items-center gap-1 truncate"><i class="fa-solid fa-satellite animate-pulse text-[8px] text-cyan-400"></i><span id="navi-route-name">首都高湾岸線</span></span>
+                    <span id="navi-gps-spd" class="font-mono text-emerald-400 font-bold">245 km/h</span>
                 </div>
-                <span id="gforce-text" class="text-[9px] font-['Orbitron'] text-rose-300 mt-0.5">MAX: 0.0G</span>
-            </div>
-
-            <!-- Live Turbo Boost Gauge -->
-            <div class="hidden md:flex flex-col items-center">
-                <div class="w-11 h-11 rounded-full bg-slate-950 border border-slate-700 relative flex items-center justify-center overflow-hidden">
-                    <div class="absolute inset-1 rounded-full border border-sky-900/60 flex items-center justify-center">
-                        <div id="boost-needle" class="w-0.5 h-4 bg-amber-400 origin-bottom transform -rotate-45 transition-transform duration-75 shadow-[0_0_6px_#f59e0b]"></div>
-                    </div>
-                    <div class="w-2 h-2 rounded-full bg-slate-400 z-10"></div>
+                <!-- 6-Lane Bird's-Eye GPS Route Canvas -->
+                <div class="relative w-full h-16 bg-slate-950 rounded-lg overflow-hidden border border-slate-800">
+                    <canvas id="navi-canvas" width="180" height="64" class="w-full h-full"></canvas>
                 </div>
-                <span id="boost-text" class="text-[9px] font-['Orbitron'] text-amber-300 mt-0.5">+0.0 BAR</span>
+                <!-- Turn-by-turn guidance alert ribbon -->
+                <div id="navi-guide-box" class="px-1.5 py-0.5 rounded bg-cyan-950/90 border border-cyan-400/40 text-[9px] font-bold text-cyan-200 flex items-center justify-between">
+                    <span id="navi-guide-text" class="truncate font-mono">直進中: L3推奨</span>
+                    <span id="navi-dist-remain" class="text-amber-300 text-[8px] font-mono">🏁 2.4km</span>
+                </div>
             </div>
 
             <div class="flex flex-col">
@@ -499,47 +500,97 @@
                         </div>
                     </div>
 
-                    <!-- 8 Sculpted Car Cards -->
-                    <div id="car-select-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <div data-car="HYPER" class="select-card selected rounded-xl p-2.5 text-left">
-                            <div class="text-[10px] font-bold text-red-400">ITALIAN V12</div>
-                            <div class="font-bold text-sm text-white">V12 ROSSO</div>
-                            <div class="text-[11px] text-slate-400">385km/h・王道スーパーカー</div>
+                    <!-- 18 Sculpted Car Cards -->
+                    <div id="car-select-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 max-h-72 overflow-y-auto p-1 border border-slate-800 rounded-xl bg-slate-950/60">
+                        <div data-car="HYPER" class="select-card selected rounded-xl p-2 text-left">
+                            <div class="text-[9px] font-bold text-red-400">ITALIAN V12</div>
+                            <div class="font-bold text-xs text-white">V12 ROSSO</div>
+                            <div class="text-[10px] text-slate-400">385km/h スーパーカー</div>
                         </div>
-                        <div data-car="JDM" class="select-card rounded-xl p-2.5 text-left">
-                            <div class="text-[10px] font-bold text-sky-400">TWIN-TURBO AWD</div>
-                            <div class="font-bold text-sm text-white">N-GTR NISMO</div>
-                            <div class="text-[11px] text-slate-400">猛烈加速＆高剛性4WD</div>
+                        <div data-car="JDM" class="select-card rounded-xl p-2 text-left">
+                            <div class="text-[9px] font-bold text-sky-400">TWIN-TURBO AWD</div>
+                            <div class="font-bold text-xs text-white">N-GTR NISMO</div>
+                            <div class="text-[10px] text-slate-400">高剛性4WD</div>
                         </div>
-                        <div data-car="INTERCEPTOR" class="select-card rounded-xl p-2.5 text-left">
-                            <div class="text-[10px] font-bold text-amber-400">ARMORED RAM</div>
-                            <div class="font-bold text-sm text-white">TITAN V8 RAM</div>
-                            <div class="text-[11px] text-slate-400">剛性180%・逆走車粉砕仕様</div>
+                        <div data-car="INTERCEPTOR" class="select-card rounded-xl p-2 text-left">
+                            <div class="text-[9px] font-bold text-amber-400">ARMORED RAM</div>
+                            <div class="font-bold text-xs text-white">TITAN V8 RAM</div>
+                            <div class="text-[10px] text-slate-400">剛性180% 装甲車</div>
                         </div>
-                        <div data-car="PROTOTYPE" class="select-card rounded-xl p-2.5 text-left">
-                            <div class="text-[10px] font-bold text-purple-400">LMP1 PROTOTYPE</div>
-                            <div class="font-bold text-sm text-white">LE MANS X-1</div>
-                            <div class="text-[11px] text-slate-400">最高425km/h・極限エアロ</div>
+                        <div data-car="PROTOTYPE" class="select-card rounded-xl p-2 text-left">
+                            <div class="text-[9px] font-bold text-purple-400">LMP1 PROTO</div>
+                            <div class="font-bold text-xs text-white">LE MANS X-1</div>
+                            <div class="text-[10px] text-slate-400">425km/h 極限エアロ</div>
                         </div>
-                        <div data-car="DRIFT" class="select-card rounded-xl p-2.5 text-left">
-                            <div class="text-[10px] font-bold text-yellow-400">ROTARY DRIFT</div>
-                            <div class="font-bold text-sm text-white">RX-7FD SPEC</div>
-                            <div class="text-[11px] text-slate-400">超旋回ワイドボディ</div>
+                        <div data-car="DRIFT" class="select-card rounded-xl p-2 text-left">
+                            <div class="text-[9px] font-bold text-yellow-400">ROTARY DRIFT</div>
+                            <div class="font-bold text-xs text-white">RX-7FD SPEC</div>
+                            <div class="text-[10px] text-slate-400">超旋回ワイドボディ</div>
                         </div>
-                        <div data-car="GOLIATH" class="select-card rounded-xl p-2.5 text-left">
-                            <div class="text-[10px] font-bold text-emerald-400">3.1t HYPER-SUV</div>
-                            <div class="font-bold text-sm text-white">GOLIATH V10</div>
-                            <div class="text-[11px] text-slate-400">剛性215%・無敵の重戦車</div>
+                        <div data-car="GOLIATH" class="select-card rounded-xl p-2 text-left">
+                            <div class="text-[9px] font-bold text-emerald-400">3.1t HYPER-SUV</div>
+                            <div class="font-bold text-xs text-white">GOLIATH V10</div>
+                            <div class="text-[10px] text-slate-400">剛性215% 重戦車</div>
                         </div>
-                        <div data-car="PORSCHE_TURBO" class="select-card rounded-xl p-2.5 text-left">
-                            <div class="text-[10px] font-bold text-rose-400">AIR-COOLED TURBO</div>
-                            <div class="font-bold text-sm text-white">930 TURBO GT</div>
-                            <div class="text-[11px] text-slate-400">伝統ホエールテール・空冷RR</div>
+                        <div data-car="PORSCHE_TURBO" class="select-card rounded-xl p-2 text-left">
+                            <div class="text-[9px] font-bold text-rose-400">AIR-COOLED</div>
+                            <div class="font-bold text-xs text-white">930 TURBO GT</div>
+                            <div class="text-[10px] text-slate-400">空冷RRホエールテール</div>
                         </div>
-                        <div data-car="HELLCAT" class="select-card rounded-xl p-2.5 text-left">
-                            <div class="text-[10px] font-bold text-orange-400">6.2L SUPERCHARGED</div>
-                            <div class="font-bold text-sm text-white">HELLCAT V8</div>
-                            <div class="text-[11px] text-slate-400">807hp・ボンネット開口＆轟音</div>
+                        <div data-car="HELLCAT" class="select-card rounded-xl p-2 text-left">
+                            <div class="text-[9px] font-bold text-orange-400">6.2L SUPERCHARGED</div>
+                            <div class="font-bold text-xs text-white">HELLCAT V8</div>
+                            <div class="text-[10px] text-slate-400">807hp マッスル</div>
+                        </div>
+                        <div data-car="DEVIL_Z" class="select-card rounded-xl p-2 text-left">
+                            <div class="text-[9px] font-bold text-blue-400">湾岸の悪魔</div>
+                            <div class="font-bold text-xs text-white">S30Z DEVIL</div>
+                            <div class="text-[10px] text-slate-400">L28改ツインターボ</div>
+                        </div>
+                        <div data-car="ROTARY_FD" class="select-card rounded-xl p-2 text-left">
+                            <div class="text-[9px] font-bold text-cyan-400">雨宮REエアロ</div>
+                            <div class="font-bold text-xs text-white">FD3S RE-SPEC</div>
+                            <div class="text-[10px] text-slate-400">13Bツインターボ</div>
+                        </div>
+                        <div data-car="EVO_IX" class="select-card rounded-xl p-2 text-left">
+                            <div class="text-[9px] font-bold text-red-500">峠のモンスター</div>
+                            <div class="font-bold text-xs text-white">EVO IX GSR</div>
+                            <div class="text-[10px] text-slate-400">4G63 4WDラリー</div>
+                        </div>
+                        <div data-car="WRX_STI" class="select-card rounded-xl p-2 text-left">
+                            <div class="text-[9px] font-bold text-blue-500">世界ラリー制覇</div>
+                            <div class="font-bold text-xs text-white">IMPREZA WRC</div>
+                            <div class="text-[10px] text-slate-400">EJ20ボクサーサウンド</div>
+                        </div>
+                        <div data-car="CYBERTRUCK" class="select-card rounded-xl p-2 text-left">
+                            <div class="text-[9px] font-bold text-slate-300">防弾装甲EV</div>
+                            <div class="font-bold text-xs text-white">CYBER ARMOR</div>
+                            <div class="text-[10px] text-slate-400">3.3t ステンレス要塞</div>
+                        </div>
+                        <div data-car="FORMULA_APEX" class="select-card rounded-xl p-2 text-left">
+                            <div class="text-[9px] font-bold text-emerald-400">F1グランプリ</div>
+                            <div class="font-bold text-xs text-white">APEX F1 PROTO</div>
+                            <div class="text-[10px] text-slate-400">640kg 超軽量415km/h</div>
+                        </div>
+                        <div data-car="DEKOTORA" class="select-card rounded-xl p-2 text-left">
+                            <div class="text-[9px] font-bold text-amber-500">天下統一</div>
+                            <div class="font-bold text-xs text-white">DEKOTORA</div>
+                            <div class="text-[10px] text-slate-400">電飾アート装甲4.2t</div>
+                        </div>
+                        <div data-car="POLICE_INTERCEPTOR" class="select-card rounded-xl p-2 text-left">
+                            <div class="text-[9px] font-bold text-slate-100">高速隊インターセプター</div>
+                            <div class="font-bold text-xs text-white">PATROL GT-R</div>
+                            <div class="text-[10px] text-slate-400">散光灯パンダ追跡仕様</div>
+                        </div>
+                        <div data-car="CHARGER_69" class="select-card rounded-xl p-2 text-left">
+                            <div class="text-[9px] font-bold text-stone-400">1969 V8マッスル</div>
+                            <div class="font-bold text-xs text-white">CHARGER 69</div>
+                            <div class="text-[10px] text-slate-400">突出ブロワー7.2L</div>
+                        </div>
+                        <div data-car="HYPER_GT3" class="select-card rounded-xl p-2 text-left">
+                            <div class="text-[9px] font-bold text-indigo-400">公認GT3耐久</div>
+                            <div class="font-bold text-xs text-white">VALKYRIE GT3</div>
+                            <div class="text-[10px] text-slate-400">スワンネックGTウイング</div>
                         </div>
                     </div>
 
@@ -587,39 +638,73 @@
                     <!-- Course Map Selection -->
                     <div>
                         <div class="flex justify-between text-xs font-bold text-sky-300 mb-1">
-                            <span><i class="fa-solid fa-map-location-dot mr-1"></i>コース環境選択 (全6ステージ)</span>
+                            <span><i class="fa-solid fa-map-location-dot mr-1"></i>コース環境選択 (全16ステージ)</span>
                             <span id="map-hazard-label" class="text-[11px] text-slate-300">路面グリップ: 100%</span>
                         </div>
-                        <div id="map-select-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            <div data-map="TOKYO" class="select-card selected rounded-xl p-2.5 text-left">
+                        <div id="map-select-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto p-1 border border-slate-800 rounded-xl bg-slate-950/60">
+                            <div data-map="TOKYO" class="select-card selected rounded-xl p-2 text-left">
                                 <div class="text-xs font-bold text-sky-300">🌃 首都高湾岸</div>
-                                <div class="text-[10px] text-slate-400">ネオン高層ビル群</div>
-                                <div class="text-[9px] font-bold text-red-400 mt-1">🚨 オービス＆夜間工事</div>
+                                <div class="text-[9px] text-red-400 mt-0.5">🚨 オービス＆夜間工事</div>
                             </div>
-                            <div data-map="CANYON" class="select-card rounded-xl p-2.5 text-left">
-                                <div class="text-xs font-bold text-amber-400">🏜️ 大渓谷サンセット</div>
-                                <div class="text-[10px] text-slate-400">夕陽の赤岩ハイウェイ</div>
-                                <div class="text-[9px] font-bold text-amber-300 mt-1">🪨 巨石崩落＆キャニオン突風</div>
+                            <div data-map="CANYON" class="select-card rounded-xl p-2 text-left">
+                                <div class="text-xs font-bold text-amber-400">🏜️ 大渓谷夕陽</div>
+                                <div class="text-[9px] text-amber-300 mt-0.5">🪨 巨石崩落＆突風</div>
                             </div>
-                            <div data-map="SNOW" class="select-card rounded-xl p-2.5 text-left">
+                            <div data-map="SNOW" class="select-card rounded-xl p-2 text-left">
                                 <div class="text-xs font-bold text-cyan-200">❄️ ブリザード雪山</div>
-                                <div class="text-[10px] text-slate-400">滑りやすい凍結路</div>
-                                <div class="text-[9px] font-bold text-cyan-300 mt-1">🧊 ブラックアイス＆除雪車</div>
+                                <div class="text-[9px] text-cyan-300 mt-0.5">🧊 ブラックアイス凍結</div>
                             </div>
-                            <div data-map="INFERNO" class="select-card rounded-xl p-2.5 text-left">
-                                <div class="text-xs font-bold text-red-400">🌋 溶岩コンビナート</div>
-                                <div class="text-[10px] text-slate-400">火の粉舞う工業地帯</div>
-                                <div class="text-[9px] font-bold text-orange-400 mt-1">🔥 高圧火柱＆沸騰マグマ</div>
+                            <div data-map="INFERNO" class="select-card rounded-xl p-2 text-left">
+                                <div class="text-xs font-bold text-red-400">🌋 溶岩工業帯</div>
+                                <div class="text-[9px] text-orange-400 mt-0.5">🔥 高圧火柱＆マグマ</div>
                             </div>
-                            <div data-map="SHUTO_C1" class="select-card rounded-xl p-2.5 text-left">
-                                <div class="text-xs font-bold text-cyan-300">🌀 首都高C1 環状線</div>
-                                <div class="text-[10px] text-slate-400">緊迫の連続地下トンネル</div>
-                                <div class="text-[9px] font-bold text-sky-400 mt-1">⚡ 超電導加速帯＆散水ミスト</div>
+                            <div data-map="SHUTO_C1" class="select-card rounded-xl p-2 text-left">
+                                <div class="text-xs font-bold text-cyan-300">🌀 首都高C1環状</div>
+                                <div class="text-[9px] text-sky-400 mt-0.5">⚡ 超電導加速パッド</div>
                             </div>
-                            <div data-map="HAKONE" class="select-card rounded-xl p-2.5 text-left">
-                                <div class="text-xs font-bold text-amber-300">🍁 箱根 ターンパイク</div>
-                                <div class="text-[10px] text-slate-400">紅葉舞い散る黄昏峠道</div>
-                                <div class="text-[9px] font-bold text-pink-400 mt-1">🌉 展望メガジャンプ台＆濃霧</div>
+                            <div data-map="HAKONE" class="select-card rounded-xl p-2 text-left">
+                                <div class="text-xs font-bold text-amber-300">🍁 箱根ターンパイク</div>
+                                <div class="text-[9px] text-pink-400 mt-0.5">🌉 展望メガジャンプ台</div>
+                            </div>
+                            <div data-map="RAINY_OSAKA" class="select-card rounded-xl p-2 text-left">
+                                <div class="text-xs font-bold text-blue-400">🌧️ 雨の阪神環状</div>
+                                <div class="text-[9px] text-blue-300 mt-0.5">🌊 ハイドロスリップ</div>
+                            </div>
+                            <div data-map="GERMAN_AUTOBAHN" class="select-card rounded-xl p-2 text-left">
+                                <div class="text-xs font-bold text-stone-300">🇩🇪 アウトバーン</div>
+                                <div class="text-[9px] text-yellow-400 mt-0.5">📸 速度無制限＆オービス</div>
+                            </div>
+                            <div data-map="NEON_VEGAS" class="select-card rounded-xl p-2 text-left">
+                                <div class="text-xs font-bold text-purple-400">🎰 ラスベガス</div>
+                                <div class="text-[9px] text-pink-300 mt-0.5">✨ レーザーゲートEMP</div>
+                            </div>
+                            <div data-map="SUNSET_MIAMI" class="select-card rounded-xl p-2 text-left">
+                                <div class="text-xs font-bold text-pink-400">🌴 マイアミ海岸</div>
+                                <div class="text-[9px] text-pink-300 mt-0.5">🏄 海上大突風＆大ジャンプ</div>
+                            </div>
+                            <div data-map="VOLCANO_CALDERA" class="select-card rounded-xl p-2 text-left">
+                                <div class="text-xs font-bold text-red-500">🌋 カルデラ地割れ</div>
+                                <div class="text-[9px] text-orange-500 mt-0.5">🔥 路面マグマ裂溝</div>
+                            </div>
+                            <div data-map="MONACO_GP" class="select-card rounded-xl p-2 text-left">
+                                <div class="text-xs font-bold text-sky-400">⚓ モナコマリーナ</div>
+                                <div class="text-[9px] text-rose-400 mt-0.5">🏎️ シケインタイヤバリア</div>
+                            </div>
+                            <div data-map="FOGGY_SILENT" class="select-card rounded-xl p-2 text-left">
+                                <div class="text-xs font-bold text-emerald-300">🌲 濃霧の樹海</div>
+                                <div class="text-[9px] text-emerald-400 mt-0.5">🌫️ 視界50m＆突如の巨石</div>
+                            </div>
+                            <div data-map="AURORA_NORDIC" class="select-card rounded-xl p-2 text-left">
+                                <div class="text-xs font-bold text-teal-300">🌌 北欧オーロラ</div>
+                                <div class="text-[9px] text-teal-200 mt-0.5">❄️ 氷河フィヨルド滑走</div>
+                            </div>
+                            <div data-map="DUBAI_GOLDEN" class="select-card rounded-xl p-2 text-left">
+                                <div class="text-xs font-bold text-amber-300">🏙️ ドバイ黄金街</div>
+                                <div class="text-[9px] text-yellow-300 mt-0.5">⚡ 連続ハイパーブースト</div>
+                            </div>
+                            <div data-map="KYOTO_CHERRY" class="select-card rounded-xl p-2 text-left">
+                                <div class="text-xs font-bold text-pink-300">🌸 京都夜桜街道</div>
+                                <div class="text-[9px] text-rose-300 mt-0.5">⛩️ 朱色鳥居開運ゲート</div>
                             </div>
                         </div>
                     </div>
@@ -747,7 +832,7 @@
         </div>
 
         <div class="hidden md:flex flex-col items-center text-center">
-            <span class="text-xs font-bold text-slate-200">[←][→]/[A][D] 旋回 / [↑]/[W] 加速 / [↓]/[S] 減速 / [Space/Shift/N] ニトロ / [X] ドリフト / [Z] ハザード防壁 / [F] 目眩まし / [T] スロー</span>
+            <span class="text-xs font-bold text-slate-200">[←][→]/[A][D] 旋回 / [↑]/[W] 加速 / [↓]/[S] 減速 / [Space/Shift/N] ニトロ / [X] ドリフト / [Z] 防壁 / [F] 目眩まし / [O] 警察ONOFF / [T] スロー</span>
             <span class="text-[10px] text-slate-400">上部レーダー(L1〜L6)で逆走車を事前察知！目標距離を走り抜けてステージクリアを目指せ！</span>
         </div>
 

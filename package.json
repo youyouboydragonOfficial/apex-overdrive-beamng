@@ -1,7 +1,7 @@
 {
   "name": "crashoria-ultimate-road-adventure",
-  "version": "3.1.1",
-  "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.1.1 - 警察追跡逃走システム完全刷新＆リアルタイム距離HUD・加速ニトロ同時操舵ロック解消＆キーボードゴースト対策（Shift/N/Space両対応）・パトカー追跡距離拡張140m",
+  "version": "3.2.0",
+  "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.2.0 - 車載GPSカーナビゲーション・警察ON/OFF機能＆危険運転時のみ出動・新規10車種追加（計18車種）・新規10マップ追加（計16マップ）・マップ専用新ギミック（水たまりスリップ・レーザーゲート・マグマ地割れ・朱色鳥居ゲート・シケインバリア）",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -31,10 +31,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.1.1.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.2.0.exe"
     },
     "portable": {
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.1.1.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.2.0.exe"
     }
   },
   "devDependencies": {

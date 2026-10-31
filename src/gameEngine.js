@@ -1,5 +1,5 @@
 /**
- * Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.1.1
+ * Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.2.0
  * Core Physics Simulation, Soft-Body Crash Handler, Smart Escape-Corridor Spawner & UI Controller
  */
 
@@ -94,6 +94,7 @@
         driftPts: 0,
         driftPressed: false,
         nosPressed: false,
+        policeEnabled: true,
         pursuitEscapeProgress: 0,
         slipstreamActive: false,
         impactSlowMoTimer: 0,
@@ -1056,12 +1057,22 @@
         if (!type) {
             const map = state.selectedMap || 'TOKYO';
             const mapPools = {
-                TOKYO: ['ORVIS_CAMERA', 'RAMP', 'BARREL', 'OIL', 'REPAIR', 'RAMP'],
+                TOKYO: ['ORVIS_CAMERA', 'RAMP', 'BARREL', 'OIL', 'REPAIR'],
                 CANYON: ['BOULDER_FALL', 'RAMP', 'BARREL', 'SPIKE', 'REPAIR'],
                 SNOW: ['BLACK_ICE', 'RAMP', 'CONTAINER', 'REPAIR', 'BARREL'],
                 INFERNO: ['FLAME_VENT', 'BARREL', 'CRUSHER', 'CONCRETE_WALL', 'REPAIR'],
                 SHUTO_C1: ['CYBER_BOOST', 'TUNNEL_DELUGE', 'RAMP', 'CONTAINER', 'REPAIR'],
-                HAKONE: ['VALLEY_RAMP', 'SPIKE', 'RAMP', 'REPAIR', 'BARREL']
+                HAKONE: ['VALLEY_RAMP', 'SPIKE', 'RAMP', 'REPAIR', 'BARREL'],
+                RAINY_OSAKA: ['HYDRO_PUDDLE', 'BARREL', 'OIL', 'RAMP', 'REPAIR'],
+                GERMAN_AUTOBAHN: ['ORVIS_CAMERA', 'CYBER_BOOST', 'BARREL', 'REPAIR', 'CONTAINER'],
+                NEON_VEGAS: ['LASER_GRID', 'CYBER_BOOST', 'RAMP', 'REPAIR', 'BARREL'],
+                SUNSET_MIAMI: ['HYDRO_PUDDLE', 'VALLEY_RAMP', 'BARREL', 'REPAIR', 'RAMP'],
+                VOLCANO_CALDERA: ['LAVA_CRACK', 'FLAME_VENT', 'CRUSHER', 'BARREL', 'REPAIR'],
+                MONACO_GP: ['CHICANE_BARRIER', 'VALLEY_RAMP', 'SPIKE', 'REPAIR', 'BARREL'],
+                FOGGY_SILENT: ['BOULDER_FALL', 'BARREL', 'SPIKE', 'OIL', 'REPAIR'],
+                AURORA_NORDIC: ['BLACK_ICE', 'HYDRO_PUDDLE', 'RAMP', 'REPAIR', 'CONTAINER'],
+                DUBAI_GOLDEN: ['CYBER_BOOST', 'LASER_GRID', 'RAMP', 'REPAIR', 'BARREL'],
+                KYOTO_CHERRY: ['TORII_GATE', 'VALLEY_RAMP', 'OIL', 'REPAIR', 'BARREL']
             };
             const pool = mapPools[map] || ['SPIKE', 'BARREL', 'OIL', 'RAMP', 'REPAIR'];
             type = pool[Math.floor(Math.random() * pool.length)];
@@ -1099,6 +1110,31 @@
             return;
         } else if (type === 'TUNNEL_DELUGE') {
             const obj = WorldBuilder.createTunnelDeluge(zOffset);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        } else if (type === 'HYDRO_PUDDLE') {
+            const obj = WorldBuilder.createHydroPuddle(zOffset, laneIndex);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        } else if (type === 'LASER_GRID') {
+            const obj = WorldBuilder.createLaserSecurityGrid(zOffset);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        } else if (type === 'LAVA_CRACK') {
+            const obj = WorldBuilder.createMoltenLavaCrack(zOffset, laneIndex);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        } else if (type === 'TORII_GATE') {
+            const obj = WorldBuilder.createToriiArchGate(zOffset);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        } else if (type === 'CHICANE_BARRIER') {
+            const obj = WorldBuilder.createChicaneTireBarrier(zOffset, laneIndex);
             scene.add(obj.mesh);
             roadTraps.push(obj);
             return;
@@ -1780,6 +1816,165 @@
      * Updates 6-Lane Oncoming Hazard Radar at the top of the screen so the player can clearly see
      * which lanes have Wrong-Way Elderly Cars or Road-Rage Cars approaching!
      */
+
+    function updateCarNaviHUD(dt) {
+        const naviCanvas = document.getElementById('navi-canvas');
+        if (!naviCanvas) return;
+        const ctx = naviCanvas.getContext('2d');
+        if (!ctx) return;
+
+        const cw = naviCanvas.width;
+        const ch = naviCanvas.height;
+
+        ctx.fillStyle = '#040710';
+        ctx.fillRect(0, 0, cw, ch);
+
+        // Draw 6 Road Lanes in bird's-eye GPS perspective
+        const roadMargin = 12;
+        const roadW = cw - roadMargin * 2;
+        const laneW = roadW / 6;
+
+        // Road surface
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(roadMargin, 0, roadW, ch);
+
+        // Lane divider dashed lines
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        for (let l = 1; l < 6; l++) {
+            const lx = roadMargin + l * laneW;
+            ctx.beginPath();
+            ctx.moveTo(lx, 0);
+            ctx.lineTo(lx, ch);
+            ctx.stroke();
+        }
+        ctx.setLineDash([]);
+
+        // Outer shoulders
+        ctx.strokeStyle = '#0284c7';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(roadMargin, 0); ctx.lineTo(roadMargin, ch);
+        ctx.moveTo(roadMargin + roadW, 0); ctx.lineTo(roadMargin + roadW, ch);
+        ctx.stroke();
+
+        const playerCanvasY = ch - 12;
+        const playerCanvasX = roadMargin + ((state.playerX + 16.5) / 33.0) * roadW;
+
+        // Draw Player Car Navigation Arrow (Electric Cyan Chevron)
+        ctx.fillStyle = '#22d3ee';
+        ctx.shadowColor = '#06b6d4';
+        ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.moveTo(playerCanvasX, playerCanvasY - 7);
+        ctx.lineTo(playerCanvasX - 4.5, playerCanvasY + 4);
+        ctx.lineTo(playerCanvasX, playerCanvasY + 1.5);
+        ctx.lineTo(playerCanvasX + 4.5, playerCanvasY + 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        let nearestHazardMsg = null;
+
+        // Draw Ahead Traffic Cars
+        trafficCars.forEach(tc => {
+            const dz = tc.mesh.position.z - playerCar.root.position.z;
+            if (dz < -120 || dz > 30) return;
+            const cy = playerCanvasY + (dz / 120) * (playerCanvasY - 4);
+            const cx = roadMargin + ((tc.mesh.position.x + 16.5) / 33.0) * roadW;
+
+            if (tc.type === 'POLICE' && tc.isChasing) {
+                const isBlue = Math.floor(clock.elapsedTime * 8) % 2 === 0;
+                ctx.fillStyle = isBlue ? '#38bdf8' : '#ef4444';
+                ctx.beginPath();
+                ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+                if (dz < -5 && dz > -80 && !nearestHazardMsg) {
+                    nearestHazardMsg = `🚨 警察追跡中 (${Math.round(Math.abs(dz))}m)`;
+                }
+            } else if (tc.isWrongWay) {
+                ctx.fillStyle = '#f43f5e';
+                ctx.beginPath();
+                ctx.moveTo(cx, cy + 4);
+                ctx.lineTo(cx - 3.5, cy - 3.5);
+                ctx.lineTo(cx + 3.5, cy - 3.5);
+                ctx.closePath();
+                ctx.fill();
+                if (dz < -5 && dz > -95 && !nearestHazardMsg) {
+                    nearestHazardMsg = `⚠️ 逆走車接近! (${Math.round(Math.abs(dz))}m前方)`;
+                }
+            } else {
+                ctx.fillStyle = '#10b981';
+                ctx.fillRect(cx - 2.5, cy - 3.5, 5, 7);
+            }
+        });
+
+        // Draw Ahead Traps / Gimmicks on Car Navi
+        roadTraps.forEach(trap => {
+            const dz = trap.mesh.position.z - playerCar.root.position.z;
+            if (dz < -120 || dz > 20) return;
+            const cy = playerCanvasY + (dz / 120) * (playerCanvasY - 4);
+            const cx = roadMargin + ((trap.mesh.position.x + 16.5) / 33.0) * roadW;
+
+            if (trap.type === 'ORVIS_CAMERA') {
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(roadMargin, cy - 1, roadW, 2);
+                if (dz < -5 && dz > -90 && !nearestHazardMsg) {
+                    nearestHazardMsg = `📸 オービス取締 (${Math.round(Math.abs(dz))}m先)`;
+                }
+            } else if (trap.type === 'CYBER_BOOST') {
+                ctx.fillStyle = '#06b6d4';
+                ctx.fillRect(cx - 4, cy - 2, 8, 4);
+                if (dz < -5 && dz > -70 && !nearestHazardMsg) {
+                    nearestHazardMsg = `⚡ 加速パッド (${Math.round(Math.abs(dz))}m先)`;
+                }
+            } else if (trap.type === 'HYDRO_PUDDLE') {
+                ctx.fillStyle = '#38bdf8';
+                ctx.beginPath();
+                ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+                if (dz < -5 && dz > -70 && !nearestHazardMsg) {
+                    nearestHazardMsg = `🌊 水たまりスリップ (${Math.round(Math.abs(dz))}m先)`;
+                }
+            } else if (trap.type === 'TORII_GATE') {
+                ctx.fillStyle = '#f43f5e';
+                ctx.fillRect(roadMargin, cy - 1.5, roadW, 3);
+                if (dz < -5 && dz > -80 && !nearestHazardMsg) {
+                    nearestHazardMsg = `⛩️ 鳥居開運ゲート (${Math.round(Math.abs(dz))}m先)`;
+                }
+            } else if (trap.type === 'FINISH_GOAL') {
+                ctx.fillStyle = '#facc15';
+                ctx.fillRect(roadMargin, cy - 1.5, roadW, 3);
+                if (dz < -5 && dz > -80 && !nearestHazardMsg) {
+                    nearestHazardMsg = `🏁 ゴール接近 (${Math.round(Math.abs(dz))}m先)`;
+                }
+            }
+        });
+
+        // Update Car Navi Route Text and Guidance
+        const routeNameEl = document.getElementById('navi-route-name');
+        if (routeNameEl) routeNameEl.textContent = MAP_SPECS[state.selectedMap]?.name || '首都高湾岸';
+
+        const gpsSpdEl = document.getElementById('navi-gps-spd');
+        if (gpsSpdEl) gpsSpdEl.textContent = `${Math.round(state.speedKmh)} km/h`;
+
+        const distRemainEl = document.getElementById('navi-dist-remain');
+        if (distRemainEl) {
+            const remainM = Math.max(0, state.goalDistanceMeters - state.distanceTraveled);
+            distRemainEl.textContent = remainM > 1000 ? `🏁 ${(remainM / 1000).toFixed(1)}km` : `🏁 ${Math.round(remainM)}m`;
+        }
+
+        const guideTextEl = document.getElementById('navi-guide-text');
+        if (guideTextEl) {
+            if (nearestHazardMsg) {
+                guideTextEl.textContent = nearestHazardMsg;
+            } else {
+                guideTextEl.textContent = '直進中: 巡航クリア';
+            }
+        }
+    }
+
     function updateLaneRadarHUD() {
         for (let l = 0; l < 6; l++) {
             const radarEl = document.getElementById(`lane-radar-${l}`);
@@ -2872,7 +3067,7 @@
         }
 
         // Active Police Interceptor Dispatcher when Wanted (heatLevel > 0)
-        if (state.heatLevel > 0 && state.mode === 'PLAYING') {
+        if (state.policeEnabled && state.heatLevel > 0 && state.mode === 'PLAYING') {
             policeDispatchTimer -= dt;
             const activePolice = trafficCars.filter(c => c.type === 'POLICE');
             const maxPoliceAllowed = Math.min(3, state.heatLevel);
@@ -2971,7 +3166,7 @@
         }
 
         // Speed Violation Radar Detection during high speed cruise
-        if (state.speedKmh > 290 && Math.random() < 0.0025 && state.heatLevel === 0 && state.mode === 'PLAYING') {
+        if (state.policeEnabled && state.speedKmh > 325 && Math.random() < 0.0015 && state.heatLevel === 0 && state.mode === 'PLAYING') {
             state.heatLevel = 1;
             updateHUD();
             audio.playPoliceSiren(0.85);
@@ -3042,7 +3237,7 @@
                         triggerTruckCargoSpill(tc);
                     }
                 } else if (tc.type === 'POLICE') {
-                    const isChasing = tc.isChasing || (state.heatLevel > 0) || (dz > -70 && dz < 40 && state.speedKmh > 230);
+                    const isChasing = state.policeEnabled && (tc.isChasing || (state.heatLevel > 0));
                     if (isChasing) {
                         tc.isChasing = true;
                         if (state.heatLevel === 0) {
@@ -3168,6 +3363,11 @@
                             tc.isChasing = false;
                             audio.playCrash(0.85);
                             applySoftBodyCarDamage(14, dx * 0.4, 2.0);
+                            if (state.policeEnabled && tc.type !== 'POLICE') {
+                                state.heatLevel = Math.min(3, state.heatLevel + 1);
+                                updateHUD();
+                                addFloatingNotification('🚨 一般車追突事故検知!! 警察が緊急出動 (手配度 ★)', 'text-red-500 font-black');
+                            }
                             state.speedKmh = Math.min(carSpec.maxSpeed, state.speedKmh + 20);
                             tc.speedKmh = Math.max(state.minSpeedKmh, tc.speedKmh - 40);
                             tc.vx = (Math.random() - 0.5) * 8.0;
@@ -3379,7 +3579,7 @@
         state.playerX = LANE_CENTERS[2];
         state.playerY = 0;
         state.playerVY = 0;
-        state.heatLevel = (state.selectedLevel >= 5 ? 2 : (state.selectedLevel >= 4 ? 1 : 0));
+        state.heatLevel = 0; // Starts clean! Police only dispatched if player commits dangerous driving
         policeDispatchTimer = (state.heatLevel > 0 ? 3.0 : 6.0);
         state.bountyProgress = 0;
         state.impactSlowMoTimer = 0;
@@ -3504,6 +3704,34 @@
         renderer.setSize(wrapper.clientWidth, wrapper.clientHeight);
     }
 
+
+    function togglePolice(forceState = null) {
+        state.policeEnabled = forceState !== null ? forceState : !state.policeEnabled;
+        const btnHeader = document.getElementById('police-toggle-label');
+        const btnModal = document.getElementById('modal-police-text');
+
+        if (state.policeEnabled) {
+            if (btnHeader) btnHeader.textContent = '🚨 警察: ON';
+            if (btnModal) btnModal.textContent = '🚨 警察追跡: [ON] (危険運転時のみ出動)';
+            addFloatingNotification('🚨 警察追跡システム: [ON] (一般車追突や速度取締オービス検知時にのみ出動)', 'text-rose-400 font-bold');
+        } else {
+            if (btnHeader) btnHeader.textContent = '🕊️ 警察: OFF';
+            if (btnModal) btnModal.textContent = '🕊️ 警察追跡: [OFF] (完全平和モード)';
+            state.heatLevel = 0;
+            state.pursuitEscapeProgress = 0;
+            trafficCars.forEach(c => {
+                if (c.type === 'POLICE') {
+                    c.isChasing = false;
+                    c.speedKmh = 135;
+                }
+            });
+            const pursuitHud = document.getElementById('police-pursuit-hud');
+            if (pursuitHud) pursuitHud.classList.add('hidden');
+            updateHUD();
+            addFloatingNotification('🕊️ 警察追跡システム: [OFF] (平穏なハイウェイクルーズモード)', 'text-slate-300 font-bold');
+        }
+    }
+
     function toggleBeamSkeleton() {
         state.beamSkeletonVisible = !state.beamSkeletonVisible;
         if (playerCar && playerCar.beamSkeleton) {
@@ -3580,6 +3808,7 @@
             if (e.code === 'KeyH') triggerPlayerHornAndFlash(false);
             if (e.code === 'KeyZ') toggleHazardLights();
             if (e.code === 'KeyP') togglePhotoMode();
+            if (e.code === 'KeyO') togglePolice();
             if (e.code === 'F11') {
                 try {
                     const { ipcRenderer } = require('electron');
@@ -3623,6 +3852,11 @@
         bindControlBtn('ctrl-down', 'ArrowDown');
         bindControlBtn('ctrl-nos', 'Space', 'nosPressed');
         bindControlBtn('ctrl-drift', 'KeyX', 'driftPressed');
+        const policeToggleBtn = document.getElementById('btn-police-toggle');
+        if (policeToggleBtn) policeToggleBtn.addEventListener('click', () => togglePolice());
+        const modalPoliceBtn = document.getElementById('modal-btn-police');
+        if (modalPoliceBtn) modalPoliceBtn.addEventListener('click', () => togglePolice());
+
         const passBtn = document.getElementById('ctrl-pass');
         if (passBtn) passBtn.addEventListener('click', () => triggerPlayerHornAndFlash(true));
         const hazardBtn = document.getElementById('ctrl-hazard');
@@ -3838,6 +4072,7 @@
         requestAnimationFrame(animate);
         const rawDt = Math.min(clock.getDelta(), 0.05);
         updateGamePhysics(rawDt);
+        updateCarNaviHUD(rawDt);
         renderer.render(scene, camera);
     }
 
