@@ -1141,6 +1141,32 @@
         const beamSkeleton = createNodeBeamSkeleton(profile);
         chassisGroup.add(beamSkeleton);
 
+        // =========================================================================
+        // 9. HAZARD BLINKERS & REAR COUNTER-SHIELD
+        // =========================================================================
+        const blinkerMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, visible: false });
+        const blinkerGeo = new THREE.BoxGeometry(0.18, 0.12, 0.12);
+        const hazardBlinkers = new THREE.Group();
+        const flB = new THREE.Mesh(blinkerGeo, blinkerMat); flB.position.set(-profile.width * 0.44, 0.62, -profile.length * 0.48);
+        const frB = new THREE.Mesh(blinkerGeo, blinkerMat); frB.position.set(profile.width * 0.44, 0.62, -profile.length * 0.48);
+        const rlB = new THREE.Mesh(blinkerGeo, blinkerMat); rlB.position.set(-profile.width * 0.44, 0.66, profile.length * 0.48);
+        const rrB = new THREE.Mesh(blinkerGeo, blinkerMat); rrB.position.set(profile.width * 0.44, 0.66, profile.length * 0.48);
+        hazardBlinkers.add(flB, frB, rlB, rrB);
+        chassisGroup.add(hazardBlinkers);
+
+        const shieldGeo = new THREE.PlaneGeometry(profile.width * 1.15, 0.95, 6, 4);
+        const shieldMat = new THREE.MeshBasicMaterial({
+            color: 0xf59e0b,
+            wireframe: true,
+            transparent: true,
+            opacity: 0,
+            side: THREE.DoubleSide
+        });
+        const rearHazardShield = new THREE.Mesh(shieldGeo, shieldMat);
+        rearHazardShield.position.set(0, 0.72, profile.length * 0.52);
+        rearHazardShield.visible = false;
+        chassisGroup.add(rearHazardShield);
+
         return {
             root,
             chassisGroup,
@@ -1157,6 +1183,10 @@
             wheelStates,
             headlightL: spotL,
             headlightR: spotR,
+            hazardBlinkers,
+            blinkerMat,
+            rearHazardShield,
+            shieldMat,
             subsystems: {
                 engineHp: 100,
                 radiatorHp: 100,

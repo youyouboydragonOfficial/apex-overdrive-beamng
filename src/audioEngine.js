@@ -778,6 +778,70 @@
             osc.stop(now + 0.68);
         }
 
+        playHazardClick() {
+            if (!this.ctx || !this.sfxEnabled) return;
+            const now = this.ctx.currentTime;
+            const dest = this.sfxGainNode || this.ctx.destination;
+
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(1450, now);
+            osc.frequency.exponentialRampToValueAtTime(800, now + 0.035);
+
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.038);
+
+            osc.connect(gain);
+            gain.connect(dest);
+            osc.start(now);
+            osc.stop(now + 0.04);
+        }
+
+        playPassingFlash() {
+            if (!this.ctx || !this.sfxEnabled) return;
+            const now = this.ctx.currentTime;
+            const dest = this.sfxGainNode || this.ctx.destination;
+
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(2400, now);
+            osc.frequency.exponentialRampToValueAtTime(3600, now + 0.09);
+
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+            osc.connect(gain);
+            gain.connect(dest);
+            osc.start(now);
+            osc.stop(now + 0.13);
+        }
+
+        playMiniTurbo(isSuper = false) {
+            if (!this.ctx || !this.sfxEnabled) return;
+            const now = this.ctx.currentTime;
+            const dest = this.sfxGainNode || this.ctx.destination;
+
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = isSuper ? 'sawtooth' : 'triangle';
+            const startFreq = isSuper ? 480 : 340;
+            const endFreq = isSuper ? 1420 : 980;
+            const dur = isSuper ? 0.65 : 0.45;
+
+            osc.frequency.setValueAtTime(startFreq, now);
+            osc.frequency.exponentialRampToValueAtTime(endFreq, now + dur);
+
+            gain.gain.setValueAtTime(0.25, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+            osc.connect(gain);
+            gain.connect(dest);
+            osc.start(now);
+            osc.stop(now + dur + 0.02);
+        }
+
         playExplosion() {
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;

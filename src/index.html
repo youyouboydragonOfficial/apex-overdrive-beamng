@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.0.1</title>
+    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.1.0</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Bundled Offline Three.js r128 & Cannon.js 0.6.2 -->
@@ -277,13 +277,41 @@
             </div>
         </div>
 
-        <!-- Live Slipstream & Drift Indicators (Bottom Center) -->
-        <div class="pointer-events-none absolute bottom-24 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1">
+        <!-- Live Slipstream, Escape Gauge & Drift Mini-Turbo Indicators (Bottom Center) -->
+        <div class="pointer-events-none absolute bottom-24 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 w-max max-w-[92vw]">
+            <!-- Police Pursuit Escape Progress Gauge -->
+            <div id="police-pursuit-hud" class="hidden flex flex-col items-center gap-1 px-4 py-1.5 rounded-xl bg-slate-950/90 border border-red-500/70 shadow-[0_0_20px_rgba(239,68,68,0.4)]">
+                <div class="flex items-center justify-between w-full gap-4 text-[11px] font-bold">
+                    <span class="text-red-400 flex items-center gap-1">
+                        <i class="fa-solid fa-car-burst animate-pulse"></i> 警察追跡発令中
+                    </span>
+                    <span id="police-escape-text" class="text-emerald-400 font-mono">逃走メーター: 0%</span>
+                </div>
+                <div class="w-48 sm:w-60 h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
+                    <div id="police-escape-bar" class="h-full bg-gradient-to-r from-amber-500 to-emerald-400 transition-all duration-100" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <!-- Hazard Counter-Shield Active Badge -->
+            <div id="hazard-shield-hud" class="hidden px-4 py-1 rounded-full bg-amber-950/90 border border-amber-400 text-amber-300 font-['Orbitron'] font-black text-xs sm:text-sm shadow-[0_0_18px_rgba(245,158,11,0.6)] animate-pulse flex items-center gap-1.5">
+                <i class="fa-solid fa-shield-halved text-amber-400"></i>
+                HAZARD SHIELD: エアブレーキ＆リア防壁カウンター展開中 [Z]
+            </div>
+
+            <!-- Slipstream Draft -->
             <div id="slipstream-hud" class="hidden px-3.5 py-1 rounded-full hud-glass border border-cyan-400/60 text-cyan-300 font-['Orbitron'] font-bold text-xs sm:text-sm shadow-[0_0_15px_rgba(34,211,238,0.4)] animate-pulse">
                 💨 SLIPSTREAM DRAFTING +35km/h BOOST
             </div>
-            <div id="drift-hud" class="hidden px-3.5 py-1 rounded-full hud-glass border border-amber-400/60 text-amber-300 font-['Orbitron'] font-bold text-xs sm:text-sm shadow-[0_0_15px_rgba(245,158,11,0.4)]">
-                🔥 POWER DRIFT: <span id="drift-meters" class="font-mono">0</span>m (+<span id="drift-pts" class="font-mono">0</span> PTS)
+
+            <!-- Drift Mini-Turbo HUD -->
+            <div id="drift-hud" class="hidden flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl hud-glass border border-amber-400/60 text-amber-300 font-['Orbitron'] font-bold text-xs sm:text-sm shadow-[0_0_15px_rgba(245,158,11,0.4)] transition-all duration-200">
+                <div class="flex items-center gap-2">
+                    <span id="drift-mode-label">🔥 POWER DRIFT:</span>
+                    <span class="font-mono"><span id="drift-meters">0</span>m (+<span id="drift-pts">0</span> PTS)</span>
+                </div>
+                <div id="drift-turbo-status" class="text-[10px] font-mono tracking-wider text-slate-300 font-black">
+                    [Xホールドでミニターボチャージ中...]
+                </div>
             </div>
         </div>
 
@@ -738,15 +766,15 @@
             </button>
             <button id="ctrl-drift" class="game-btn w-16 h-11 sm:w-20 sm:h-11 rounded-2xl flex flex-col items-center justify-center text-amber-300 border-amber-400/60" aria-label="ハンドブレーキ ドリフト">
                 <i class="fa-solid fa-angles-right text-sm"></i>
-                <span class="text-[9px] font-bold">DRIFT [X]</span>
+                <span class="text-[9px] font-bold">DRIFT/BOOST [X]</span>
             </button>
             <button id="ctrl-pass" class="game-btn w-16 h-11 sm:w-20 sm:h-11 rounded-2xl flex flex-col items-center justify-center text-yellow-300 border-yellow-400/60" aria-label="パッシング連打">
                 <i class="fa-solid fa-bolt text-sm"></i>
-                <span class="text-[9px] font-bold">FLASH [F]</span>
+                <span class="text-[9px] font-bold">FLASH/BLIND [F]</span>
             </button>
             <button id="ctrl-hazard" class="game-btn w-16 h-11 sm:w-20 sm:h-11 rounded-2xl flex flex-col items-center justify-center text-orange-400 border-orange-400/60" aria-label="ハザード点滅">
                 <i class="fa-solid fa-triangle-exclamation text-sm"></i>
-                <span class="text-[9px] font-bold">HAZARD [Z]</span>
+                <span class="text-[9px] font-bold">SHIELD/BRAKE [Z]</span>
             </button>
         </div>
     </footer>
