@@ -2299,17 +2299,22 @@
             const canInitiateDrift = state.speedKmh > 50;
 
             if (steerInput !== 0) {
-                const driftSteerMult = (isDriftKeyDown && canInitiateDrift) ? 1.55 : 1.0;
-                const nosSteerMult = state.nosActive ? 1.85 : 1.0;
-                const speedSteerMult = 1.0 + Math.max(0, (state.speedKmh - 120) / 120) * 0.85;
-                const totalSteerPower = carSpec.steerPower * driftSteerMult * nosSteerMult * speedSteerMult * mapSpec.grip * airControlFactor;
-                state.playerVX += steerInput * totalSteerPower * dt;
+                const driftSteerMult = (isDriftKeyDown && canInitiateDrift) ? 1.35 : 1.0;
+                const nosSteerMult = state.nosActive ? 1.15 : 1.0;
+                // High-speed stabilizing: gentle capped assistance (+0% to +18%) preventing twitchy runaway oversteering at high cruise speeds
+                const speedSteerMult = 1.0 + THREE.MathUtils.clamp((state.speedKmh - 130) / 450, 0, 0.18);
+                // Baseline steer power dialed back (~20%) so high-speed lane shifting is smooth, planted, and fully controllable
+                const steerBase = carSpec.steerPower * 0.80;
+                const totalSteerPower = steerBase * driftSteerMult * nosSteerMult * speedSteerMult * mapSpec.grip * airControlFactor;
+                // Progressive lateral acceleration with natural aerodynamic damping to prevent erratic jerking
+                state.playerVX += (steerInput * totalSteerPower - state.playerVX * 2.6) * dt;
             } else {
-                const damping = mapSpec.grip < 0.8 ? 0.14 : (isDriftKeyDown ? 0.08 : 0.035);
+                const damping = mapSpec.grip < 0.8 ? 0.14 : (isDriftKeyDown ? 0.08 : 0.032);
                 state.playerVX *= Math.pow(damping, dt);
             }
 
-            const maxVX = (isDriftKeyDown && canInitiateDrift) ? 26.0 : (state.nosActive ? 25.0 : 19.0);
+            // Balanced lateral velocity limits: ensures fine, stable control during high cruise & nitro bursts
+            const maxVX = (isDriftKeyDown && canInitiateDrift) ? 18.0 : (state.nosActive ? 14.5 : 12.8);
             state.playerVX = THREE.MathUtils.clamp(state.playerVX, -maxVX, maxVX);
             state.lateralG = ((state.playerVX - prevVX) / Math.max(0.01, dt * 9.81));
             state.playerX += (state.playerVX + tireDriftBias) * dt;
