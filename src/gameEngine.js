@@ -40,7 +40,8 @@
     }
 
     const state = {
-        mode: 'MENU', // MENU, PLAYING, EXPLODING, GAMEOVER, STAGECLEAR
+        mode: 'HOME', // HOME, MENU, PLAYING, EXPLODING, GAMEOVER, STAGECLEAR
+        steerSensitivity: 1.0, // Fine steering sensitivity preference (50% - 150%)
         gameType: 'CAREER', // CAREER (Stage Clear Goal), ENDLESS, SANDBOX (BeamNG Crash Lab)
         selectedCar: 'HYPER',
         selectedMap: 'TOKYO',
@@ -148,6 +149,12 @@
     let playerCar = null;
 
     function initThreeAndPhysics() {
+        try {
+            const savedSens = localStorage.getItem('crashoria_steer_sensitivity');
+            if (savedSens) {
+                state.steerSensitivity = parseFloat(savedSens) / 100;
+            }
+        } catch (e) {}
         const canvas = document.getElementById('game-canvas');
         const wrapper = document.getElementById('canvas-wrapper');
 
@@ -362,6 +369,7 @@
         const nameEl = document.getElementById('hud-car-name');
         if (nameEl) nameEl.textContent = CAR_SPECS[state.selectedCar].name;
         updateDamageSchematicUI();
+        updateHomePreview();
     }
 
     function applyMapTheme(mapKey) {
@@ -2143,7 +2151,7 @@
         }
 
         // Interactive 3D Showroom Turntable when in MENU / GAMEOVER / STAGECLEAR
-        if (state.mode === 'MENU' || state.mode === 'GAMEOVER' || state.mode === 'STAGECLEAR') {
+        if (state.mode === 'HOME' || state.mode === 'MENU' || state.mode === 'GAMEOVER' || state.mode === 'STAGECLEAR') {
             roadTexture.offset.y -= 0.35 * rawDt;
             if (playerCar && playerCar.root) {
                 playerCar.root.position.set(0, 0, 0);
@@ -2299,22 +2307,17 @@
             const canInitiateDrift = state.speedKmh > 50;
 
             if (steerInput !== 0) {
-                const driftSteerMult = (isDriftKeyDown && canInitiateDrift) ? 1.35 : 1.0;
-                const nosSteerMult = state.nosActive ? 1.15 : 1.0;
-                // High-speed stabilizing: gentle capped assistance (+0% to +18%) preventing twitchy runaway oversteering at high cruise speeds
-                const speedSteerMult = 1.0 + THREE.MathUtils.clamp((state.speedKmh - 130) / 450, 0, 0.18);
-                // Baseline steer power dialed back (~20%) so high-speed lane shifting is smooth, planted, and fully controllable
-                const steerBase = carSpec.steerPower * 0.80;
-                const totalSteerPower = steerBase * driftSteerMult * nosSteerMult * speedSteerMult * mapSpec.grip * airControlFactor;
-                // Progressive lateral acceleration with natural aerodynamic damping to prevent erratic jerking
-                state.playerVX += (steerInput * totalSteerPower - state.playerVX * 2.6) * dt;
+                const userSensitivity = (state.steerSensitivity !== undefined ? state.steerSensitivity : 1.0);
+                const driftSteerMult = (isDriftKeyDown && canInitiateDrift) ? 1.45 : 1.0;
+                // Direct, stable, classic steering restored from previous version, adjusted by user sensitivity slider!
+                const totalSteerPower = carSpec.steerPower * driftSteerMult * mapSpec.grip * airControlFactor * userSensitivity;
+                state.playerVX += steerInput * totalSteerPower * dt;
             } else {
-                const damping = mapSpec.grip < 0.8 ? 0.14 : (isDriftKeyDown ? 0.08 : 0.032);
+                const damping = mapSpec.grip < 0.8 ? 0.14 : (isDriftKeyDown ? 0.08 : 0.035);
                 state.playerVX *= Math.pow(damping, dt);
             }
 
-            // Balanced lateral velocity limits: ensures fine, stable control during high cruise & nitro bursts
-            const maxVX = (isDriftKeyDown && canInitiateDrift) ? 18.0 : (state.nosActive ? 14.5 : 12.8);
+            const maxVX = (isDriftKeyDown && canInitiateDrift) ? 22.0 : 17.0;
             state.playerVX = THREE.MathUtils.clamp(state.playerVX, -maxVX, maxVX);
             state.lateralG = ((state.playerVX - prevVX) / Math.max(0.01, dt * 9.81));
             state.playerX += (state.playerVX + tireDriftBias) * dt;
@@ -3722,6 +3725,13 @@
     function startNewRace() {
         audio.init();
 
+        const home = document.getElementById('home-screen');
+        if (home) home.classList.add('hidden');
+        const settings = document.getElementById('settings-modal');
+        if (settings) settings.classList.add('hidden');
+        const modal = document.getElementById('modal-overlay');
+        if (modal) modal.classList.add('hidden');
+
         trafficCars.forEach(tc => scene.remove(tc.mesh));
         trafficCars = [];
         roadTraps.forEach(t => scene.remove(t.mesh));
@@ -3796,10 +3806,70 @@
         document.getElementById('modal-overlay').classList.add('hidden');
     }
 
+    function updateHomePreview() {
+        const car = CAR_SPECS[state.selectedCar];
+        const map = MAP_SPECS[state.selectedMap] || MAP_SPECS.TOKYO;
+        const lvl = LEVEL_SPECS[state.selectedLevel] || LEVEL_SPECS[2];
+
+        const carNameEl = document.getElementById('home-car-name');
+        if (carNameEl && car) carNameEl.textContent = car.name;
+        const carSubEl = document.getElementById('home-car-sub');
+        if (carSubEl && car) carSubEl.textContent = `最高速: ${car.maxSpeed}km/h | 加速: ${car.accel}`;
+
+        const stageNameEl = document.getElementById('home-stage-name');
+        if (stageNameEl && map) stageNameEl.textContent = map.name;
+        const stageSubEl = document.getElementById('home-stage-sub');
+        if (stageSubEl && lvl) stageSubEl.textContent = `Lv.${state.selectedLevel} | 目標 ${lvl.goalKm}km`;
+    }
+
+    function openHomeScreen() {
+        state.mode = 'HOME';
+        const home = document.getElementById('home-screen');
+        if (home) home.classList.remove('hidden');
+        const modal = document.getElementById('modal-overlay');
+        if (modal) modal.classList.add('hidden');
+        const settings = document.getElementById('settings-modal');
+        if (settings) settings.classList.add('hidden');
+        const uninst = document.getElementById('uninstall-confirm-modal');
+        if (uninst) uninst.classList.add('hidden');
+        updateHomePreview();
+    }
+
+    function openSettingsModal() {
+        const settings = document.getElementById('settings-modal');
+        if (settings) settings.classList.remove('hidden');
+        syncSettingsUI();
+    }
+
+    function closeSettingsModal() {
+        const settings = document.getElementById('settings-modal');
+        if (settings) settings.classList.add('hidden');
+        if (state.mode === 'HOME') {
+            openHomeScreen();
+        }
+    }
+
+    function syncSettingsUI() {
+        const slider = document.getElementById('setting-steer-slider');
+        const label = document.getElementById('setting-steer-label');
+        if (slider) {
+            const pct = Math.round((state.steerSensitivity || 1.0) * 100);
+            slider.value = pct;
+            if (label) {
+                let desc = '標準';
+                if (pct < 80) desc = '穏やか・安定';
+                else if (pct > 115) desc = 'クイック・高機動';
+                label.textContent = `${pct}% (${desc})`;
+            }
+        }
+    }
+
     function openGarageModal() {
         state.mode = 'MENU';
         state.cameraDragYaw = 0.45;
         state.cameraDragPitch = 0.08;
+        const home = document.getElementById('home-screen');
+        if (home) home.classList.add('hidden');
         const modal = document.getElementById('modal-overlay');
         modal.classList.remove('hidden');
         document.getElementById('result-stats').classList.add('hidden');
@@ -3980,8 +4050,27 @@
                     ipcRenderer.send('toggle-fullscreen');
                 } catch (err) {}
             }
-            if (e.code === 'Enter' && state.mode !== 'PLAYING' && state.mode !== 'EXPLODING') {
-                startNewRace();
+            if (e.code === 'Enter') {
+                if (state.mode === 'HOME' || (state.mode !== 'PLAYING' && state.mode !== 'EXPLODING')) {
+                    startNewRace();
+                    return;
+                }
+            }
+            if (e.code === 'Escape') {
+                const settings = document.getElementById('settings-modal');
+                if (settings && !settings.classList.contains('hidden')) {
+                    closeSettingsModal();
+                    return;
+                }
+                const modal = document.getElementById('modal-overlay');
+                if (modal && !modal.classList.contains('hidden')) {
+                    openHomeScreen();
+                    return;
+                }
+                if (state.mode === 'PLAYING') {
+                    openHomeScreen();
+                    return;
+                }
             }
         });
 
@@ -4234,11 +4323,163 @@
         document.getElementById('btn-start').addEventListener('click', startNewRace);
         const btnStartBottom = document.getElementById('btn-start-bottom');
         if (btnStartBottom) btnStartBottom.addEventListener('click', startNewRace);
+
+        // Home Screen Buttons
+        const btnHomeStart = document.getElementById('btn-home-start');
+        if (btnHomeStart) btnHomeStart.addEventListener('click', startNewRace);
+
+        const btnHomeGarage = document.getElementById('btn-home-garage');
+        if (btnHomeGarage) btnHomeGarage.addEventListener('click', openGarageModal);
+
+        const btnHomeOpenGarage = document.getElementById('btn-home-open-garage');
+        if (btnHomeOpenGarage) btnHomeOpenGarage.addEventListener('click', openGarageModal);
+
+        const btnHomeStage = document.getElementById('btn-home-stage');
+        if (btnHomeStage) btnHomeStage.addEventListener('click', () => {
+            openGarageModal();
+            const stageTabBtn = document.querySelector('[data-tab="stages"]');
+            if (stageTabBtn) stageTabBtn.click();
+        });
+
+        const btnHomeSettings = document.getElementById('btn-home-settings');
+        if (btnHomeSettings) btnHomeSettings.addEventListener('click', openSettingsModal);
+
+        const btnHomeHud = document.getElementById('btn-home-hud');
+        if (btnHomeHud) btnHomeHud.addEventListener('click', openHomeScreen);
+
+        const btnSettingsHud = document.getElementById('btn-settings-hud');
+        if (btnSettingsHud) btnSettingsHud.addEventListener('click', openSettingsModal);
+
+        const btnGarageHome = document.getElementById('btn-garage-back-home');
+        if (btnGarageHome) btnGarageHome.addEventListener('click', openHomeScreen);
+
+        // Settings Modal Handlers
+        const btnCloseSettings = document.getElementById('btn-close-settings');
+        if (btnCloseSettings) btnCloseSettings.addEventListener('click', closeSettingsModal);
+
+        const btnSettingsDone = document.getElementById('btn-settings-done');
+        if (btnSettingsDone) btnSettingsDone.addEventListener('click', closeSettingsModal);
+
+        const steerSlider = document.getElementById('setting-steer-slider');
+        if (steerSlider) {
+            steerSlider.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value, 10);
+                state.steerSensitivity = val / 100;
+                try {
+                    localStorage.setItem('crashoria_steer_sensitivity', val);
+                } catch (err) {}
+                syncSettingsUI();
+            });
+        }
+
+        const btnPreset70 = document.getElementById('btn-sens-preset-70');
+        if (btnPreset70) btnPreset70.addEventListener('click', () => {
+            state.steerSensitivity = 0.70;
+            try { localStorage.setItem('crashoria_steer_sensitivity', '70'); } catch (err) {}
+            syncSettingsUI();
+        });
+
+        const btnPreset100 = document.getElementById('btn-sens-preset-100');
+        if (btnPreset100) btnPreset100.addEventListener('click', () => {
+            state.steerSensitivity = 1.00;
+            try { localStorage.setItem('crashoria_steer_sensitivity', '100'); } catch (err) {}
+            syncSettingsUI();
+        });
+
+        const btnPreset130 = document.getElementById('btn-sens-preset-130');
+        if (btnPreset130) btnPreset130.addEventListener('click', () => {
+            state.steerSensitivity = 1.30;
+            try { localStorage.setItem('crashoria_steer_sensitivity', '130'); } catch (err) {}
+            syncSettingsUI();
+        });
+
+        // Desktop Shortcut IPC triggers
+        const triggerShortcutCreation = () => {
+            try {
+                const { ipcRenderer } = require('electron');
+                ipcRenderer.send('create-desktop-shortcut');
+                ipcRenderer.once('create-desktop-shortcut-result', (_event, res) => {
+                    const badge = document.getElementById('setting-shortcut-badge');
+                    if (badge) {
+                        badge.classList.remove('hidden');
+                        badge.textContent = res.ok ? '✅ デスクトップにショートカットを作成しました！' : '❌ 作成失敗';
+                        badge.className = res.ok ? 'text-xs text-center font-bold text-emerald-400' : 'text-xs text-center font-bold text-rose-400';
+                        setTimeout(() => badge.classList.add('hidden'), 4000);
+                    }
+                    addFloatingNotification(res.ok ? '🖥️ デスクトップにショートカットを作成しました！' : '❌ ショートカット作成失敗', res.ok ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold');
+                });
+            } catch (err) {
+                addFloatingNotification('⚠️ ブラウザ版ではショートカット作成に対応していません', 'text-amber-400');
+            }
+        };
+
+        const btnHomeShortcut = document.getElementById('btn-home-shortcut');
+        if (btnHomeShortcut) btnHomeShortcut.addEventListener('click', triggerShortcutCreation);
+
+        const btnSettingShortcut = document.getElementById('btn-setting-create-shortcut');
+        if (btnSettingShortcut) btnSettingShortcut.addEventListener('click', triggerShortcutCreation);
+
+        const btnHomeExit = document.getElementById('btn-home-exit');
+        if (btnHomeExit) btnHomeExit.addEventListener('click', () => {
+            try {
+                const { ipcRenderer } = require('electron');
+                ipcRenderer.send('quit-app');
+            } catch (err) {
+                window.close();
+            }
+        });
+
+        // Danger Zone: Uninstall confirmation
+        const uninstModal = document.getElementById('uninstall-confirm-modal');
+        const btnDangerUninstall = document.getElementById('btn-danger-uninstall');
+        if (btnDangerUninstall) {
+            btnDangerUninstall.addEventListener('click', () => {
+                if (uninstModal) uninstModal.classList.remove('hidden');
+            });
+        }
+
+        const btnUninstCancel = document.getElementById('btn-uninstall-cancel');
+        if (btnUninstCancel) {
+            btnUninstCancel.addEventListener('click', () => {
+                if (uninstModal) uninstModal.classList.add('hidden');
+            });
+        }
+
+        const btnUninstProceed = document.getElementById('btn-uninstall-proceed');
+        if (btnUninstProceed) {
+            btnUninstProceed.addEventListener('click', () => {
+                if (uninstModal) uninstModal.classList.add('hidden');
+                try {
+                    const { ipcRenderer } = require('electron');
+                    ipcRenderer.send('uninstall-app');
+                } catch (err) {
+                    addFloatingNotification('⚠️ アンインストーラーの起動に失敗しました', 'text-red-400');
+                }
+            });
+        }
+
+        // Danger Zone: Data Reset
+        const btnDangerReset = document.getElementById('btn-danger-reset');
+        if (btnDangerReset) {
+            btnDangerReset.addEventListener('click', () => {
+                if (confirm('【危険】全セーブデータ、クリア履歴、ハイスコアをリセットして初期化しますか？')) {
+                    try {
+                        localStorage.clear();
+                        state.steerSensitivity = 1.0;
+                        syncSettingsUI();
+                        addFloatingNotification('🧹 全データを初期化しました', 'text-amber-300 font-bold');
+                    } catch (err) {}
+                }
+            });
+        }
     }
 
     function animate() {
         requestAnimationFrame(animate);
         const rawDt = Math.min(clock.getDelta(), 0.05);
+        if (state.mode === 'HOME' || state.mode === 'MENU') {
+            state.cameraDragYaw += 0.20 * rawDt;
+        }
         updateGamePhysics(rawDt);
         updateCarNaviHUD(rawDt);
         renderer.render(scene, camera);
@@ -4273,6 +4514,7 @@
         setupInputListeners();
         updateStageHUDLabels();
         setupSmokeTestHandler();
+        openHomeScreen();
         animate();
     });
 })(window);

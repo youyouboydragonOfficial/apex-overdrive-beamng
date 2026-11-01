@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.2.2</title>
+    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.3.0</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Bundled Offline Three.js r128 & Cannon.js 0.6.2 -->
@@ -200,8 +200,14 @@
                 <i class="fa-solid fa-shield-halved text-rose-400"></i>
                 <span id="police-toggle-label" class="text-[10px] font-bold">ON</span>
             </button>
+            <button id="btn-home-hud" class="game-btn w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-amber-300 border-amber-500/40 shrink-0" title="スタート・ホーム画面">
+                <i class="fa-solid fa-house"></i>
+            </button>
             <button id="btn-garage" class="game-btn w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-amber-300 border-amber-500/40 shrink-0" title="ショールーム＆設定ガレージ [ESC]">
                 <i class="fa-solid fa-warehouse"></i>
+            </button>
+            <button id="btn-settings-hud" class="game-btn w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-sky-300 border-sky-500/40 shrink-0" title="設定＆操舵感度＆危険地帯">
+                <i class="fa-solid fa-sliders"></i>
             </button>
             <button id="btn-weather" class="game-btn w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-sky-300 border-sky-500/40 shrink-0" title="天候切替">
                 <i id="weather-icon" class="fa-solid fa-sun text-yellow-400"></i>
@@ -412,9 +418,228 @@
         </div>
 
         <!-- ========================================================================= -->
+        <!-- START / HOME SCREEN (タイトル・スタート画面) -->
+        <!-- ========================================================================= -->
+        <div id="home-screen" class="absolute inset-0 z-40 flex items-center justify-center p-4 bg-gradient-to-b from-slate-950/85 via-slate-950/65 to-slate-950/90 backdrop-blur-sm pointer-events-auto">
+            <div class="hud-glass max-w-xl w-full rounded-3xl p-6 sm:p-8 border border-sky-500/40 shadow-[0_0_60px_rgba(14,165,233,0.3)] flex flex-col items-center text-center gap-5">
+                <!-- Glowing Title -->
+                <div>
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-300 text-xs font-bold mb-2">
+                        <i class="fa-solid fa-car-burst text-orange-400"></i> BEAMNG 軟体物理エンジン搭載 v3.3.0
+                    </div>
+                    <h1 class="font-['Orbitron'] font-black text-3xl sm:text-5xl tracking-widest bg-gradient-to-r from-white via-sky-300 to-amber-400 bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(56,189,248,0.6)]">
+                        CRASHORIA
+                    </h1>
+                    <p class="font-['Orbitron'] text-xs sm:text-sm font-bold text-slate-300 tracking-wider mt-1">
+                        ULTIMATE ROAD ADVENTURE
+                    </p>
+                </div>
+
+                <!-- Selected Machine & Stage Quick Badge Deck -->
+                <div class="w-full grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div class="bg-slate-900/80 rounded-2xl p-3 border border-slate-700/80 flex items-center justify-between text-left">
+                        <div class="overflow-hidden">
+                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">SELECTED MACHINE</div>
+                            <div id="home-car-name" class="font-['Orbitron'] font-black text-sky-300 text-sm truncate">V12 ROSSO CORSA</div>
+                            <div id="home-car-sub" class="text-[10px] text-emerald-400 font-bold">最高速: 385km/h</div>
+                        </div>
+                        <button id="btn-home-garage" type="button" class="game-btn px-2.5 py-1.5 rounded-xl text-xs font-bold text-amber-300 border-amber-500/40 shrink-0 ml-2" title="ガレージでマシン変更">
+                            変更
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-900/80 rounded-2xl p-3 border border-slate-700/80 flex items-center justify-between text-left">
+                        <div class="overflow-hidden">
+                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">SELECTED STAGE</div>
+                            <div id="home-stage-name" class="font-['Orbitron'] font-black text-amber-300 text-sm truncate">首都高湾岸6車線</div>
+                            <div id="home-stage-sub" class="text-[10px] text-sky-400 font-bold">Lv.2 | 目標 3.2km</div>
+                        </div>
+                        <button id="btn-home-stage" type="button" class="game-btn px-2.5 py-1.5 rounded-xl text-xs font-bold text-sky-300 border-sky-500/40 shrink-0 ml-2" title="マップ・難易度変更">
+                            変更
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Primary Action Buttons -->
+                <div class="w-full flex flex-col gap-2.5">
+                    <button id="btn-home-start" type="button" class="primary-btn w-full py-3.5 px-6 rounded-2xl font-black text-white text-base sm:text-lg tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_30px_rgba(239,68,68,0.6)]">
+                        <i class="fa-solid fa-play"></i>
+                        <span>レース開始 [START RACE] (Enter)</span>
+                    </button>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <button id="btn-home-open-garage" type="button" class="game-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold text-amber-300 border-amber-500/40 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-warehouse"></i>
+                            <span>ガレージ・車種選択</span>
+                        </button>
+                        <button id="btn-home-settings" type="button" class="game-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold text-sky-300 border-sky-500/40 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-sliders"></i>
+                            <span>設定＆左右感度調整</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <button id="btn-home-shortcut" type="button" class="game-btn py-2 px-3 rounded-xl text-xs font-bold text-emerald-300 border-emerald-500/40 flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-desktop"></i>
+                            <span>ショートカット作成</span>
+                        </button>
+                        <button id="btn-home-exit" type="button" class="game-btn py-2 px-3 rounded-xl text-xs font-bold text-slate-400 border-slate-700 hover:text-rose-400 flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-power-off"></i>
+                            <span>ゲーム終了</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Hint Key Controls -->
+                <div class="text-[11px] text-slate-400 border-t border-slate-800 pt-3 w-full flex flex-wrap justify-center gap-x-4 gap-y-1">
+                    <span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200">W/A/S/D</kbd> or <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200">矢印</kbd> 操舵・加減速</span>
+                    <span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200">Shift / Space</kbd> ニトロ</span>
+                    <span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200">X</kbd> ドリフト</span>
+                    <span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200">Z</kbd> ハザード防壁</span>
+                    <span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200">R</kbd> 修復</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- SETTINGS & SENSITIVITY MODAL (設定＆左右操舵感度＆危険地帯) -->
+        <!-- ========================================================================= -->
+        <div id="settings-modal" class="hidden absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md pointer-events-auto">
+            <div class="hud-glass max-w-lg w-full rounded-3xl p-5 sm:p-6 border border-sky-500/40 shadow-[0_0_50px_rgba(14,165,233,0.35)] flex flex-col gap-4 max-h-[90vh] overflow-y-auto custom-scroll">
+                <!-- Top Header -->
+                <div class="flex items-center justify-between border-b border-slate-700/80 pb-3">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-sky-400 text-lg"></i>
+                        <h2 class="font-['Orbitron'] text-lg sm:text-xl font-black text-white">
+                            GAME SETTINGS & CONTROLS
+                        </h2>
+                    </div>
+                    <button id="btn-close-settings" type="button" class="game-btn w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white" title="閉じる">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- 1. 細かい左右車移動の感度設定 (Steering Sensitivity Slider) -->
+                <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-700/80 flex flex-col gap-2.5">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-sm text-slate-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-arrows-left-right text-amber-400"></i>
+                            左右車移動の操舵感度 (ステアリング)
+                        </span>
+                        <span id="setting-steer-label" class="font-['Orbitron'] font-black text-amber-400 text-xs px-2 py-0.5 rounded bg-amber-950/60 border border-amber-500/30">
+                            100% (標準)
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-400">
+                        キーボード操作時の左右レーンチェンジ速度を微調整できます。前のバージョン準拠の挙動をベースに、お好みのフィーリングに細かく調節可能です。
+                    </p>
+                    <input id="setting-steer-slider" type="range" min="50" max="150" step="5" value="100" class="w-full accent-amber-400 h-2 bg-slate-800 rounded-lg cursor-pointer">
+                    
+                    <div class="flex items-center justify-between gap-2 pt-1">
+                        <button id="btn-sens-preset-70" type="button" class="flex-1 py-1 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold border border-slate-600">
+                            穏やか (70%)
+                        </button>
+                        <button id="btn-sens-preset-100" type="button" class="flex-1 py-1 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 text-[10px] font-bold border border-amber-500/40">
+                            標準 (100% 推奨)
+                        </button>
+                        <button id="btn-sens-preset-130" type="button" class="flex-1 py-1 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-300 text-[10px] font-bold border border-sky-500/40">
+                            クイック (130%)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. ショートカット作成 -->
+                <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-700/80 flex items-center justify-between gap-3">
+                    <div>
+                        <div class="font-bold text-sm text-slate-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-desktop text-sky-400"></i>
+                            デスクトップショートカット
+                        </div>
+                        <div class="text-[11px] text-slate-400 mt-0.5">
+                            Windowsのデスクトップに起動用ショートカットを作成します。
+                        </div>
+                    </div>
+                    <button id="btn-setting-create-shortcut" type="button" class="game-btn px-3 py-1.5 rounded-xl text-xs font-bold text-sky-300 border-sky-500/40 shrink-0">
+                        ショートカット作成
+                    </button>
+                </div>
+                <div id="setting-shortcut-badge" class="hidden text-xs text-center font-bold"></div>
+
+                <!-- 3. 危険地帯 (DANGER ZONE) -->
+                <div class="p-4 rounded-2xl bg-rose-950/40 border border-rose-500/50 flex flex-col gap-3">
+                    <div class="flex items-center gap-1.5 text-rose-400 font-bold text-xs">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        危険地帯 (DANGER ZONE)
+                    </div>
+
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <div class="font-bold text-xs text-rose-200">
+                                アプリケーションのアンインストール
+                            </div>
+                            <div class="text-[10px] text-rose-300/70">
+                                アンインストーラーを起動してアプリをPCから削除します。
+                            </div>
+                        </div>
+                        <button id="btn-danger-uninstall" type="button" class="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs border border-rose-400 shrink-0 cursor-pointer transition-all shadow-[0_0_15px_rgba(244,63,94,0.4)]">
+                            <i class="fa-solid fa-trash-can mr-1"></i>アンインストール
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-3 border-t border-rose-900/60 pt-2.5">
+                        <div>
+                            <div class="font-bold text-xs text-slate-300">
+                                セーブデータ・ハイスコア初期化
+                            </div>
+                            <div class="text-[10px] text-slate-400">
+                                保存された最高スコアやクリア進捗を初期化します。
+                            </div>
+                        </div>
+                        <button id="btn-danger-reset" type="button" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 font-bold text-xs border border-rose-500/40 shrink-0 cursor-pointer transition-all">
+                            <i class="fa-solid fa-broom mr-1"></i>初期化
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Close Button -->
+                <button id="btn-settings-done" type="button" class="primary-btn w-full py-2.5 rounded-xl font-bold text-white text-xs cursor-pointer">
+                    設定を保存して閉じる (CLOSE)
+                </button>
+            </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- UNINSTALL CONFIRMATION MODAL (アンインストール確認) -->
+        <!-- ========================================================================= -->
+        <div id="uninstall-confirm-modal" class="hidden absolute inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md pointer-events-auto">
+            <div class="hud-glass max-w-md w-full rounded-3xl p-6 border-2 border-rose-500 shadow-[0_0_50px_rgba(244,63,94,0.6)] flex flex-col gap-4 text-center">
+                <div class="w-14 h-14 rounded-full bg-rose-600/30 border-2 border-rose-500 flex items-center justify-center mx-auto text-rose-400 text-2xl">
+                    <i class="fa-solid fa-trash-can"></i>
+                </div>
+                <div>
+                    <h3 class="font-['Orbitron'] text-xl font-black text-white">
+                        UNINSTALL APP?
+                    </h3>
+                    <p class="text-xs text-rose-200 mt-2 leading-relaxed">
+                        本当に Crashoria をアンインストールしますか？<br>
+                        インストーラー版（Setup版）の場合はアンインストーラーを起動してアプリを終了します。ポータブル版の場合はWindowsの「インストールされているアプリ」画面を開きます。
+                    </p>
+                </div>
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button id="btn-uninstall-cancel" type="button" class="game-btn py-2.5 rounded-xl font-bold text-slate-300 border-slate-600 text-xs cursor-pointer">
+                        キャンセル
+                    </button>
+                    <button id="btn-uninstall-proceed" type="button" class="py-2.5 rounded-xl font-bold text-white bg-rose-600 hover:bg-rose-500 border border-rose-400 text-xs cursor-pointer shadow-[0_0_20px_rgba(244,63,94,0.6)]">
+                        アンインストール実行
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================= -->
         <!-- REDESIGNED SPLIT-VIEW 3D SHOWROOM & STAGE SELECT UI (Crystal Clear & Easy to Read!) -->
         <!-- ========================================================================= -->
-        <div id="modal-overlay" class="absolute inset-0 z-30 flex flex-col lg:flex-row items-stretch justify-between p-3 sm:p-5 bg-gradient-to-r from-slate-950/95 via-slate-950/70 to-transparent pointer-events-none">
+        <div id="modal-overlay" class="hidden absolute inset-0 z-30 flex flex-col lg:flex-row items-stretch justify-between p-3 sm:p-5 bg-gradient-to-r from-slate-950/95 via-slate-950/70 to-transparent pointer-events-none">
 
             <!-- Left Interactive Control Deck (Scrollable, high contrast, readable fonts) -->
             <div class="pointer-events-auto hud-glass w-full lg:w-[560px] xl:w-[610px] h-full rounded-3xl p-4 sm:p-5 border border-sky-500/35 flex flex-col justify-between gap-3 overflow-y-auto custom-scroll">
@@ -429,10 +654,16 @@
                             SHOWROOM & STAGE SELECT
                         </h2>
                     </div>
-                    <button id="btn-start" type="button" class="primary-btn w-full sm:w-auto py-3 px-6 rounded-2xl font-black text-white text-sm sm:text-base tracking-wider flex items-center justify-center gap-2 cursor-pointer shrink-0">
-                        <i class="fa-solid fa-flag-checkered"></i>
-                        <span id="btn-start-text">エンジン始動・出撃！</span>
-                    </button>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <button id="btn-garage-back-home" type="button" class="game-btn py-3 px-4 rounded-2xl font-bold text-amber-300 border-amber-500/40 text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer shrink-0" title="ホーム画面へ戻る">
+                            <i class="fa-solid fa-house"></i>
+                            <span>ホーム</span>
+                        </button>
+                        <button id="btn-start" type="button" class="primary-btn flex-1 sm:flex-none py-3 px-6 rounded-2xl font-black text-white text-sm sm:text-base tracking-wider flex items-center justify-center gap-2 cursor-pointer shrink-0">
+                            <i class="fa-solid fa-flag-checkered"></i>
+                            <span id="btn-start-text">エンジン始動・出撃！</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Result Stats Banner (Shown on Stage Clear or Game Over) -->
