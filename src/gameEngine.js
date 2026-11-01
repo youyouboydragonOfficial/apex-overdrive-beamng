@@ -941,6 +941,8 @@
             rollRate: 0,
             honked: false,
             hitByPlayer: false,
+            rammedByPlayerTimer: 0,
+            isWrecked: false,
             overtaken: false,
             cargoGroup: built.cargoGroup || null,
             cargoType: built.cargoType || truckCargoType,
@@ -1301,7 +1303,9 @@
         const curr = modes[state.weatherMode];
         const lbl = document.getElementById('weather-label');
         const icn = document.getElementById('weather-icon');
+        const btnWeather = document.getElementById('btn-weather');
         if (lbl) lbl.textContent = curr.name;
+        if (btnWeather) btnWeather.title = `天候切替: ${curr.name}`;
         if (icn) icn.className = 'fa-solid ' + curr.icon;
         scene.background.setHex(curr.sky);
         scene.fog.color.setHex(curr.sky);
@@ -1497,10 +1501,11 @@
 
                 // Check traffic cars hit by spilled log
                 for (let tc of trafficCars) {
-                    if (tc.hitByPlayer) continue;
+                    if (tc.isWrecked) continue;
                     const tdx = hz.mesh.position.x - tc.mesh.position.x;
                     const tdz = hz.mesh.position.z - tc.mesh.position.z;
                     if (Math.abs(tdx) < 2.2 && Math.abs(tdz) < 2.2) {
+                        tc.isWrecked = true;
                         tc.hitByPlayer = true;
                         tc.isChasing = false;
                         audio.playWoodImpact();
@@ -1508,16 +1513,23 @@
                         tc.vy = 7.5;
                         tc.vz = -18;
                         tc.yawRate = 6.0;
-                        state.score += 4000;
-                        state.nosFuel = 100;
-                        if (tc.type === 'POLICE') {
-                            state.heatLevel = Math.max(0, state.heatLevel - 1);
-                            updateHUD();
-                            addFloatingNotification('🪵 TRAP TAKEDOWN: 落下丸太でパトカー撃破!! +4,000 PTS', 'text-amber-400 font-black');
-                        } else {
-                            addFloatingNotification('🪵 TRAP TAKEDOWN: 落下丸太で車両撃破!! +4,000 PTS', 'text-amber-400 font-black');
+
+                        const playerDistToTrap = Math.abs(hz.mesh.position.z - playerCar.root.position.z);
+                        const isPlayerInvolved = (tc.rammedByPlayerTimer > 0) || (tc.type === 'POLICE' && tc.isChasing && playerDistToTrap < 38);
+
+                        if (isPlayerInvolved) {
+                            state.score += 4000;
+                            state.nosFuel = 100;
+                            if (tc.type === 'POLICE') {
+                                state.heatLevel = Math.max(0, state.heatLevel - 1);
+                                state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 35.0);
+                                updateHUD();
+                                addFloatingNotification('🪵 TRAP TAKEDOWN: 落下丸太でパトカー撃破!! +4,000 PTS (逃走メーター +35%)', 'text-amber-400 font-black');
+                            } else {
+                                addFloatingNotification('🪵 TRAP TAKEDOWN: 落下丸太で車両撃破!! +4,000 PTS', 'text-amber-400 font-black');
+                            }
+                            advanceBounty('TAKEDOWN');
                         }
-                        advanceBounty('TAKEDOWN');
                         break;
                     }
                 }
@@ -2645,27 +2657,34 @@
 
                 if (trap.isFlaming) {
                     for (const tc of trafficCars) {
-                        if (tc.hitByPlayer) continue;
+                        if (tc.isWrecked) continue;
                         const tdz = trap.mesh.position.z - tc.mesh.position.z;
                         const tdx = trap.centerX - tc.mesh.position.x;
                         if (Math.abs(tdz) < 2.5 && Math.abs(tdx) < 3.2) {
                             audio.playFlameRoar();
                             spawnParticles(tc.mesh.position.clone(), 16, 'EXPLOSION');
+                            tc.isWrecked = true;
                             tc.hitByPlayer = true;
                             tc.isChasing = false;
                             tc.vy = 7.0;
                             tc.yawRate = 6.0;
-                            state.score += 4000;
-                            state.nosFuel = 100;
-                            if (tc.type === 'POLICE') {
-                                state.heatLevel = Math.max(0, state.heatLevel - 1);
-                                state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 35.0);
-                                updateHUD();
-                                addFloatingNotification('🔥 TRAP TAKEDOWN: 高圧火柱でパトカー炎上撃破!! +4,000 PTS (逃走メーター +35%)', 'text-red-400 font-black');
-                            } else {
-                                addFloatingNotification('🔥 TRAP TAKEDOWN: 高圧火柱で車両炎上撃破!! +4,000 PTS', 'text-red-400 font-black');
+
+                            const playerDistToTrap = Math.abs(trap.mesh.position.z - playerCar.root.position.z);
+                            const isPlayerInvolved = (tc.rammedByPlayerTimer > 0) || (tc.type === 'POLICE' && tc.isChasing && playerDistToTrap < 38);
+
+                            if (isPlayerInvolved) {
+                                state.score += 4000;
+                                state.nosFuel = 100;
+                                if (tc.type === 'POLICE') {
+                                    state.heatLevel = Math.max(0, state.heatLevel - 1);
+                                    state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 35.0);
+                                    updateHUD();
+                                    addFloatingNotification('🔥 TRAP TAKEDOWN: 高圧火柱でパトカー炎上撃破!! +4,000 PTS (逃走メーター +35%)', 'text-red-400 font-black');
+                                } else {
+                                    addFloatingNotification('🔥 TRAP TAKEDOWN: 高圧火柱で車両炎上撃破!! +4,000 PTS', 'text-red-400 font-black');
+                                }
+                                advanceBounty('TAKEDOWN');
                             }
-                            advanceBounty('TAKEDOWN');
                             break;
                         }
                     }
@@ -2762,29 +2781,37 @@
                 // Check traffic cars crushed by boulder
                 if (!trap.shattered) {
                     for (const tc of trafficCars) {
-                        if (tc.hitByPlayer) continue;
+                        if (tc.isWrecked) continue;
                         const tdz = trap.mesh.position.z - tc.mesh.position.z;
                         const tdx = trap.mesh.position.x - tc.mesh.position.x;
                         if (Math.abs(tdz) < 2.5 && Math.abs(tdx) < 2.4) {
                             trap.shattered = true;
                             audio.playCrashSound(45);
                             spawnPhysicalShatterPieces(trap.mesh.position.clone(), 8, 0x9a3412, 16);
+                            tc.isWrecked = true;
                             tc.hitByPlayer = true;
                             tc.isChasing = false;
                             tc.vy = 7.5;
                             tc.yawRate = 6.5;
                             tc.rollRate = 8.0;
-                            state.impactSlowMoTimer = 0.60;
-                            state.score += 4500;
-                            state.nosFuel = 100;
-                            if (tc.type === 'POLICE') {
-                                state.heatLevel = Math.max(0, state.heatLevel - 1);
-                                updateHUD();
-                                addFloatingNotification('🪨 TRAP TAKEDOWN: 崩落巨石でパトカー圧壊大破!! +4,500 PTS', 'text-orange-400 font-black');
-                            } else {
-                                addFloatingNotification('🪨 TRAP TAKEDOWN: 崩落巨石で車両圧壊大破!! +4,500 PTS', 'text-orange-400 font-black');
+
+                            const playerDistToTrap = Math.abs(trap.mesh.position.z - playerCar.root.position.z);
+                            const isPlayerInvolved = (tc.rammedByPlayerTimer > 0) || (tc.type === 'POLICE' && tc.isChasing && playerDistToTrap < 38);
+
+                            if (isPlayerInvolved) {
+                                state.impactSlowMoTimer = 0.60;
+                                state.score += 4500;
+                                state.nosFuel = 100;
+                                if (tc.type === 'POLICE') {
+                                    state.heatLevel = Math.max(0, state.heatLevel - 1);
+                                    state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 35.0);
+                                    updateHUD();
+                                    addFloatingNotification('🪨 TRAP TAKEDOWN: 崩落巨石でパトカー圧壊大破!! +4,500 PTS (逃走メーター +35%)', 'text-orange-400 font-black');
+                                } else {
+                                    addFloatingNotification('🪨 TRAP TAKEDOWN: 崩落巨石で車両圧壊大破!! +4,500 PTS', 'text-orange-400 font-black');
+                                }
+                                advanceBounty('TAKEDOWN');
                             }
-                            advanceBounty('TAKEDOWN');
                             scene.remove(trap.mesh);
                             roadTraps.splice(i, 1);
                             break;
@@ -2899,14 +2926,116 @@
                 continue;
             }
 
-            const isLowTrap = ['SPIKE', 'OIL', 'RAMP'].includes(trap.type);
+            // Gimmick: Rainy Osaka Hydro Puddle
+            if (trap.type === 'HYDRO_PUDDLE') {
+                const dz = trap.mesh.position.z - playerCar.root.position.z;
+                const dx = trap.mesh.position.x - state.playerX;
+                if (state.mode === 'PLAYING' && !trap.triggered && Math.abs(dz) < 2.8 && Math.abs(dx) < 2.4 && state.playerY < 0.6) {
+                    trap.triggered = true;
+                    audio.playIceSkid();
+                    state.playerVX += (Math.random() - 0.5) * 11.0;
+                    state.speedKmh = Math.max(state.minSpeedKmh, state.speedKmh * 0.88);
+                    addFloatingNotification('🌊 ハイドロプレーニング発生!! 水膜でグリップ喪失!', 'text-sky-300 font-bold');
+                }
+                if (trap.mesh.position.z > 28) {
+                    scene.remove(trap.mesh);
+                    roadTraps.splice(i, 1);
+                }
+                continue;
+            }
+
+            // Gimmick: Neon Vegas Laser Security Grid
+            if (trap.type === 'LASER_GRID') {
+                const dz = trap.mesh.position.z - playerCar.root.position.z;
+                if (state.mode === 'PLAYING' && !trap.triggered && Math.abs(dz) < 2.0 && state.playerY < 2.0) {
+                    trap.triggered = true;
+                    const currentLane = Math.max(0, Math.min(5, Math.floor((state.playerX + ROAD_WIDTH / 2) / 5.4)));
+                    if (currentLane === trap.safeLane) {
+                        audio.playSlipstream();
+                        state.score += 2500;
+                        state.nosFuel = 100;
+                        addFloatingNotification('⚡ レーザーセーフティゾーン突破!! +2,500 PTS', 'text-fuchsia-300 font-black');
+                        advanceBounty('GIMMICK');
+                    } else {
+                        audio.playOrvisFlash(false);
+                        triggerScreenFlash('rgba(236, 72, 153, 0.5)');
+                        applySoftBodyCarDamage(18, 0, -1.5);
+                        state.speedKmh = Math.max(state.minSpeedKmh, state.speedKmh - 30);
+                        addFloatingNotification('🚨 レーザーグリッド遮断!! レーザーセンサー直撃!', 'text-pink-400 font-bold');
+                    }
+                }
+                if (trap.mesh.position.z > 28) {
+                    scene.remove(trap.mesh);
+                    roadTraps.splice(i, 1);
+                }
+                continue;
+            }
+
+            // Gimmick: Volcano Molten Lava Crack
+            if (trap.type === 'LAVA_CRACK') {
+                const dz = trap.mesh.position.z - playerCar.root.position.z;
+                const dx = trap.mesh.position.x - state.playerX;
+                if (state.mode === 'PLAYING' && !trap.triggered && Math.abs(dz) < 3.2 && Math.abs(dx) < 2.2 && state.playerY < 0.6) {
+                    trap.triggered = true;
+                    audio.playFlameRoar();
+                    triggerScreenFlash('rgba(239, 68, 68, 0.45)');
+                    applySoftBodyCarDamage(20, 0, -1.6);
+                    state.speedKmh = Math.max(state.minSpeedKmh, state.speedKmh - 25);
+                    addFloatingNotification('🌋 溶岩亀裂通過!! 熱気流でアンダーボディダメージ!', 'text-orange-500 font-bold');
+                }
+                if (trap.mesh.position.z > 28) {
+                    scene.remove(trap.mesh);
+                    roadTraps.splice(i, 1);
+                }
+                continue;
+            }
+
+            // Gimmick: Kyoto Cherry Torii Gate
+            if (trap.type === 'TORII_GATE') {
+                const dz = trap.mesh.position.z - playerCar.root.position.z;
+                if (state.mode === 'PLAYING' && !trap.triggered && Math.abs(dz) < 2.2) {
+                    trap.triggered = true;
+                    audio.playCyberBoost();
+                    state.score += 2000;
+                    state.nosFuel = 100;
+                    addFloatingNotification('⛩️ 鳥居ゲート通過!! スピード祈願ボーナス +2,000 PTS & NOS全開!', 'text-rose-300 font-black');
+                    advanceBounty('GIMMICK');
+                }
+                if (trap.mesh.position.z > 28) {
+                    scene.remove(trap.mesh);
+                    roadTraps.splice(i, 1);
+                }
+                continue;
+            }
+
+            // Gimmick: Monaco Chicane Tire Barrier
+            if (trap.type === 'CHICANE_BARRIER') {
+                const dz = trap.mesh.position.z - playerCar.root.position.z;
+                const dx = trap.mesh.position.x - state.playerX;
+                if (state.mode === 'PLAYING' && !trap.triggered && Math.abs(dz) < 1.8 && Math.abs(dx) < 1.8 && state.playerY < 1.0) {
+                    trap.triggered = true;
+                    audio.playCrashSound(35);
+                    spawnPhysicalShatterPieces(trap.mesh.position.clone(), 6, 0xef4444, 12);
+                    applySoftBodyCarDamage(15, dx * 0.5, -1.2);
+                    state.speedKmh = Math.max(state.minSpeedKmh, state.speedKmh * 0.75);
+                    state.playerVX += (dx >= 0 ? -1 : 1) * 7.0;
+                    addFloatingNotification('🏁 シケインタイヤバリア激突!!', 'text-yellow-400 font-bold');
+                }
+                if (trap.mesh.position.z > 28) {
+                    scene.remove(trap.mesh);
+                    roadTraps.splice(i, 1);
+                }
+                continue;
+            }
+
+            const isLowTrap = ['SPIKE', 'OIL', 'RAMP', 'HYDRO_PUDDLE', 'LAVA_CRACK'].includes(trap.type);
             const heightClear = isLowTrap && state.playerY > 0.65;
 
             // Check trap collisions with traffic cars (Specifically Police and Road-Rage enemies)
             let trapConsumedByTraffic = false;
             for (let tci = trafficCars.length - 1; tci >= 0; tci--) {
                 const tc = trafficCars[tci];
-                if (tc.hitByPlayer) continue;
+                if (tc.isWrecked) continue;
 
                 const tdx = trap.mesh.position.x - tc.mesh.position.x;
                 const tdz = trap.mesh.position.z - tc.mesh.position.z;
@@ -2914,83 +3043,102 @@
                 const minTZ = (trap.length / 2) + (tc.length / 2) + 0.35;
 
                 if (Math.abs(tdx) < minTX && Math.abs(tdz) < minTZ) {
+                    const playerDistToTrap = Math.abs(trap.mesh.position.z - playerCar.root.position.z);
+                    const isPlayerInvolved = (tc.rammedByPlayerTimer > 0) || (tc.type === 'POLICE' && tc.isChasing && playerDistToTrap < 38);
+
                     if (trap.type === 'BARREL') {
                         trap.triggered = true;
                         audio.playExplosion();
                         spawnParticles(trap.mesh.position.clone().add(new THREE.Vector3(0, 0.8, 0)), 18, 'EXPLOSION');
+                        tc.isWrecked = true;
                         tc.hitByPlayer = true;
                         tc.isChasing = false;
                         tc.vy = 8.5;
                         tc.vz = -20;
                         tc.yawRate = 7.0;
-                        state.impactSlowMoTimer = 0.65;
-                        state.score += 4000;
-                        state.nosFuel = 100;
-                        if (tc.type === 'POLICE') {
-                            state.heatLevel = Math.max(0, state.heatLevel - 1);
-                            state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 35.0);
-                            updateHUD();
-                            addFloatingNotification('💥 TRAP TAKEDOWN: 爆発ドラム缶でパトカー撃破!! +4,000 PTS (逃走メーター +35%)', 'text-amber-400 font-black');
-                        } else {
-                            addFloatingNotification('💥 TRAP TAKEDOWN: ドラム缶で車両撃破!! +4,000 PTS', 'text-amber-400 font-black');
+
+                        if (isPlayerInvolved) {
+                            state.impactSlowMoTimer = 0.65;
+                            state.score += 4000;
+                            state.nosFuel = 100;
+                            if (tc.type === 'POLICE') {
+                                state.heatLevel = Math.max(0, state.heatLevel - 1);
+                                state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 35.0);
+                                updateHUD();
+                                addFloatingNotification('💥 TRAP TAKEDOWN: 爆発ドラム缶でパトカー撃破!! +4,000 PTS (逃走メーター +35%)', 'text-amber-400 font-black');
+                            } else {
+                                addFloatingNotification('💥 TRAP TAKEDOWN: ドラム缶で車両撃破!! +4,000 PTS', 'text-amber-400 font-black');
+                            }
+                            advanceBounty('TAKEDOWN');
                         }
-                        advanceBounty('TAKEDOWN');
                         scene.remove(trap.mesh);
                         roadTraps.splice(i, 1);
                         trapConsumedByTraffic = true;
                         break;
                     } else if (trap.type === 'SPIKE') {
                         audio.playTireScreech();
+                        tc.isWrecked = true;
                         tc.hitByPlayer = true;
                         tc.isChasing = false;
                         tc.vx = (Math.random() > 0.5 ? 1 : -1) * 14.0;
                         tc.yawRate = 9.5;
                         tc.speedKmh *= 0.35;
-                        state.score += 3500;
-                        state.nosFuel = 100;
-                        if (tc.type === 'POLICE') {
-                            state.heatLevel = Math.max(0, state.heatLevel - 1);
-                            state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 35.0);
-                            updateHUD();
-                            addFloatingNotification('⛓️ TRAP TAKEDOWN: スパイクでパトカーのタイヤ破裂・スピン撃破!! +3,500 PTS (逃走メーター +35%)', 'text-yellow-300 font-black');
-                        } else {
-                            addFloatingNotification('⛓️ TRAP TAKEDOWN: スパイクで車両スピン撃破!! +3,500 PTS', 'text-yellow-300 font-black');
+
+                        if (isPlayerInvolved) {
+                            state.score += 3500;
+                            state.nosFuel = 100;
+                            if (tc.type === 'POLICE') {
+                                state.heatLevel = Math.max(0, state.heatLevel - 1);
+                                state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 35.0);
+                                updateHUD();
+                                addFloatingNotification('⛓️ TRAP TAKEDOWN: スパイクでパトカーのタイヤ破裂・スピン撃破!! +3,500 PTS (逃走メーター +35%)', 'text-yellow-300 font-black');
+                            } else {
+                                addFloatingNotification('⛓️ TRAP TAKEDOWN: スパイクで車両スピン撃破!! +3,500 PTS', 'text-yellow-300 font-black');
+                            }
+                            advanceBounty('TAKEDOWN');
                         }
-                        advanceBounty('TAKEDOWN');
                         break;
                     } else if (trap.type === 'OIL') {
                         audio.playTireScreech();
+                        tc.isWrecked = true;
                         tc.hitByPlayer = true;
                         tc.isChasing = false;
                         tc.yawRate = 12.0;
                         tc.vx = (Math.random() > 0.5 ? 1 : -1) * 8.5;
-                        state.score += 3000;
-                        if (tc.type === 'POLICE') {
-                            state.heatLevel = Math.max(0, state.heatLevel - 1);
-                            state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 35.0);
-                            updateHUD();
-                            addFloatingNotification('💧 TRAP TAKEDOWN: オイルスリップでパトカー激突大破!! +3,000 PTS (逃走メーター +35%)', 'text-purple-300 font-black');
-                        } else {
-                            addFloatingNotification('💧 TRAP TAKEDOWN: オイルスリップで車両大破!! +3,000 PTS', 'text-purple-300 font-black');
+
+                        if (isPlayerInvolved) {
+                            state.score += 3000;
+                            if (tc.type === 'POLICE') {
+                                state.heatLevel = Math.max(0, state.heatLevel - 1);
+                                state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 35.0);
+                                updateHUD();
+                                addFloatingNotification('💧 TRAP TAKEDOWN: オイルスリップでパトカー激突大破!! +3,000 PTS (逃走メーター +35%)', 'text-purple-300 font-black');
+                            } else {
+                                addFloatingNotification('💧 TRAP TAKEDOWN: オイルスリップで車両大破!! +3,000 PTS', 'text-purple-300 font-black');
+                            }
+                            advanceBounty('TAKEDOWN');
                         }
-                        advanceBounty('TAKEDOWN');
                         break;
                     } else if (trap.type === 'CONTAINER' || trap.type === 'CONCRETE_WALL' || trap.type === 'CRUSHER') {
                         audio.playCrashSound(50);
+                        tc.isWrecked = true;
                         tc.hitByPlayer = true;
                         tc.isChasing = false;
                         tc.vz = -22;
                         tc.vx = (Math.random() > 0.5 ? 1 : -1) * 9.0;
-                        state.score += 4500;
-                        if (tc.type === 'POLICE') {
-                            state.heatLevel = Math.max(0, state.heatLevel - 1);
-                            state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 35.0);
-                            updateHUD();
-                            addFloatingNotification('⚙️ TRAP TAKEDOWN: 障害物防壁でパトカー完全圧壊!! +4,500 PTS (逃走メーター +35%)', 'text-fuchsia-400 font-black');
-                        } else {
-                            addFloatingNotification('⚙️ TRAP TAKEDOWN: 障害物防壁で車両完全圧壊!! +4,500 PTS', 'text-fuchsia-400 font-black');
+
+                        if (isPlayerInvolved) {
+                            state.score += 4500;
+                            if (tc.type === 'POLICE') {
+                                state.heatLevel = Math.max(0, state.heatLevel - 1);
+                                state.pursuitEscapeProgress = Math.min(100, (state.pursuitEscapeProgress || 0) + 35.0);
+                                updateHUD();
+                                addFloatingNotification('⚙️ TRAP TAKEDOWN: 障害物防壁でパトカー完全圧壊!! +4,500 PTS (逃走メーター +35%)', 'text-fuchsia-400 font-black');
+                            } else {
+                                addFloatingNotification('⚙️ TRAP TAKEDOWN: 障害物防壁で車両完全圧壊!! +4,500 PTS', 'text-fuchsia-400 font-black');
+                            }
+                            advanceBounty('TAKEDOWN');
                         }
-                        advanceBounty('TAKEDOWN');
                         break;
                     }
                 }
@@ -3176,6 +3324,9 @@
         let hasAnySlipstream = false;
         for (let i = trafficCars.length - 1; i >= 0; i--) {
             const tc = trafficCars[i];
+            if (tc.rammedByPlayerTimer > 0) {
+                tc.rammedByPlayerTimer -= dt;
+            }
             const relativeSpeedMs = (state.speedKmh - tc.speedKmh) / 3.6;
 
             if (state.mode === 'PLAYING' && !tc.hitByPlayer) {
@@ -3333,6 +3484,8 @@
                         if (state.hazardActive) {
                             // 🛡️ HAZARD REAR COUNTER-SHIELD ACTIVATION!
                             tc.hitByPlayer = true;
+                            tc.isWrecked = true;
+                            tc.rammedByPlayerTimer = 4.0;
                             tc.isChasing = false;
                             audio.playCrashSound(50);
                             audio.playTakedown();
@@ -3360,6 +3513,7 @@
                         } else {
                             // Normal rear impact: player pushed, takes rear bumper damage
                             tc.hitByPlayer = true;
+                            tc.rammedByPlayerTimer = 4.0;
                             tc.isChasing = false;
                             audio.playCrash(0.85);
                             applySoftBodyCarDamage(14, dx * 0.4, 2.0);
@@ -3384,6 +3538,7 @@
                     const relKmh = Math.max(20, Math.abs(state.speedKmh - tc.speedKmh));
 
                     tc.hitByPlayer = true;
+                    tc.rammedByPlayerTimer = 4.0;
                     if (tc.type === 'TRUCK' && !tc.cargoSpilled && tc.cargoGroup) {
                         triggerTruckCargoSpill(tc);
                     }
@@ -3710,12 +3865,15 @@
         const btnHeader = document.getElementById('police-toggle-label');
         const btnModal = document.getElementById('modal-police-text');
 
+        const btnPolice = document.getElementById('btn-police-toggle');
         if (state.policeEnabled) {
-            if (btnHeader) btnHeader.textContent = '🚨 警察: ON';
+            if (btnHeader) btnHeader.textContent = 'ON';
+            if (btnPolice) btnPolice.title = '警察追跡: ON [O]';
             if (btnModal) btnModal.textContent = '🚨 警察追跡: [ON] (危険運転時のみ出動)';
             addFloatingNotification('🚨 警察追跡システム: [ON] (一般車追突や速度取締オービス検知時にのみ出動)', 'text-rose-400 font-bold');
         } else {
-            if (btnHeader) btnHeader.textContent = '🕊️ 警察: OFF';
+            if (btnHeader) btnHeader.textContent = 'OFF';
+            if (btnPolice) btnPolice.title = '警察追跡: OFF [O]';
             if (btnModal) btnModal.textContent = '🕊️ 警察追跡: [OFF] (完全平和モード)';
             state.heatLevel = 0;
             state.pursuitEscapeProgress = 0;
@@ -3767,7 +3925,9 @@
         state.cameraDragPitch = 0;
         const labels = ['チェイス', 'ローアングル', 'コックピット', 'ヘリ俯瞰'];
         const el = document.getElementById('camera-label');
+        const btnCam = document.getElementById('btn-camera');
         if (el) el.textContent = labels[state.cameraPreset];
+        if (btnCam) btnCam.title = `カメラ視点: ${labels[state.cameraPreset]} [C]`;
     }
 
     function setupInputListeners() {
@@ -4048,7 +4208,10 @@
             audio.init();
             audio.bgmMode = (audio.bgmMode + 1) % 4;
             const labels = ['BGM OFF', 'BGM 1: SYNTH', 'BGM 2: EURO', 'BGM 3: DARK'];
-            document.getElementById('bgm-label').textContent = labels[audio.bgmMode];
+            const bgmLbl = document.getElementById('bgm-label');
+            const btnBgm = document.getElementById('btn-bgm');
+            if (bgmLbl) bgmLbl.textContent = labels[audio.bgmMode];
+            if (btnBgm) btnBgm.title = `BGM切替: ${labels[audio.bgmMode]}`;
             document.getElementById('bgm-icon').className = audio.bgmMode === 0
                 ? 'fa-solid fa-music text-slate-500'
                 : 'fa-solid fa-music text-pink-400 animate-pulse';

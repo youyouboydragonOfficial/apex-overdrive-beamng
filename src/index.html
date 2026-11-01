@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.2.0</title>
+    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.2.1</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Bundled Offline Three.js r128 & Cannon.js 0.6.2 -->
@@ -142,94 +142,90 @@
 <body class="flex flex-col h-screen w-screen overflow-hidden select-none">
 
     <!-- Top HUD Bar -->
-    <header class="w-full h-14 z-20 px-3 sm:px-5 flex items-center justify-between hud-glass border-b border-slate-700/60 shrink-0 select-none overflow-hidden">
+    <header class="w-full h-14 z-20 px-2 sm:px-4 flex items-center justify-between hud-glass border-b border-slate-700/60 shrink-0 select-none overflow-hidden">
         <!-- Left: Brand & Stage Progress -->
-        <div class="flex items-center gap-2.5 shrink-0">
-            <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 shrink-0">
+            <div class="flex items-center gap-1.5">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
                 <div class="flex flex-col">
-                    <h1 class="font-['Orbitron'] font-black text-sm sm:text-base tracking-wider bg-gradient-to-r from-white via-sky-300 to-orange-400 bg-clip-text text-transparent leading-none">
+                    <h1 class="font-['Orbitron'] font-black text-xs sm:text-sm tracking-wider bg-gradient-to-r from-white via-sky-300 to-orange-400 bg-clip-text text-transparent leading-none">
                         CRASHORIA
                     </h1>
-                    <span class="text-[9px] font-bold text-amber-400/90 tracking-tight leading-none mt-0.5">ULTIMATE ROAD ADVENTURE</span>
+                    <span class="text-[8px] font-bold text-amber-400/90 tracking-tight leading-none mt-0.5 hidden sm:inline">ULTIMATE ROAD ADVENTURE</span>
                 </div>
             </div>
-            <span id="hud-stage-badge" class="text-[11px] font-bold text-sky-300 bg-slate-900/90 px-2.5 py-0.5 rounded-full border border-sky-500/30">
+            <span id="hud-stage-badge" class="text-[10px] font-bold text-sky-300 bg-slate-900/90 px-2 py-0.5 rounded-full border border-sky-500/30 max-w-[130px] sm:max-w-none truncate">
                 Lv.2 | 首都高湾岸6車線
             </span>
-            <div id="highbeam-badge" class="hidden flex items-center gap-1 bg-blue-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.6)]">
-                <i class="fa-solid fa-bolt text-yellow-300"></i> HIGH BEAM [F]
+            <div id="highbeam-badge" class="hidden flex items-center gap-1 bg-blue-600/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-blue-300">
+                <i class="fa-solid fa-bolt text-yellow-300"></i> HI [F]
             </div>
         </div>
 
-        <!-- Center: Armor Bar + Goal Distance Progress Bar (Fixed width, tabular numbers so it NEVER pushes adjacent elements) -->
-        <div class="hidden md:flex flex-col gap-1 w-64 lg:w-80 shrink-0 mx-2">
-            <div class="flex justify-between items-center text-[11px]">
+        <!-- Center: Armor Bar + Goal Distance Progress Bar (Flexible width, compresses gracefully so right-side controls never overflow) -->
+        <div class="hidden md:flex flex-col gap-0.5 max-w-[260px] w-full shrink mx-1.5">
+            <div class="flex justify-between items-center text-[10px]">
                 <span class="font-bold flex items-center gap-1 text-slate-200">
                     <i class="fa-solid fa-car-burst text-orange-400"></i>
                     軟体剛性
                 </span>
-                <div class="flex items-center gap-2">
-                    <span id="goal-progress-text" class="text-[11px] font-bold text-emerald-300 font-mono tabular-nums">GOAL残り: 3.20 km (0%)</span>
-                    <span id="hp-text" class="font-['Orbitron'] font-bold text-emerald-400 text-xs w-10 text-right tabular-nums">100%</span>
+                <div class="flex items-center gap-1.5">
+                    <span id="goal-progress-text" class="text-[10px] font-bold text-emerald-300 font-mono tabular-nums">GOAL残り: 3.20 km (0%)</span>
+                    <span id="hp-text" class="font-['Orbitron'] font-bold text-emerald-400 text-xs w-9 text-right tabular-nums">100%</span>
                 </div>
             </div>
-            <div class="w-full h-2.5 bg-slate-900/90 rounded-full overflow-hidden border border-slate-700 p-0.5 flex gap-1">
+            <div class="w-full h-2 bg-slate-900/90 rounded-full overflow-hidden border border-slate-700 p-0.5 flex gap-1">
                 <div id="hp-bar" class="h-full rounded-full transition-all duration-150 bg-gradient-to-r from-emerald-500 via-lime-400 to-emerald-300" style="width: 100%;"></div>
             </div>
-            <div class="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+            <div class="w-full h-1 bg-slate-900 rounded-full overflow-hidden">
                 <div id="goal-progress-bar" class="h-full bg-gradient-to-r from-sky-400 to-emerald-400 transition-all duration-150" style="width: 0%;"></div>
             </div>
         </div>
 
-        <!-- Right: Score, Overtakes & Action Buttons (Fixed widths for score and overtakes so buttons NEVER wobble!) -->
-        <div class="flex items-center gap-1.5 shrink-0 ml-auto">
-            <div class="flex items-center gap-2 bg-slate-900/80 px-2.5 py-1 rounded-xl border border-slate-700/80">
+        <!-- Right: Score, Overtakes & Action Buttons (Compact, cleanly sized so controls never push off-screen) -->
+        <div class="flex items-center gap-1 shrink-0 ml-auto">
+            <div class="flex items-center gap-1.5 bg-slate-900/80 px-2 py-1 rounded-lg border border-slate-700/80">
                 <div class="text-right">
-                    <div class="text-[9px] text-slate-400 leading-none">OVERTAKES</div>
-                    <div id="overtake-count" class="font-['Orbitron'] font-bold text-sky-400 text-xs sm:text-sm w-7 text-right tabular-nums">0</div>
+                    <div class="text-[8px] text-slate-400 leading-none">PASS</div>
+                    <div id="overtake-count" class="font-['Orbitron'] font-bold text-sky-400 text-xs w-6 text-right tabular-nums">0</div>
                 </div>
-                <div class="h-5 w-[1px] bg-slate-700"></div>
+                <div class="h-4 w-[1px] bg-slate-700"></div>
                 <div class="text-right">
-                    <div class="text-[9px] text-slate-400 leading-none">SCORE</div>
-                    <div id="score-display" class="font-['Orbitron'] font-bold text-amber-400 text-xs sm:text-sm w-16 sm:w-20 text-right tabular-nums">000000</div>
+                    <div class="text-[8px] text-slate-400 leading-none">SCORE</div>
+                    <div id="score-display" class="font-['Orbitron'] font-bold text-amber-400 text-xs sm:text-sm w-16 text-right tabular-nums">000000</div>
                 </div>
             </div>
 
-            <button id="btn-police-toggle" class="game-btn px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 text-rose-300 border-rose-500/50" title="警察追跡機能 ON/OFF 切替 (Oキー)">
-                <i class="fa-solid fa-shield-halved"></i>
-                <span id="police-toggle-label">🚨 警察: ON</span>
+            <button id="btn-police-toggle" class="game-btn h-8 px-2 rounded-lg text-xs font-bold flex items-center gap-1 text-rose-300 border-rose-500/50 shrink-0" title="警察追跡 ON/OFF [O]">
+                <i class="fa-solid fa-shield-halved text-rose-400"></i>
+                <span id="police-toggle-label" class="text-[10px] font-bold">ON</span>
             </button>
-            <button id="btn-garage" class="game-btn px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 text-amber-300 border-amber-500/40" title="ショールーム＆設定画面">
+            <button id="btn-garage" class="game-btn w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-amber-300 border-amber-500/40 shrink-0" title="ショールーム＆設定ガレージ [ESC]">
                 <i class="fa-solid fa-warehouse"></i>
-                <span class="hidden xl:inline">ガレージ</span>
             </button>
-            <button id="btn-weather" class="game-btn px-2 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 text-sky-300 border-sky-500/40" title="天候切替 (晴天/深夜/雨天/濃霧)">
+            <button id="btn-weather" class="game-btn w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-sky-300 border-sky-500/40 shrink-0" title="天候切替">
                 <i id="weather-icon" class="fa-solid fa-sun text-yellow-400"></i>
-                <span class="hidden 2xl:inline" id="weather-label">晴天</span>
+                <span class="sr-only" id="weather-label">晴天</span>
             </button>
-            <button id="btn-beam-view" class="game-btn px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 text-slate-200" title="BeamNG 構造ノード・応力表示 (Vキー)">
-                <i class="fa-solid fa-diagram-project text-emerald-400"></i>
-                <span class="hidden lg:inline">構造ノード[V]</span>
+            <button id="btn-beam-view" class="game-btn w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-emerald-400 border-emerald-500/40 shrink-0" title="BeamNG 構造ノード表示 [V]">
+                <i class="fa-solid fa-diagram-project"></i>
             </button>
-            <button id="btn-slowmo" class="game-btn px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 text-slate-200" title="スローモーション切替 (Shiftキー)">
-                <i class="fa-solid fa-Burst text-fuchsia-400 fa-clock"></i>
-                <span class="hidden lg:inline">スロー[Shift]</span>
+            <button id="btn-slowmo" class="game-btn w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-fuchsia-400 border-fuchsia-500/40 shrink-0" title="スローモーション [Shift]">
+                <i class="fa-solid fa-clock"></i>
             </button>
-            <button id="btn-repair-hud" class="game-btn px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 text-lime-300" title="即座に板金・パンク修復 (Rキー)">
+            <button id="btn-repair-hud" class="game-btn w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-lime-300 border-lime-500/40 shrink-0" title="即座に板金修復 [R]">
                 <i class="fa-solid fa-wrench"></i>
-                <span class="hidden xl:inline">修復[R]</span>
             </button>
-            <button id="btn-camera" class="game-btn px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 text-slate-200" title="カメラ視点切替 (Cキー)">
-                <i class="fa-solid fa-video text-sky-400"></i>
-                <span class="hidden xl:inline" id="camera-label">チェイス</span>
+            <button id="btn-camera" class="game-btn w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-sky-400 border-sky-500/40 shrink-0" title="カメラ視点切替 [C]">
+                <i class="fa-solid fa-video"></i>
+                <span class="sr-only" id="camera-label">チェイス</span>
             </button>
-            <button id="btn-bgm" class="game-btn px-2 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 text-slate-200" title="BGM切替">
-                <i id="bgm-icon" class="fa-solid fa-music text-pink-400"></i>
-                <span class="hidden 2xl:inline" id="bgm-label">BGM 1</span>
+            <button id="btn-bgm" class="game-btn w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-pink-400 border-pink-500/40 shrink-0" title="BGM切替">
+                <i id="bgm-icon" class="fa-solid fa-music"></i>
+                <span class="sr-only" id="bgm-label">BGM 1</span>
             </button>
-            <button id="btn-sound" class="game-btn px-2 py-1.5 rounded-xl text-xs font-bold flex items-center text-slate-200" title="効果音 ON/OFF">
-                <i id="sound-icon" class="fa-solid fa-volume-high text-emerald-400"></i>
+            <button id="btn-sound" class="game-btn w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-emerald-400 border-emerald-500/40 shrink-0" title="効果音 ON/OFF">
+                <i id="sound-icon" class="fa-solid fa-volume-high"></i>
             </button>
         </div>
     </header>
