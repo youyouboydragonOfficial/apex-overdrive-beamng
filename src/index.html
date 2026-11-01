@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.3.0</title>
+    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.0</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Bundled Offline Three.js r128 & Cannon.js 0.6.2 -->
@@ -15,6 +15,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
+        @keyframes splashBarShimmerAnim {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(250%); }
+        }
+        .splash-bar-shimmer {
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.85) 50%, transparent 100%);
+            animation: splashBarShimmerAnim 1.1s infinite linear;
+        }
         * {
             box-sizing: border-box;
             user-select: none;
@@ -418,14 +426,65 @@
         </div>
 
         <!-- ========================================================================= -->
+        <!-- STARTUP SPLASH & LOADING SCREEN (アプリ起動画面 - 16:9 ワイド画面＆滑らかロードバー) -->
+        <!-- ========================================================================= -->
+        <div id="splash-screen" class="fixed inset-0 z-50 flex flex-col justify-between overflow-hidden bg-slate-950 transition-opacity duration-700 select-none">
+            <!-- 16:9 Widescreen Backdrop -->
+            <div class="absolute inset-0 z-0 overflow-hidden flex items-center justify-center bg-slate-950">
+                <img id="splash-img" src="assets/splash_widescreen.jpg" class="w-full h-full object-cover object-center scale-100 transition-transform duration-1000 ease-out" alt="Crashoria Ultimate Road Adventure">
+                <!-- Cyberpunk Vignette & Glowing Edge Shading -->
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-slate-950/70 pointer-events-none"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-slate-950/70 via-transparent to-slate-950/70 pointer-events-none"></div>
+                <div class="absolute inset-0 shadow-[inset_0_0_100px_rgba(2,6,23,0.95)] pointer-events-none"></div>
+            </div>
+
+            <!-- Top Brand Bar -->
+            <div class="relative z-10 w-full pt-4 px-6 sm:px-8 flex items-center justify-between pointer-events-auto">
+                <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/70 border border-sky-500/40 backdrop-blur-md">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="font-['Orbitron'] text-[11px] font-black tracking-widest text-emerald-400">BEAMNG SOFT-BODY v3.4.0</span>
+                </div>
+                <button id="btn-skip-splash" type="button" class="game-btn px-3 py-1 rounded-full text-slate-300 hover:text-white text-[11px] font-bold border-slate-700 bg-slate-900/70 backdrop-blur-md cursor-pointer transition-all hover:border-amber-400">
+                    スキップ (Space / Enter) <i class="fa-solid fa-forward ml-1"></i>
+                </button>
+            </div>
+
+            <!-- Bottom Smooth Loading Bar (横に流れるかくかくしないロードバー) -->
+            <div class="relative z-10 w-full max-w-2xl mx-auto px-6 pb-8 flex flex-col items-center gap-2 pointer-events-auto">
+                <div class="w-full flex items-center justify-between text-xs font-['Orbitron'] font-bold drop-shadow-[0_0_12px_rgba(56,189,248,0.8)]">
+                    <div class="flex items-center gap-2 text-sky-300 tracking-wider">
+                        <i id="splash-spinner" class="fa-solid fa-circle-notch fa-spin text-sky-400"></i>
+                        <span id="splash-status-text">INITIALIZING SOFT-BODY PHYSICS ENGINE...</span>
+                    </div>
+                    <div id="splash-pct-text" class="text-amber-400 text-sm font-black">
+                        0%
+                    </div>
+                </div>
+
+                <!-- Silky Smooth Horizontal Shimmer Track -->
+                <div class="w-full h-3.5 bg-slate-950/85 border border-sky-500/50 rounded-full p-0.5 overflow-hidden shadow-[0_0_25px_rgba(56,189,248,0.4)] backdrop-blur-md">
+                    <div id="splash-progress-bar" class="h-full rounded-full relative overflow-hidden transition-[width] duration-75 ease-linear" style="width: 0%; background: linear-gradient(90deg, #0284c7 0%, #38bdf8 30%, #f59e0b 70%, #ec4899 100%); box-shadow: 0 0 15px rgba(56,189,248,0.85);">
+                        <!-- Silk Shimmer Beam -->
+                        <div class="absolute inset-0 splash-bar-shimmer pointer-events-none"></div>
+                    </div>
+                </div>
+
+                <div class="w-full flex items-center justify-between text-[10px] text-slate-400 font-medium px-1">
+                    <span>CRASHORIA: ULTIMATE ROAD ADVENTURE</span>
+                    <span class="text-slate-500">クリックまたはキー操作ですぐに開始</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================= -->
         <!-- START / HOME SCREEN (タイトル・スタート画面) -->
         <!-- ========================================================================= -->
-        <div id="home-screen" class="absolute inset-0 z-40 flex items-center justify-center p-4 bg-gradient-to-b from-slate-950/85 via-slate-950/65 to-slate-950/90 backdrop-blur-sm pointer-events-auto">
+        <div id="home-screen" class="hidden absolute inset-0 z-40 flex items-center justify-center p-4 bg-gradient-to-b from-slate-950/85 via-slate-950/65 to-slate-950/90 backdrop-blur-sm pointer-events-auto">
             <div class="hud-glass max-w-xl w-full rounded-3xl p-6 sm:p-8 border border-sky-500/40 shadow-[0_0_60px_rgba(14,165,233,0.3)] flex flex-col items-center text-center gap-5">
                 <!-- Glowing Title -->
                 <div>
                     <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-300 text-xs font-bold mb-2">
-                        <i class="fa-solid fa-car-burst text-orange-400"></i> BEAMNG 軟体物理エンジン搭載 v3.3.0
+                        <i class="fa-solid fa-car-burst text-orange-400"></i> BEAMNG 軟体物理エンジン搭載 v3.4.0
                     </div>
                     <h1 class="font-['Orbitron'] font-black text-3xl sm:text-5xl tracking-widest bg-gradient-to-r from-white via-sky-300 to-amber-400 bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(56,189,248,0.6)]">
                         CRASHORIA
@@ -478,12 +537,17 @@
                         </button>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2.5">
-                        <button id="btn-home-shortcut" type="button" class="game-btn py-2 px-3 rounded-xl text-xs font-bold text-emerald-300 border-emerald-500/40 flex items-center justify-center gap-1.5">
+                    <!-- 3-Button Action Deck: Shortcut, Danger Zone, Exit -->
+                    <div class="grid grid-cols-3 gap-2">
+                        <button id="btn-home-shortcut" type="button" class="game-btn py-2 px-2 rounded-xl text-[11px] font-bold text-emerald-300 border-emerald-500/40 flex items-center justify-center gap-1">
                             <i class="fa-solid fa-desktop"></i>
-                            <span>ショートカット作成</span>
+                            <span>ショートカット</span>
                         </button>
-                        <button id="btn-home-exit" type="button" class="game-btn py-2 px-3 rounded-xl text-xs font-bold text-slate-400 border-slate-700 hover:text-rose-400 flex items-center justify-center gap-1.5">
+                        <button id="btn-home-danger" type="button" class="game-btn py-2 px-2 rounded-xl text-[11px] font-bold text-rose-400 border-rose-500/50 hover:bg-rose-950/60 flex items-center justify-center gap-1 shadow-[0_0_12px_rgba(244,63,94,0.3)]">
+                            <i class="fa-solid fa-triangle-exclamation text-rose-500"></i>
+                            <span>危険地帯</span>
+                        </button>
+                        <button id="btn-home-exit" type="button" class="game-btn py-2 px-2 rounded-xl text-[11px] font-bold text-slate-400 border-slate-700 hover:text-rose-400 flex items-center justify-center gap-1">
                             <i class="fa-solid fa-power-off"></i>
                             <span>ゲーム終了</span>
                         </button>
@@ -502,7 +566,7 @@
         </div>
 
         <!-- ========================================================================= -->
-        <!-- SETTINGS & SENSITIVITY MODAL (設定＆左右操舵感度＆危険地帯) -->
+        <!-- SETTINGS & SENSITIVITY MODAL (設定＆左右操舵感度) -->
         <!-- ========================================================================= -->
         <div id="settings-modal" class="hidden absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md pointer-events-auto">
             <div class="hud-glass max-w-lg w-full rounded-3xl p-5 sm:p-6 border border-sky-500/40 shadow-[0_0_50px_rgba(14,165,233,0.35)] flex flex-col gap-4 max-h-[90vh] overflow-y-auto custom-scroll">
@@ -531,7 +595,7 @@
                         </span>
                     </div>
                     <p class="text-[11px] text-slate-400">
-                        キーボード操作時の左右レーンチェンジ速度を微調整できます。前のバージョン準拠の挙動をベースに、お好みのフィーリングに細かく調節可能です。
+                        キーボード操作時の左右レーンチェンジ速度を微調整できます。急な左右の振れを抑えた安定感ある物理挙動をベースに、お好みのフィーリングに細かく調節可能です。
                     </p>
                     <input id="setting-steer-slider" type="range" min="50" max="150" step="5" value="100" class="w-full accent-amber-400 h-2 bg-slate-800 rounded-lg cursor-pointer">
                     
@@ -565,40 +629,20 @@
                 </div>
                 <div id="setting-shortcut-badge" class="hidden text-xs text-center font-bold"></div>
 
-                <!-- 3. 危険地帯 (DANGER ZONE) -->
-                <div class="p-4 rounded-2xl bg-rose-950/40 border border-rose-500/50 flex flex-col gap-3">
-                    <div class="flex items-center gap-1.5 text-rose-400 font-bold text-xs">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        危険地帯 (DANGER ZONE)
-                    </div>
-
-                    <div class="flex items-center justify-between gap-3">
-                        <div>
-                            <div class="font-bold text-xs text-rose-200">
-                                アプリケーションのアンインストール
-                            </div>
-                            <div class="text-[10px] text-rose-300/70">
-                                アンインストーラーを起動してアプリをPCから削除します。
-                            </div>
+                <!-- 3. 危険地帯 (DANGER ZONE) Link -->
+                <div class="p-4 rounded-2xl bg-rose-950/40 border border-rose-500/50 flex items-center justify-between gap-3">
+                    <div>
+                        <div class="flex items-center gap-1.5 text-rose-400 font-bold text-xs">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            危険地帯 (DANGER ZONE)
                         </div>
-                        <button id="btn-danger-uninstall" type="button" class="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs border border-rose-400 shrink-0 cursor-pointer transition-all shadow-[0_0_15px_rgba(244,63,94,0.4)]">
-                            <i class="fa-solid fa-trash-can mr-1"></i>アンインストール
-                        </button>
-                    </div>
-
-                    <div class="flex items-center justify-between gap-3 border-t border-rose-900/60 pt-2.5">
-                        <div>
-                            <div class="font-bold text-xs text-slate-300">
-                                セーブデータ・ハイスコア初期化
-                            </div>
-                            <div class="text-[10px] text-slate-400">
-                                保存された最高スコアやクリア進捗を初期化します。
-                            </div>
+                        <div class="text-[10px] text-rose-300/80 mt-0.5">
+                            ポータブル版の完全消去・アンインストール・セーブデータ初期化
                         </div>
-                        <button id="btn-danger-reset" type="button" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 font-bold text-xs border border-rose-500/40 shrink-0 cursor-pointer transition-all">
-                            <i class="fa-solid fa-broom mr-1"></i>初期化
-                        </button>
                     </div>
+                    <button id="btn-settings-open-danger" type="button" class="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs border border-rose-400 shrink-0 cursor-pointer transition-all shadow-[0_0_15px_rgba(244,63,94,0.4)]">
+                        危険地帯を開く
+                    </button>
                 </div>
 
                 <!-- Close Button -->
@@ -609,7 +653,91 @@
         </div>
 
         <!-- ========================================================================= -->
-        <!-- UNINSTALL CONFIRMATION MODAL (アンインストール確認) -->
+        <!-- DEDICATED DANGER ZONE MODAL (危険地帯 - ポータブル版消去 / アンインストール / データ初期化) -->
+        <!-- ========================================================================= -->
+        <div id="danger-zone-modal" class="hidden absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md pointer-events-auto select-none">
+            <div class="hud-glass max-w-lg w-full rounded-3xl p-5 sm:p-6 border-2 border-rose-500/80 shadow-[0_0_60px_rgba(244,63,94,0.5)] flex flex-col gap-4 max-h-[90vh] overflow-y-auto custom-scroll">
+                <!-- Header -->
+                <div class="flex items-center justify-between border-b border-rose-500/40 pb-3">
+                    <div class="flex items-center gap-2 text-rose-400">
+                        <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                        <h2 class="font-['Orbitron'] text-lg sm:text-xl font-black text-white">
+                            DANGER ZONE (危険地帯)
+                        </h2>
+                    </div>
+                    <button id="btn-close-danger-zone" type="button" class="game-btn w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white" title="閉じる">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Edition Badge (Portable vs Installed) -->
+                <div id="danger-edition-badge" class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-between text-xs">
+                    <span class="text-slate-400">現在の稼働環境:</span>
+                    <span id="danger-edition-text" class="font-bold text-sky-400">検出中...</span>
+                </div>
+
+                <!-- 1. Portable Mode Card (Shown when Portable) -->
+                <div id="danger-portable-card" class="p-4 rounded-2xl bg-rose-950/30 border border-rose-500/50 flex flex-col gap-3">
+                    <div class="flex items-center gap-2 text-rose-300 font-bold text-xs">
+                        <i class="fa-solid fa-box-archive"></i>
+                        <span>ポータブル版 (PORTABLE) の消去・ファイル管理</span>
+                    </div>
+                    <p class="text-[11px] text-rose-200/80 leading-relaxed">
+                        本アプリはインストール不要のポータブル版として動作しています。PCから完全に消去したい場合は「ポータブル版を完全消去」を実行してください。保存先のファイルを直接確認したい場合は「保存先フォルダーを開く」をご利用いただけます。
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                        <button id="btn-danger-portable-delete" type="button" class="py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs border border-rose-400 flex items-center justify-center gap-1.5 cursor-pointer shadow-[0_0_20px_rgba(244,63,94,0.4)]">
+                            <i class="fa-solid fa-trash-can"></i>
+                            <span>ポータブル版を完全消去</span>
+                        </button>
+                        <button id="btn-danger-portable-folder" type="button" class="game-btn py-2.5 px-3 rounded-xl text-sky-300 border-sky-500/40 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-folder-open"></i>
+                            <span>保存先フォルダーを開く</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. Installer Mode Card (Shown when Installed) -->
+                <div id="danger-installer-card" class="hidden p-4 rounded-2xl bg-rose-950/30 border border-rose-500/50 flex flex-col gap-3">
+                    <div class="flex items-center gap-2 text-rose-300 font-bold text-xs">
+                        <i class="fa-solid fa-window-restore"></i>
+                        <span>インストーラー版 (SETUP) のアンインストール</span>
+                    </div>
+                    <p class="text-[11px] text-rose-200/80 leading-relaxed">
+                        Windows公式のアンインストーラーを起動し、デスクトップショートカットやプログラム本体をPCから完全に削除します。
+                    </p>
+                    <button id="btn-danger-installer-uninstall" type="button" class="w-full py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs border border-rose-400 flex items-center justify-center gap-1.5 cursor-pointer shadow-[0_0_20px_rgba(244,63,94,0.4)]">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span>Windowsアンインストーラーを起動</span>
+                    </button>
+                </div>
+
+                <!-- 3. Save Data & Cache Reset Card (Common to both) -->
+                <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-700 flex flex-col gap-2.5">
+                    <div class="flex items-center justify-between">
+                        <div class="font-bold text-xs text-slate-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-database text-amber-400"></i>
+                            <span>セーブデータ＆キャッシュ完全初期化</span>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-400 leading-relaxed">
+                        すべてのハイスコア、ステージクリア記録、ステアリング感度設定、ローカル一時データを初期状態にリセットします。
+                    </p>
+                    <button id="btn-danger-reset-all" type="button" class="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-broom"></i>
+                        <span>全セーブデータ・設定を初期化</span>
+                    </button>
+                </div>
+
+                <!-- Close -->
+                <button id="btn-close-danger-zone-bottom" type="button" class="game-btn w-full py-2.5 rounded-xl font-bold text-slate-300 text-xs cursor-pointer">
+                    危険地帯を閉じる
+                </button>
+            </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- UNINSTALL CONFIRMATION MODAL (アンインストール・完全消去 最終確認) -->
         <!-- ========================================================================= -->
         <div id="uninstall-confirm-modal" class="hidden absolute inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md pointer-events-auto">
             <div class="hud-glass max-w-md w-full rounded-3xl p-6 border-2 border-rose-500 shadow-[0_0_50px_rgba(244,63,94,0.6)] flex flex-col gap-4 text-center">
@@ -617,12 +745,11 @@
                     <i class="fa-solid fa-trash-can"></i>
                 </div>
                 <div>
-                    <h3 class="font-['Orbitron'] text-xl font-black text-white">
-                        UNINSTALL APP?
+                    <h3 id="confirm-modal-title" class="font-['Orbitron'] text-xl font-black text-white">
+                        CONFIRM DELETION
                     </h3>
-                    <p class="text-xs text-rose-200 mt-2 leading-relaxed">
-                        本当に Crashoria をアンインストールしますか？<br>
-                        インストーラー版（Setup版）の場合はアンインストーラーを起動してアプリを終了します。ポータブル版の場合はWindowsの「インストールされているアプリ」画面を開きます。
+                    <p id="confirm-modal-desc" class="text-xs text-rose-200 mt-2 leading-relaxed">
+                        本当に Crashoria を削除しますか？
                     </p>
                 </div>
                 <div class="grid grid-cols-2 gap-3 pt-2">
@@ -630,7 +757,7 @@
                         キャンセル
                     </button>
                     <button id="btn-uninstall-proceed" type="button" class="py-2.5 rounded-xl font-bold text-white bg-rose-600 hover:bg-rose-500 border border-rose-400 text-xs cursor-pointer shadow-[0_0_20px_rgba(244,63,94,0.6)]">
-                        アンインストール実行
+                        実行する
                     </button>
                 </div>
             </div>

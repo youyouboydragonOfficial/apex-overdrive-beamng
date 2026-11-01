@@ -40,7 +40,8 @@
     }
 
     const state = {
-        mode: 'HOME', // HOME, MENU, PLAYING, EXPLODING, GAMEOVER, STAGECLEAR
+        mode: 'SPLASH', // SPLASH, HOME, MENU, PLAYING, EXPLODING, GAMEOVER, STAGECLEAR
+        appInfo: { isPortable: false, portableExePath: '' },
         steerSensitivity: 1.0, // Fine steering sensitivity preference (50% - 150%)
         gameType: 'CAREER', // CAREER (Stage Clear Goal), ENDLESS, SANDBOX (BeamNG Crash Lab)
         selectedCar: 'HYPER',
@@ -2308,16 +2309,19 @@
 
             if (steerInput !== 0) {
                 const userSensitivity = (state.steerSensitivity !== undefined ? state.steerSensitivity : 1.0);
-                const driftSteerMult = (isDriftKeyDown && canInitiateDrift) ? 1.45 : 1.0;
-                // Direct, stable, classic steering restored from previous version, adjusted by user sensitivity slider!
-                const totalSteerPower = carSpec.steerPower * driftSteerMult * mapSpec.grip * airControlFactor * userSensitivity;
-                state.playerVX += steerInput * totalSteerPower * dt;
+                const driftSteerMult = (isDriftKeyDown && canInitiateDrift) ? 1.38 : 1.0;
+                const nosSteerMult = state.nosActive ? 1.10 : 1.0;
+                // Balanced baseline steer power dialed back to smooth out rapid snaps and excessive jerkiness
+                const steerBase = carSpec.steerPower * 0.82;
+                const totalSteerPower = steerBase * driftSteerMult * nosSteerMult * mapSpec.grip * airControlFactor * userSensitivity;
+                // Progressive lateral acceleration with aerodynamic damping for predictable, planted steering
+                state.playerVX += (steerInput * totalSteerPower - state.playerVX * 2.5) * dt;
             } else {
-                const damping = mapSpec.grip < 0.8 ? 0.14 : (isDriftKeyDown ? 0.08 : 0.035);
+                const damping = mapSpec.grip < 0.8 ? 0.14 : (isDriftKeyDown ? 0.08 : 0.032);
                 state.playerVX *= Math.pow(damping, dt);
             }
 
-            const maxVX = (isDriftKeyDown && canInitiateDrift) ? 22.0 : 17.0;
+            const maxVX = (isDriftKeyDown && canInitiateDrift) ? 18.0 : (state.nosActive ? 14.5 : 13.2) * Math.max(0.7, (state.steerSensitivity || 1.0));
             state.playerVX = THREE.MathUtils.clamp(state.playerVX, -maxVX, maxVX);
             state.lateralG = ((state.playerVX - prevVX) / Math.max(0.01, dt * 9.81));
             state.playerX += (state.playerVX + tireDriftBias) * dt;
@@ -3822,6 +3826,145 @@
         if (stageSubEl && lvl) stageSubEl.textContent = `Lv.${state.selectedLevel} | 目標 ${lvl.goalKm}km`;
     }
 
+    // =========================================================================
+    // STARTUP SPLASH SCREEN ENGINE (16:9 ワイド画面＆滑らかロードバー)
+    // =========================================================================
+    let splashProgress = 0;
+    let splashAnimationDone = false;
+    let splashStartTime = null;
+
+    function initSplashScreen() {
+        state.mode = 'SPLASH';
+        const splash = document.getElementById('splash-screen');
+        if (!splash) {
+            openHomeScreen();
+            return;
+        }
+        splash.classList.remove('hidden');
+        splash.style.opacity = '1';
+        splashProgress = 0;
+        splashAnimationDone = false;
+        splashStartTime = null;
+
+        const btnSkip = document.getElementById('btn-skip-splash');
+        if (btnSkip) {
+            btnSkip.onclick = (e) => {
+                e.stopPropagation();
+                closeSplashScreen();
+            };
+        }
+        splash.onclick = (e) => {
+            if (e.target.closest('#btn-skip-splash')) return;
+            closeSplashScreen();
+        };
+
+        requestAnimationFrame(updateSplashStep);
+    }
+
+    function updateSplashStep(timestamp) {
+        if (splashAnimationDone || state.mode !== 'SPLASH') return;
+        if (!splashStartTime) splashStartTime = timestamp;
+        const elapsed = (timestamp - splashStartTime) / 1000;
+
+        // Smooth cubic progression across 2.2 seconds total
+        const targetProgress = Math.min(100, (elapsed / 2.2) * 100);
+        splashProgress = THREE.MathUtils.lerp(splashProgress, targetProgress, 0.14);
+
+        const bar = document.getElementById('splash-progress-bar');
+        const pctText = document.getElementById('splash-pct-text');
+        const statusText = document.getElementById('splash-status-text');
+
+        const dispPct = Math.min(100, Math.round(splashProgress));
+        if (bar) bar.style.width = `${dispPct}%`;
+        if (pctText) pctText.textContent = `${dispPct}%`;
+
+        if (statusText) {
+            if (dispPct < 25) {
+                statusText.textContent = 'INITIALIZING SOFT-BODY PHYSICS & MESHES...';
+            } else if (dispPct < 55) {
+                statusText.textContent = 'TUNING V12 SUPERCHARGED POWERTRAINS...';
+            } else if (dispPct < 85) {
+                statusText.textContent = 'STREAMING 16 ULTRA-HD HIGHWAYS & CANYONS...';
+            } else {
+                statusText.textContent = 'SYSTEM READY - LAUNCHING CRASHORIA...';
+            }
+        }
+
+        if (elapsed >= 2.25 && dispPct >= 99) {
+            if (bar) bar.style.width = '100%';
+            if (pctText) pctText.textContent = '100%';
+            setTimeout(() => {
+                closeSplashScreen();
+            }, 180);
+            return;
+        }
+
+        requestAnimationFrame(updateSplashStep);
+    }
+
+    function closeSplashScreen() {
+        if (splashAnimationDone) return;
+        splashAnimationDone = true;
+        const splash = document.getElementById('splash-screen');
+        if (splash) {
+            splash.style.opacity = '0';
+            setTimeout(() => {
+                splash.classList.add('hidden');
+            }, 600);
+        }
+        openHomeScreen();
+    }
+
+    // =========================================================================
+    // APP ENVIRONMENT & DANGER ZONE UI
+    // =========================================================================
+    function queryAppEnvironment() {
+        try {
+            const { ipcRenderer } = require('electron');
+            ipcRenderer.send('get-app-info');
+            ipcRenderer.once('get-app-info-result', (_event, info) => {
+                state.appInfo = info;
+                syncDangerZoneUI();
+            });
+        } catch (err) {
+            state.appInfo = { isPortable: true, portableExePath: '' };
+            syncDangerZoneUI();
+        }
+    }
+
+    function syncDangerZoneUI() {
+        const info = state.appInfo || { isPortable: false };
+        const editionText = document.getElementById('danger-edition-text');
+        const portableCard = document.getElementById('danger-portable-card');
+        const installerCard = document.getElementById('danger-installer-card');
+
+        if (editionText) {
+            editionText.textContent = info.isPortable
+                ? '【ポータブル版 (PORTABLE)】- インストール不要単独動作中'
+                : '【インストーラー版 (SETUP)】- Windows正規インストール環境';
+            editionText.className = info.isPortable ? 'font-bold text-amber-400' : 'font-bold text-sky-400';
+        }
+        if (portableCard) {
+            if (info.isPortable) portableCard.classList.remove('hidden');
+            else portableCard.classList.add('hidden');
+        }
+        if (installerCard) {
+            if (info.isPortable) installerCard.classList.add('hidden');
+            else installerCard.classList.remove('hidden');
+        }
+    }
+
+    function openDangerZoneModal() {
+        const modal = document.getElementById('danger-zone-modal');
+        if (modal) modal.classList.remove('hidden');
+        syncDangerZoneUI();
+    }
+
+    function closeDangerZoneModal() {
+        const modal = document.getElementById('danger-zone-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
     function openHomeScreen() {
         state.mode = 'HOME';
         const home = document.getElementById('home-screen');
@@ -3830,6 +3973,8 @@
         if (modal) modal.classList.add('hidden');
         const settings = document.getElementById('settings-modal');
         if (settings) settings.classList.add('hidden');
+        const danger = document.getElementById('danger-zone-modal');
+        if (danger) danger.classList.add('hidden');
         const uninst = document.getElementById('uninstall-confirm-modal');
         if (uninst) uninst.classList.add('hidden');
         updateHomePreview();
@@ -4050,6 +4195,12 @@
                     ipcRenderer.send('toggle-fullscreen');
                 } catch (err) {}
             }
+            if (state.mode === 'SPLASH') {
+                if (e.code === 'Enter' || e.code === 'Space' || e.code === 'Escape') {
+                    closeSplashScreen();
+                    return;
+                }
+            }
             if (e.code === 'Enter') {
                 if (state.mode === 'HOME' || (state.mode !== 'PLAYING' && state.mode !== 'EXPLODING')) {
                     startNewRace();
@@ -4057,6 +4208,16 @@
                 }
             }
             if (e.code === 'Escape') {
+                const danger = document.getElementById('danger-zone-modal');
+                if (danger && !danger.classList.contains('hidden')) {
+                    closeDangerZoneModal();
+                    return;
+                }
+                const uninst = document.getElementById('uninstall-confirm-modal');
+                if (uninst && !uninst.classList.contains('hidden')) {
+                    uninst.classList.add('hidden');
+                    return;
+                }
                 const settings = document.getElementById('settings-modal');
                 if (settings && !settings.classList.contains('hidden')) {
                     closeSettingsModal();
@@ -4429,46 +4590,114 @@
             }
         });
 
-        // Danger Zone: Uninstall confirmation
-        const uninstModal = document.getElementById('uninstall-confirm-modal');
-        const btnDangerUninstall = document.getElementById('btn-danger-uninstall');
-        if (btnDangerUninstall) {
-            btnDangerUninstall.addEventListener('click', () => {
+        // Danger Zone Modal Triggers & Handlers
+        let pendingDangerAction = null;
+        queryAppEnvironment();
+
+        const btnHomeDanger = document.getElementById('btn-home-danger');
+        if (btnHomeDanger) btnHomeDanger.addEventListener('click', openDangerZoneModal);
+
+        const btnSettingsDanger = document.getElementById('btn-settings-open-danger');
+        if (btnSettingsDanger) {
+            btnSettingsDanger.addEventListener('click', () => {
+                closeSettingsModal();
+                openDangerZoneModal();
+            });
+        }
+
+        const btnCloseDanger = document.getElementById('btn-close-danger-zone');
+        if (btnCloseDanger) btnCloseDanger.addEventListener('click', closeDangerZoneModal);
+
+        const btnCloseDangerBottom = document.getElementById('btn-close-danger-zone-bottom');
+        if (btnCloseDangerBottom) btnCloseDangerBottom.addEventListener('click', closeDangerZoneModal);
+
+        // Portable: Delete .exe
+        const btnPortableDelete = document.getElementById('btn-danger-portable-delete');
+        if (btnPortableDelete) {
+            btnPortableDelete.addEventListener('click', () => {
+                pendingDangerAction = 'DELETE_PORTABLE';
+                const uninstModal = document.getElementById('uninstall-confirm-modal');
+                const title = document.getElementById('confirm-modal-title');
+                const desc = document.getElementById('confirm-modal-desc');
+                if (title) title.textContent = 'DELETE PORTABLE APP?';
+                if (desc) desc.innerHTML = 'ダウンロードしたポータブル実行ファイル本体（.exe）をPCから自動的に安全消去し、ゲームを終了します。<br><span class="text-rose-400 font-bold">※この操作は取り消せません。本当によろしいですか？</span>';
                 if (uninstModal) uninstModal.classList.remove('hidden');
+            });
+        }
+
+        // Portable: Open Folder
+        const btnPortableFolder = document.getElementById('btn-danger-portable-folder');
+        if (btnPortableFolder) {
+            btnPortableFolder.addEventListener('click', () => {
+                try {
+                    const { ipcRenderer } = require('electron');
+                    ipcRenderer.send('open-portable-folder');
+                    addFloatingNotification('📁 保存先フォルダーをエクスプローラーで開きました', 'text-sky-300 font-bold');
+                } catch (err) {
+                    addFloatingNotification('⚠️ フォルダーを開けませんでした', 'text-amber-400');
+                }
+            });
+        }
+
+        // Installer: Launch official uninstaller
+        const btnInstallerUninst = document.getElementById('btn-danger-installer-uninstall');
+        if (btnInstallerUninst) {
+            btnInstallerUninst.addEventListener('click', () => {
+                pendingDangerAction = 'UNINSTALL_SETUP';
+                const uninstModal = document.getElementById('uninstall-confirm-modal');
+                const title = document.getElementById('confirm-modal-title');
+                const desc = document.getElementById('confirm-modal-desc');
+                if (title) title.textContent = 'UNINSTALL APP?';
+                if (desc) desc.innerHTML = 'Windows公式アンインストーラーを起動してアプリをPCから完全に削除します。<br>よろしいですか？';
+                if (uninstModal) uninstModal.classList.remove('hidden');
+            });
+        }
+
+        // Confirmation Modal Proceed
+        const btnUninstProceed = document.getElementById('btn-uninstall-proceed');
+        if (btnUninstProceed) {
+            btnUninstProceed.addEventListener('click', () => {
+                const uninstModal = document.getElementById('uninstall-confirm-modal');
+                if (uninstModal) uninstModal.classList.add('hidden');
+                try {
+                    const { ipcRenderer } = require('electron');
+                    if (pendingDangerAction === 'DELETE_PORTABLE') {
+                        addFloatingNotification('🗑️ ポータブル版を消去して終了しています...', 'text-rose-400 font-bold');
+                        ipcRenderer.send('delete-portable-app');
+                    } else {
+                        ipcRenderer.send('uninstall-app');
+                    }
+                } catch (err) {
+                    addFloatingNotification('⚠️ 処理に失敗しました: ' + err.message, 'text-red-400');
+                }
             });
         }
 
         const btnUninstCancel = document.getElementById('btn-uninstall-cancel');
         if (btnUninstCancel) {
             btnUninstCancel.addEventListener('click', () => {
+                const uninstModal = document.getElementById('uninstall-confirm-modal');
                 if (uninstModal) uninstModal.classList.add('hidden');
+                pendingDangerAction = null;
             });
         }
 
-        const btnUninstProceed = document.getElementById('btn-uninstall-proceed');
-        if (btnUninstProceed) {
-            btnUninstProceed.addEventListener('click', () => {
-                if (uninstModal) uninstModal.classList.add('hidden');
-                try {
-                    const { ipcRenderer } = require('electron');
-                    ipcRenderer.send('uninstall-app');
-                } catch (err) {
-                    addFloatingNotification('⚠️ アンインストーラーの起動に失敗しました', 'text-red-400');
-                }
-            });
-        }
-
-        // Danger Zone: Data Reset
-        const btnDangerReset = document.getElementById('btn-danger-reset');
-        if (btnDangerReset) {
-            btnDangerReset.addEventListener('click', () => {
-                if (confirm('【危険】全セーブデータ、クリア履歴、ハイスコアをリセットして初期化しますか？')) {
+        // Reset all data
+        const btnResetAll = document.getElementById('btn-danger-reset-all');
+        if (btnResetAll) {
+            btnResetAll.addEventListener('click', () => {
+                if (confirm('【危険】全セーブデータ、クリア履歴、ハイスコア、左右感度設定を初期化しますか？')) {
                     try {
                         localStorage.clear();
                         state.steerSensitivity = 1.0;
                         syncSettingsUI();
+                        const { ipcRenderer } = require('electron');
+                        ipcRenderer.send('clear-all-data');
                         addFloatingNotification('🧹 全データを初期化しました', 'text-amber-300 font-bold');
-                    } catch (err) {}
+                        closeDangerZoneModal();
+                    } catch (err) {
+                        addFloatingNotification('⚠️ 初期化に失敗しました', 'text-red-400');
+                    }
                 }
             });
         }
@@ -4477,7 +4706,7 @@
     function animate() {
         requestAnimationFrame(animate);
         const rawDt = Math.min(clock.getDelta(), 0.05);
-        if (state.mode === 'HOME' || state.mode === 'MENU') {
+        if (state.mode === 'HOME' || state.mode === 'MENU' || state.mode === 'SPLASH') {
             state.cameraDragYaw += 0.20 * rawDt;
         }
         updateGamePhysics(rawDt);
@@ -4491,6 +4720,7 @@
             const { ipcRenderer } = require('electron');
             ipcRenderer.on('run-smoke-test', () => {
                 try {
+                    closeSplashScreen();
                     startNewRace();
                     applySoftBodyCarDamage(25, -0.5, -2.0);
                     toggleBeamSkeleton();
@@ -4514,7 +4744,7 @@
         setupInputListeners();
         updateStageHUDLabels();
         setupSmokeTestHandler();
-        openHomeScreen();
+        initSplashScreen();
         animate();
     });
 })(window);

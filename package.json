@@ -1,7 +1,7 @@
 {
   "name": "crashoria-ultimate-road-adventure",
-  "version": "3.3.0",
-  "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.3.0 - スタート・ホーム画面追加・細分化ステアリング左右操舵感度スライダー設定・前バージョン準拠安定ステアリング復元・デスクトップショートカット作成・アプリ内アンインストール（危険地帯）",
+  "version": "3.4.0",
+  "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.0 - アプリ起動ロード画面（16:9ワイド画像・流麗プログレスバー）・左右ステアリング挙動の更なる微調整・ホーム画面直結危険地帯＆ポータブル版完全自己消去対応",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -32,10 +32,10 @@
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
       "shortcutName": "Crashoria Ultimate Road Adventure",
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.3.0.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.4.0.exe"
     },
     "portable": {
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.3.0.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.4.0.exe"
     }
   },
   "devDependencies": {
