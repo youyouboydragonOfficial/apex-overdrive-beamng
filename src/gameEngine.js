@@ -4202,7 +4202,11 @@
                 }
             }
             if (e.code === 'Enter') {
-                if (state.mode === 'HOME' || (state.mode !== 'PLAYING' && state.mode !== 'EXPLODING')) {
+                if (state.mode === 'HOME') {
+                    openGarageModal();
+                    return;
+                }
+                if (state.mode === 'MENU' || (state.mode !== 'PLAYING' && state.mode !== 'EXPLODING')) {
                     startNewRace();
                     return;
                 }
@@ -4485,9 +4489,9 @@
         const btnStartBottom = document.getElementById('btn-start-bottom');
         if (btnStartBottom) btnStartBottom.addEventListener('click', startNewRace);
 
-        // Home Screen Buttons
+        // Home Screen Buttons: "ゲームを始める" opens Showroom & Stage Select ("あの画面")!
         const btnHomeStart = document.getElementById('btn-home-start');
-        if (btnHomeStart) btnHomeStart.addEventListener('click', startNewRace);
+        if (btnHomeStart) btnHomeStart.addEventListener('click', openGarageModal);
 
         const btnHomeGarage = document.getElementById('btn-home-garage');
         if (btnHomeGarage) btnHomeGarage.addEventListener('click', openGarageModal);
