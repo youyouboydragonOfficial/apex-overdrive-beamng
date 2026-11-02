@@ -1,7 +1,7 @@
 {
   "name": "crashoria-ultimate-road-adventure",
-  "version": "3.4.2",
-  "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.2 - Web Audio ライフサイクル完全自動復帰＆常時発声パッチ (Autoplay Policy / Context Resume Guard)",
+  "version": "3.4.3",
+  "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.3 - 車両旋回性能チューニング：急ハンドル回避性能の復活＆やりすぎ防止リバランス (Crisp Emergency Steering & Anti-Oversteer Refinement)",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -32,10 +32,10 @@
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
       "shortcutName": "Crashoria Ultimate Road Adventure",
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.4.2.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.4.3.exe"
     },
     "portable": {
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.4.2.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.4.3.exe"
     }
   },
   "devDependencies": {

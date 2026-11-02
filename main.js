@@ -64,7 +64,7 @@ function createWindow() {
     height: 860,
     minWidth: 1024,
     minHeight: 640,
-    title: 'Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.2',
+    title: 'Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.3',
     backgroundColor: '#040710',
     autoHideMenuBar: true,
     show: true,

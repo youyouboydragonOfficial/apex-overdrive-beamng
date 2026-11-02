@@ -2309,19 +2309,23 @@
 
             if (steerInput !== 0) {
                 const userSensitivity = (state.steerSensitivity !== undefined ? state.steerSensitivity : 1.0);
-                const driftSteerMult = (isDriftKeyDown && canInitiateDrift) ? 1.38 : 1.0;
-                const nosSteerMult = state.nosActive ? 1.10 : 1.0;
-                // Balanced baseline steer power dialed back to smooth out rapid snaps and excessive jerkiness
-                const steerBase = carSpec.steerPower * 0.82;
-                const totalSteerPower = steerBase * driftSteerMult * nosSteerMult * mapSpec.grip * airControlFactor * userSensitivity;
-                // Progressive lateral acceleration with aerodynamic damping for predictable, planted steering
-                state.playerVX += (steerInput * totalSteerPower - state.playerVX * 2.5) * dt;
+                const driftSteerMult = (isDriftKeyDown && canInitiateDrift) ? 1.42 : 1.0;
+                // Controlled NOS steering: +12% responsiveness (keeps control intact without runaway oversteer)
+                const nosSteerMult = state.nosActive ? 1.12 : 1.0;
+                // Crisp counter-steer assist to snap the car straight or reverse direction cleanly
+                const counterSteerMult = (steerInput * state.playerVX < 0) ? 1.35 : 1.0;
+                // Sharp, agile steer power (restores classic arcade turn-in without the sluggish resistance)
+                const steerPower = carSpec.steerPower * 1.05 * driftSteerMult * nosSteerMult * counterSteerMult * mapSpec.grip * airControlFactor * userSensitivity;
+                // Mild lateral drag (0.45) to maintain stability at speed while allowing full, swift turn-in
+                state.playerVX += (steerInput * steerPower - state.playerVX * 0.45) * dt;
             } else {
-                const damping = mapSpec.grip < 0.8 ? 0.14 : (isDriftKeyDown ? 0.08 : 0.032);
+                const damping = mapSpec.grip < 0.8 ? 0.14 : (isDriftKeyDown ? 0.08 : 0.035);
                 state.playerVX *= Math.pow(damping, dt);
             }
 
-            const maxVX = (isDriftKeyDown && canInitiateDrift) ? 18.0 : (state.nosActive ? 14.5 : 13.2) * Math.max(0.7, (state.steerSensitivity || 1.0));
+            // Balanced max lateral speed: sharp enough to dodge emergencies (17.2 m/s), capped to prevent runaway crashes
+            const sensFactor = Math.max(0.65, Math.min(1.45, state.steerSensitivity || 1.0));
+            const maxVX = ((isDriftKeyDown && canInitiateDrift) ? 22.0 : (state.nosActive ? 18.8 : 17.2)) * sensFactor;
             state.playerVX = THREE.MathUtils.clamp(state.playerVX, -maxVX, maxVX);
             state.lateralG = ((state.playerVX - prevVX) / Math.max(0.01, dt * 9.81));
             state.playerX += (state.playerVX + tireDriftBias) * dt;
