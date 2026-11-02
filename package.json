@@ -1,7 +1,7 @@
 {
   "name": "crashoria-ultimate-road-adventure",
-  "version": "3.4.1",
-  "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.1 - 起動画面を「ゲームを始める・設定・危険地帯」の3大ボタン構成に統一、始めるボタンで広々とした愛車・マップ選択（ショールーム）画面へ遷移",
+  "version": "3.4.2",
+  "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.2 - Web Audio ライフサイクル完全自動復帰＆常時発声パッチ (Autoplay Policy / Context Resume Guard)",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -32,10 +32,10 @@
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
       "shortcutName": "Crashoria Ultimate Road Adventure",
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.4.1.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.4.2.exe"
     },
     "portable": {
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.4.1.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.4.2.exe"
     }
   },
   "devDependencies": {

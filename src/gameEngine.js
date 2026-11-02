@@ -2152,7 +2152,7 @@
         }
 
         // Interactive 3D Showroom Turntable when in MENU / GAMEOVER / STAGECLEAR
-        if (state.mode === 'HOME' || state.mode === 'MENU' || state.mode === 'GAMEOVER' || state.mode === 'STAGECLEAR') {
+        if (state.mode === 'SPLASH' || state.mode === 'HOME' || state.mode === 'MENU' || state.mode === 'GAMEOVER' || state.mode === 'STAGECLEAR') {
             roadTexture.offset.y -= 0.35 * rawDt;
             if (playerCar && playerCar.root) {
                 playerCar.root.position.set(0, 0, 0);
@@ -3728,6 +3728,7 @@
 
     function startNewRace() {
         audio.init();
+        audio.ensureActive();
 
         const home = document.getElementById('home-screen');
         if (home) home.classList.add('hidden');
@@ -3834,6 +3835,8 @@
     let splashStartTime = null;
 
     function initSplashScreen() {
+        audio.init();
+        audio.ensureActive();
         state.mode = 'SPLASH';
         const splash = document.getElementById('splash-screen');
         if (!splash) {
@@ -3966,6 +3969,7 @@
     }
 
     function openHomeScreen() {
+        audio.ensureActive();
         state.mode = 'HOME';
         const home = document.getElementById('home-screen');
         if (home) home.classList.remove('hidden');
@@ -4010,6 +4014,7 @@
     }
 
     function openGarageModal() {
+        audio.ensureActive();
         state.mode = 'MENU';
         state.cameraDragYaw = 0.45;
         state.cameraDragPitch = 0.08;
@@ -4283,15 +4288,18 @@
         const weatherBtn = document.getElementById('btn-weather');
         if (weatherBtn) weatherBtn.addEventListener('click', cycleWeather);
 
-        // Global audio unlock on first user interaction so BGM always starts cleanly
-        const unlockAudio = () => {
-            audio.init();
-            if (audio.ctx && audio.ctx.state === 'suspended') {
-                audio.ctx.resume();
-            }
+        // Robust persistent audio activation on any user interaction or window focus/visibility change
+        const keepAudioActive = () => {
+            audio.ensureActive();
         };
-        window.addEventListener('pointerdown', unlockAudio, { once: true });
-        window.addEventListener('keydown', unlockAudio, { once: true });
+        window.addEventListener('pointerdown', keepAudioActive, { passive: true });
+        window.addEventListener('keydown', keepAudioActive, { passive: true });
+        window.addEventListener('focus', keepAudioActive);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                audio.ensureActive();
+            }
+        });
 
         // Home / Garage Tab Switching
         document.querySelectorAll('.garage-tab-btn').forEach(tabBtn => {
@@ -4465,6 +4473,7 @@
 
         document.getElementById('btn-bgm').addEventListener('click', () => {
             audio.init();
+            audio.ensureActive();
             audio.bgmMode = (audio.bgmMode + 1) % 4;
             const labels = ['BGM OFF', 'BGM 1: SYNTH', 'BGM 2: EURO', 'BGM 3: DARK'];
             const bgmLbl = document.getElementById('bgm-label');
@@ -4478,6 +4487,7 @@
 
         document.getElementById('btn-sound').addEventListener('click', () => {
             audio.init();
+            audio.ensureActive();
             audio.sfxEnabled = !audio.sfxEnabled;
             const icon = document.getElementById('sound-icon');
             icon.className = audio.sfxEnabled
@@ -4744,6 +4754,8 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+        audio.init();
+        audio.ensureActive();
         initThreeAndPhysics();
         setupInputListeners();
         updateStageHUDLabels();

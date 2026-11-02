@@ -28,12 +28,29 @@
             this.lastScreechSfxTime = 0;
             this.lastHornSfxTime = 0;
             this.lastNosSfxTime = 0;
+
+            if (typeof window !== 'undefined') {
+                try {
+                    this.init();
+                } catch (e) {}
+            }
+        }
+
+        ensureActive() {
+            if (!this.ctx) {
+                this.init();
+                return;
+            }
+            if (this.ctx.state === 'suspended') {
+                this.ctx.resume().catch(() => {});
+            }
         }
 
         init() {
             if (!this.ctx) {
                 try {
                     const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (!AudioCtx) return;
                     this.ctx = new AudioCtx();
 
                     this.masterCompressor = this.ctx.createDynamicsCompressor();
@@ -59,7 +76,7 @@
                 }
             }
             if (this.ctx && this.ctx.state === 'suspended') {
-                this.ctx.resume();
+                this.ctx.resume().catch(() => {});
             }
         }
 
@@ -103,7 +120,16 @@
         startBGMSequencer() {
             if (this.bgmTimer) clearInterval(this.bgmTimer);
             this.bgmTimer = setInterval(() => {
-                if (!this.ctx || this.bgmMode === 0 || this.ctx.state !== 'running') return;
+                if (!this.ctx) {
+                    this.init();
+                    return;
+                }
+                if (this.bgmMode === 0) return;
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume().catch(() => {});
+                    return;
+                }
+                if (this.ctx.state !== 'running') return;
                 this.playBGMStep(this.bgmStep);
                 this.bgmStep = (this.bgmStep + 1) % 32;
             }, 108);
@@ -174,13 +200,13 @@
         }
 
         updateEngine(speedKmh, isAccelerating, gameActive, carKey = 'HYPER', timeScale = 1.0) {
+            this.ensureActive();
             if (!this.ctx || !this.isPlayingEngine) return;
             if (!this.sfxEnabled || !gameActive) {
-                this.engineGain.gain.setTargetAtTime(0.0001, this.ctx.currentTime, 0.1);
+                if (this.engineGain) {
+                    this.engineGain.gain.setTargetAtTime(0.0001, this.ctx.currentTime, 0.1);
+                }
                 return;
-            }
-            if (this.ctx.state === 'suspended') {
-                this.ctx.resume();
             }
 
             const safeSpeed = Number.isFinite(speedKmh) ? Math.max(0, Math.min(460, speedKmh)) : 100;
@@ -231,6 +257,7 @@
         }
 
         playTurboBlowoff() {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             const dest = this.sfxGainNode || this.ctx.destination;
@@ -256,6 +283,7 @@
         }
 
         playNosRoar() {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             if (now - this.lastNosSfxTime < 0.25) return;
@@ -283,6 +311,7 @@
         }
 
         playTireScreech() {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             if (now - this.lastScreechSfxTime < 0.32) return;
@@ -303,6 +332,7 @@
         }
 
         playTireBurst() {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             if (now - this.lastBurstSfxTime < 0.35) return;
@@ -331,6 +361,7 @@
         }
 
         playEtcDing(success = true) {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             const dest = this.sfxGainNode || this.ctx.destination;
@@ -356,6 +387,7 @@
          * Realistic BeamNG-style multi-layered Metal Crumple + Crunch + Glass Shatter sound
          */
         playCrash(intensity = 1.0) {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             if (now - this.lastCrashSfxTime < 0.24) return;
@@ -423,6 +455,7 @@
         }
 
         playOvertake() {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             const dest = this.sfxGainNode || this.ctx.destination;
@@ -440,6 +473,7 @@
         }
 
         playHorn(isAggressive = true) {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             if (now - this.lastHornSfxTime < 0.45) return;
@@ -472,6 +506,7 @@
          * Heavy Wood Log Impact: Deep hollow trunk thud with splintering resonance
          */
         playWoodImpact() {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             const dest = this.sfxGainNode || this.ctx.destination;
@@ -515,6 +550,7 @@
          * Granular Sand & Gravel Friction Drag: Gritty rushing sound when front bumper grinds through sand
          */
         playSandGravelDrag() {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             const dest = this.sfxGainNode || this.ctx.destination;
@@ -543,6 +579,7 @@
         }
 
         playCrashSound(damage = 20) {
+            this.ensureActive();
             this.playCrash(damage / 25);
         }
 
@@ -550,6 +587,7 @@
          * Tokyo Highway Orvis Speed Camera: Flash snapshot shutter click or radar jam chime
          */
         playOrvisFlash(success = false) {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             const dest = this.sfxGainNode || this.ctx.destination;
@@ -587,6 +625,7 @@
          * Shuto C1 Tunnel: Cybernetic Boost Pad supersonic warp surge
          */
         playCyberBoost() {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             const dest = this.sfxGainNode || this.ctx.destination;
@@ -618,6 +657,7 @@
          * Inferno Industrial: High-pressure flaming pipeline burst
          */
         playFlameRoar() {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             const dest = this.sfxGainNode || this.ctx.destination;
@@ -652,6 +692,7 @@
          * Blizzard Snow: Black Ice slick gliding tire hiss
          */
         playIceSkid() {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             const dest = this.sfxGainNode || this.ctx.destination;
@@ -684,6 +725,7 @@
          * In-Run Bounty / Mission Complete fanfare chime
          */
         playBountyComplete() {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             const dest = this.sfxGainNode || this.ctx.destination;
@@ -708,6 +750,7 @@
          * Burnout / Takedown Crash chord for wrecking cop or road-rage cars
          */
         playTakedown() {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             const dest = this.sfxGainNode || this.ctx.destination;
@@ -733,6 +776,7 @@
          * Slipstream drafting suction whistle
          */
         playSlipstream() {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             const dest = this.sfxGainNode || this.ctx.destination;
@@ -754,6 +798,7 @@
          * Authentic Highway Patrol Police Wailing Siren
          */
         playPoliceSiren(intensity = 1.0) {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             if (this.lastSirenTime && (now - this.lastSirenTime < 0.65)) return;
@@ -789,6 +834,7 @@
         }
 
         playHazardClick() {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             const dest = this.sfxGainNode || this.ctx.destination;
@@ -809,6 +855,7 @@
         }
 
         playPassingFlash() {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             const dest = this.sfxGainNode || this.ctx.destination;
@@ -829,6 +876,7 @@
         }
 
         playMiniTurbo(isSuper = false) {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             const dest = this.sfxGainNode || this.ctx.destination;
@@ -853,6 +901,7 @@
         }
 
         playExplosion() {
+            this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             const dest = this.sfxGainNode || this.ctx.destination;
