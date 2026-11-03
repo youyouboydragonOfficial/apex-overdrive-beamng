@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.5</title>
+    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.6</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Bundled Offline Three.js r128 & Cannon.js 0.6.2 -->
@@ -494,7 +494,7 @@
                 <!-- Glowing Title Branding -->
                 <div>
                     <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-300 text-xs font-bold mb-3">
-                        <i class="fa-solid fa-car-burst text-orange-400"></i> BEAMNG 軟体物理エンジン搭載 v3.4.5
+                        <i class="fa-solid fa-car-burst text-orange-400"></i> BEAMNG 軟体物理エンジン搭載 v3.4.6
                     </div>
                     <h1 class="font-['Orbitron'] font-black text-3xl sm:text-5xl tracking-widest bg-gradient-to-r from-white via-sky-300 to-amber-400 bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(56,189,248,0.6)]">
                         CRASHORIA
@@ -589,7 +589,55 @@
                     </div>
                 </div>
 
-                <!-- 2. ショートカット作成 -->
+                <!-- 2. サウンド＆BGM音量設定 (Sound & Music Master Controls) -->
+                <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-700/80 flex flex-col gap-3">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <span class="font-bold text-sm text-slate-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-volume-high text-pink-400"></i>
+                            サウンド＆BGM音量設定 (SOUND & MUSIC)
+                        </span>
+                        <button id="btn-setting-test-sound" type="button" class="game-btn px-2.5 py-1 rounded-lg text-xs font-bold text-emerald-400 border-emerald-500/40 hover:bg-emerald-950/40 flex items-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-play"></i> 🔊 効果音テスト
+                        </button>
+                    </div>
+
+                    <!-- BGM Mode & Volume -->
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-300 font-bold flex items-center gap-1.5">
+                                <i class="fa-solid fa-music text-pink-400"></i> BGMモード:
+                                <span id="setting-bgm-label" class="text-pink-400 font-bold">BGM 1: SYNTH</span>
+                            </span>
+                            <button id="btn-setting-cycle-bgm" type="button" class="game-btn px-2.5 py-0.5 rounded text-[11px] font-bold text-pink-300 border-pink-500/40 cursor-pointer">
+                                切り替え <i class="fa-solid fa-rotate mr-0.5"></i>
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-[10px] text-slate-400 w-16 shrink-0">BGM音量:</span>
+                            <input id="setting-bgm-slider" type="range" min="0" max="150" step="5" value="100" class="w-full accent-pink-400 h-2 bg-slate-800 rounded-lg cursor-pointer">
+                            <span id="setting-bgm-val" class="font-['Orbitron'] font-bold text-xs text-pink-400 w-10 text-right">100%</span>
+                        </div>
+                    </div>
+
+                    <!-- SFX Toggle & Volume -->
+                    <div class="flex flex-col gap-1.5 pt-1 border-t border-slate-800">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-300 font-bold flex items-center gap-1.5">
+                                <i class="fa-solid fa-volume-high text-emerald-400"></i> 効果音 (エンジン・衝突・ニトロ):
+                            </span>
+                            <button id="btn-setting-toggle-sfx" type="button" class="game-btn px-2.5 py-0.5 rounded text-[11px] font-bold text-emerald-300 border-emerald-500/40 cursor-pointer">
+                                <span id="setting-sfx-status">ON</span>
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-[10px] text-slate-400 w-16 shrink-0">効果音量:</span>
+                            <input id="setting-sfx-slider" type="range" min="0" max="150" step="5" value="100" class="w-full accent-emerald-400 h-2 bg-slate-800 rounded-lg cursor-pointer">
+                            <span id="setting-sfx-val" class="font-['Orbitron'] font-bold text-xs text-emerald-400 w-10 text-right">100%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. ショートカット作成 -->
                 <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-700/80 flex items-center justify-between gap-3">
                     <div>
                         <div class="font-bold text-sm text-slate-200 flex items-center gap-1.5">

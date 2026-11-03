@@ -11,7 +11,7 @@ app.commandLine.appendSwitch('enable-gpu-rasterization');
 app.commandLine.appendSwitch('force_high_performance_gpu');
 // Unrestricted Web Audio Autoplay Policy for Seamless BGM & SFX
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
-app.commandLine.appendSwitch('disable-features', 'PreloadMediaEngagementData,AutoplayIgnoreWebAudio');
+app.commandLine.appendSwitch('disable-features', 'PreloadMediaEngagementData');
 
 // Helper to inspect application environment (Portable vs Installed)
 function getAppInfo() {
@@ -83,13 +83,14 @@ function createWindow() {
     height: 860,
     minWidth: 1024,
     minHeight: 640,
-    title: 'Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.5',
+    title: 'Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.6',
     backgroundColor: '#040710',
     autoHideMenuBar: true,
     show: true,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
+      autoplayPolicy: 'no-user-gesture-required',
       additionalArguments: isSmokeTest ? ['--smoke-test'] : []
     }
   });

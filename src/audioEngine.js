@@ -9,11 +9,14 @@
     class RacingAudioEngine {
         constructor() {
             this.ctx = null;
-            this.masterCompressor = null;
+            this.masterGainNode = null;
             this.bgmGainNode = null;
             this.sfxGainNode = null;
             this.sfxEnabled = true;
             this.bgmMode = 1; // 1: Cyber Synthwave, 2: Nitro Eurobeat, 3: Dark Overdrive, 0: OFF
+            this.masterVolume = 1.0;
+            this.bgmVolume = 1.0;
+            this.sfxVolume = 1.0;
             this.isPlayingEngine = false;
             this.engineOsc1 = null;
             this.engineOsc2 = null;
@@ -23,21 +26,42 @@
             this.bgmTimer = null;
             this.bgmStep = 0;
             this.lastGear = 1;
+            this.lastEngineVol = 0;
             this.lastCrashSfxTime = 0;
             this.lastBurstSfxTime = 0;
             this.lastScreechSfxTime = 0;
             this.lastHornSfxTime = 0;
             this.lastNosSfxTime = 0;
 
+            // Restore saved settings
+            try {
+                const savedBgmMode = localStorage.getItem('crashoria_bgm_mode');
+                if (savedBgmMode !== null) this.bgmMode = parseInt(savedBgmMode, 10);
+                const savedBgmVol = localStorage.getItem('crashoria_bgm_vol');
+                if (savedBgmVol !== null) this.bgmVolume = parseFloat(savedBgmVol);
+                const savedSfxVol = localStorage.getItem('crashoria_sfx_vol');
+                if (savedSfxVol !== null) this.sfxVolume = parseFloat(savedSfxVol);
+                const savedSfxEn = localStorage.getItem('crashoria_sfx_enabled');
+                if (savedSfxEn !== null) this.sfxEnabled = savedSfxEn === '1';
+            } catch (e) {}
+
             if (typeof window !== 'undefined') {
                 try {
                     this.init();
+                } catch (e) {}
+
+                try {
+                    navigator.mediaDevices?.addEventListener?.('devicechange', () => {
+                        this.init();
+                        this.ensureActive();
+                    });
                 } catch (e) {}
             }
         }
 
         ensureActive() {
-            if (!this.ctx) {
+            if (!this.ctx || this.ctx.state === 'closed') {
+                this.ctx = null;
                 this.init();
                 return;
             }
@@ -47,27 +71,26 @@
         }
 
         init() {
-            if (!this.ctx) {
+            if (!this.ctx || this.ctx.state === 'closed') {
                 try {
                     const AudioCtx = window.AudioContext || window.webkitAudioContext;
                     if (!AudioCtx) return;
                     this.ctx = new AudioCtx();
 
-                    this.masterCompressor = this.ctx.createDynamicsCompressor();
-                    this.masterCompressor.threshold.setValueAtTime(-6, this.ctx.currentTime);
-                    this.masterCompressor.knee.setValueAtTime(14, this.ctx.currentTime);
-                    this.masterCompressor.ratio.setValueAtTime(4, this.ctx.currentTime);
-                    this.masterCompressor.attack.setValueAtTime(0.003, this.ctx.currentTime);
-                    this.masterCompressor.release.setValueAtTime(0.18, this.ctx.currentTime);
-                    this.masterCompressor.connect(this.ctx.destination);
+                    // Master output channel connected directly to hardware destination
+                    this.masterGainNode = this.ctx.createGain();
+                    this.masterGainNode.gain.setValueAtTime(this.masterVolume, this.ctx.currentTime);
+                    this.masterGainNode.connect(this.ctx.destination);
 
+                    // Dedicated clean BGM channel
                     this.bgmGainNode = this.ctx.createGain();
-                    this.bgmGainNode.gain.setValueAtTime(1.15, this.ctx.currentTime);
-                    this.bgmGainNode.connect(this.masterCompressor);
+                    this.bgmGainNode.gain.setValueAtTime(this.bgmVolume, this.ctx.currentTime);
+                    this.bgmGainNode.connect(this.masterGainNode);
 
+                    // Dedicated clean SFX channel
                     this.sfxGainNode = this.ctx.createGain();
-                    this.sfxGainNode.gain.setValueAtTime(0.70, this.ctx.currentTime);
-                    this.sfxGainNode.connect(this.masterCompressor);
+                    this.sfxGainNode.gain.setValueAtTime(this.sfxVolume, this.ctx.currentTime);
+                    this.sfxGainNode.connect(this.masterGainNode);
 
                     this.setupEngineSound();
                     this.startBGMSequencer();
@@ -80,47 +103,78 @@
             }
         }
 
+        setBgmVolume(val) {
+            this.bgmVolume = Math.max(0, Math.min(2.0, val));
+            try { localStorage.setItem('crashoria_bgm_vol', this.bgmVolume); } catch (e) {}
+            if (this.bgmGainNode && this.ctx) {
+                this.bgmGainNode.gain.setValueAtTime(this.bgmVolume, this.ctx.currentTime);
+            }
+        }
+
+        setSfxVolume(val) {
+            this.sfxVolume = Math.max(0, Math.min(2.0, val));
+            try { localStorage.setItem('crashoria_sfx_vol', this.sfxVolume); } catch (e) {}
+            if (this.sfxGainNode && this.ctx) {
+                this.sfxGainNode.gain.setValueAtTime(this.sfxVolume, this.ctx.currentTime);
+            }
+        }
+
+        testSound() {
+            this.ensureActive();
+            if (this.ctx && this.ctx.state === 'suspended') {
+                this.ctx.resume().catch(() => {});
+            }
+            this.playEtcDing(true);
+            setTimeout(() => {
+                this.playTurboBlowoff();
+            }, 180);
+        }
+
         setupEngineSound() {
             if (!this.ctx) return;
-            this.engineOsc1 = this.ctx.createOscillator();
-            this.engineOsc2 = this.ctx.createOscillator();
-            this.engineSub = this.ctx.createOscillator();
-            this.engineFilter = this.ctx.createBiquadFilter();
-            this.engineGain = this.ctx.createGain();
+            try {
+                this.engineOsc1 = this.ctx.createOscillator();
+                this.engineOsc2 = this.ctx.createOscillator();
+                this.engineSub = this.ctx.createOscillator();
+                this.engineFilter = this.ctx.createBiquadFilter();
+                this.engineGain = this.ctx.createGain();
 
-            this.engineOsc1.type = 'sawtooth';
-            this.engineOsc2.type = 'triangle';
-            this.engineSub.type = 'square';
+                this.engineOsc1.type = 'sawtooth';
+                this.engineOsc2.type = 'triangle';
+                this.engineSub.type = 'square';
 
-            this.engineOsc1.frequency.value = 55;
-            this.engineOsc2.frequency.value = 110;
-            this.engineSub.frequency.value = 27.5;
+                this.engineOsc1.frequency.value = 55;
+                this.engineOsc2.frequency.value = 110;
+                this.engineSub.frequency.value = 27.5;
 
-            this.engineFilter.type = 'lowpass';
-            this.engineFilter.frequency.value = 420;
+                this.engineFilter.type = 'lowpass';
+                this.engineFilter.frequency.value = 520;
 
-            this.engineGain.gain.value = 0.0001;
+                this.engineGain.gain.value = 0.0001;
 
-            const subGain = this.ctx.createGain();
-            subGain.gain.value = 0.35;
-            this.engineSub.connect(subGain);
-            subGain.connect(this.engineFilter);
+                const subGain = this.ctx.createGain();
+                subGain.gain.value = 0.45;
+                this.engineSub.connect(subGain);
+                subGain.connect(this.engineFilter);
 
-            this.engineOsc1.connect(this.engineFilter);
-            this.engineOsc2.connect(this.engineFilter);
-            this.engineFilter.connect(this.engineGain);
-            this.engineGain.connect(this.sfxGainNode);
+                this.engineOsc1.connect(this.engineFilter);
+                this.engineOsc2.connect(this.engineFilter);
+                this.engineFilter.connect(this.engineGain);
+                this.engineGain.connect(this.sfxGainNode || this.ctx.destination);
 
-            this.engineOsc1.start();
-            this.engineOsc2.start();
-            this.engineSub.start();
-            this.isPlayingEngine = true;
+                this.engineOsc1.start();
+                this.engineOsc2.start();
+                this.engineSub.start();
+                this.isPlayingEngine = true;
+            } catch (err) {
+                console.warn('Engine sound init warning:', err);
+            }
         }
 
         startBGMSequencer() {
             if (this.bgmTimer) clearInterval(this.bgmTimer);
             this.bgmTimer = setInterval(() => {
-                if (!this.ctx) {
+                if (!this.ctx || this.ctx.state === 'closed') {
                     this.init();
                     return;
                 }
@@ -136,6 +190,7 @@
         }
 
         playBGMStep(step) {
+            if (!this.ctx) return;
             const now = this.ctx.currentTime;
             const dest = this.bgmGainNode || this.ctx.destination;
 
@@ -153,6 +208,7 @@
             const bassFreq = bassPatterns[this.bgmMode]?.[step % 16];
             const leadFreq = leadPatterns[this.bgmMode]?.[Math.floor(step / 2) % 16];
 
+            // 1. Energetic Driving Bassline (High presence, rich harmonic low-end)
             if (bassFreq) {
                 const bOsc = this.ctx.createOscillator();
                 const bFilter = this.ctx.createBiquadFilter();
@@ -160,42 +216,88 @@
                 bOsc.type = 'sawtooth';
                 bOsc.frequency.setValueAtTime(bassFreq, now);
                 bFilter.type = 'lowpass';
-                bFilter.frequency.setValueAtTime(620, now);
-                bFilter.frequency.exponentialRampToValueAtTime(160, now + 0.09);
-                bGain.gain.setValueAtTime(0.095, now);
-                bGain.gain.exponentialRampToValueAtTime(0.001, now + 0.095);
+                bFilter.frequency.setValueAtTime(880, now);
+                bFilter.frequency.exponentialRampToValueAtTime(240, now + 0.10);
+                bGain.gain.setValueAtTime(0.26, now);
+                bGain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
                 bOsc.connect(bFilter);
                 bFilter.connect(bGain);
                 bGain.connect(dest);
                 bOsc.start(now);
-                bOsc.stop(now + 0.1);
+                bOsc.stop(now + 0.12);
             }
 
+            // 2. Singing Cyber Synth Lead Melody
             if (step % 2 === 0 && leadFreq > 0) {
                 const lOsc = this.ctx.createOscillator();
                 const lGain = this.ctx.createGain();
                 lOsc.type = this.bgmMode === 2 ? 'sawtooth' : 'square';
                 lOsc.frequency.setValueAtTime(leadFreq, now);
-                lGain.gain.setValueAtTime(0.026, now);
-                lGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+                lGain.gain.setValueAtTime(0.18, now);
+                lGain.gain.exponentialRampToValueAtTime(0.001, now + 0.20);
                 lOsc.connect(lGain);
                 lGain.connect(dest);
                 lOsc.start(now);
-                lOsc.stop(now + 0.19);
+                lOsc.stop(now + 0.21);
             }
 
+            // 3. Punchy 4-on-the-Floor Kick Drum
             if (step % 4 === 0) {
                 const kOsc = this.ctx.createOscillator();
                 const kGain = this.ctx.createGain();
                 kOsc.type = 'sine';
-                kOsc.frequency.setValueAtTime(130, now);
-                kOsc.frequency.exponentialRampToValueAtTime(32, now + 0.11);
-                kGain.gain.setValueAtTime(0.10, now);
-                kGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                kOsc.frequency.setValueAtTime(160, now);
+                kOsc.frequency.exponentialRampToValueAtTime(36, now + 0.12);
+                kGain.gain.setValueAtTime(0.35, now);
+                kGain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
                 kOsc.connect(kGain);
                 kGain.connect(dest);
                 kOsc.start(now);
-                kOsc.stop(now + 0.13);
+                kOsc.stop(now + 0.14);
+            }
+
+            // 4. Snare / Clap on Beats 2 and 4 (Steps 4 and 12)
+            if (step % 8 === 4) {
+                const sBufSize = Math.floor(this.ctx.sampleRate * 0.12);
+                const sBuf = this.ctx.createBuffer(1, sBufSize, this.ctx.sampleRate);
+                const sData = sBuf.getChannelData(0);
+                for (let i = 0; i < sBufSize; i++) {
+                    sData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (sBufSize * 0.32));
+                }
+                const sSrc = this.ctx.createBufferSource();
+                sSrc.buffer = sBuf;
+                const sFilter = this.ctx.createBiquadFilter();
+                sFilter.type = 'highpass';
+                sFilter.frequency.setValueAtTime(1100, now);
+                const sGain = this.ctx.createGain();
+                sGain.gain.setValueAtTime(0.20, now);
+                sGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                sSrc.connect(sFilter);
+                sFilter.connect(sGain);
+                sGain.connect(dest);
+                sSrc.start(now);
+            }
+
+            // 5. Crisp 16th-note Hi-Hat Cymbal on Offbeats
+            if (step % 2 === 1) {
+                const hBufSize = Math.floor(this.ctx.sampleRate * 0.045);
+                const hBuf = this.ctx.createBuffer(1, hBufSize, this.ctx.sampleRate);
+                const hData = hBuf.getChannelData(0);
+                for (let i = 0; i < hBufSize; i++) {
+                    hData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (hBufSize * 0.22));
+                }
+                const hSrc = this.ctx.createBufferSource();
+                hSrc.buffer = hBuf;
+                const hFilter = this.ctx.createBiquadFilter();
+                hFilter.type = 'highpass';
+                hFilter.frequency.setValueAtTime(7500, now);
+                const hGain = this.ctx.createGain();
+                hGain.gain.setValueAtTime(0.08, now);
+                hGain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+                hSrc.connect(hFilter);
+                hFilter.connect(hGain);
+                hGain.connect(dest);
+                hSrc.start(now);
             }
         }
 
@@ -203,7 +305,8 @@
             this.ensureActive();
             if (!this.ctx || !this.isPlayingEngine) return;
             if (!this.sfxEnabled || !gameActive) {
-                if (this.engineGain) {
+                if (this.engineGain && this.lastEngineVol !== 0.0001) {
+                    this.lastEngineVol = 0.0001;
                     this.engineGain.gain.setTargetAtTime(0.0001, this.ctx.currentTime, 0.1);
                 }
                 return;
@@ -245,15 +348,18 @@
                 DEKOTORA: 0.62
             };
             const pitchMultiplier = (pitchMap[carKey] || 1.0) * (0.55 + 0.45 * timeScale);
-            const baseFreq = Math.min(340, Math.max(32, (42 + rpmNormalized * 118 + (safeSpeed * 0.17)) * pitchMultiplier));
+            const baseFreq = Math.min(380, Math.max(38, (48 + rpmNormalized * 135 + (safeSpeed * 0.18)) * pitchMultiplier));
 
             this.engineOsc1.frequency.setTargetAtTime(baseFreq, this.ctx.currentTime, 0.04);
             this.engineOsc2.frequency.setTargetAtTime(baseFreq * 1.5, this.ctx.currentTime, 0.04);
             this.engineSub.frequency.setTargetAtTime(baseFreq * 0.5, this.ctx.currentTime, 0.04);
-            this.engineFilter.frequency.setTargetAtTime(320 + rpmNormalized * 620, this.ctx.currentTime, 0.05);
+            this.engineFilter.frequency.setTargetAtTime(360 + rpmNormalized * 700, this.ctx.currentTime, 0.05);
 
-            const targetVol = isAccelerating ? 0.068 : 0.042;
-            this.engineGain.gain.setTargetAtTime(targetVol, this.ctx.currentTime, 0.08);
+            const targetVol = isAccelerating ? 0.22 : 0.13;
+            if (Math.abs((this.lastEngineVol || 0) - targetVol) > 0.01) {
+                this.lastEngineVol = targetVol;
+                this.engineGain.gain.setTargetAtTime(targetVol, this.ctx.currentTime, 0.08);
+            }
         }
 
         playTurboBlowoff() {
@@ -261,7 +367,7 @@
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
             const dest = this.sfxGainNode || this.ctx.destination;
-            const bufSize = Math.floor(this.ctx.sampleRate * 0.14);
+            const bufSize = Math.floor(this.ctx.sampleRate * 0.18);
             const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
             const data = buf.getChannelData(0);
             for (let i = 0; i < bufSize; i++) {
@@ -271,11 +377,11 @@
             noise.buffer = buf;
             const filter = this.ctx.createBiquadFilter();
             filter.type = 'bandpass';
-            filter.frequency.setValueAtTime(3400, now);
-            filter.frequency.exponentialRampToValueAtTime(1600, now + 0.13);
+            filter.frequency.setValueAtTime(3200, now);
+            filter.frequency.exponentialRampToValueAtTime(1400, now + 0.16);
             const gain = this.ctx.createGain();
-            gain.gain.setValueAtTime(0.05, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+            gain.gain.setValueAtTime(0.20, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.17);
             noise.connect(filter);
             filter.connect(gain);
             gain.connect(dest);
@@ -286,11 +392,11 @@
             this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
-            if (now - this.lastNosSfxTime < 0.25) return;
+            if (now - this.lastNosSfxTime < 0.22) return;
             this.lastNosSfxTime = now;
 
             const dest = this.sfxGainNode || this.ctx.destination;
-            const bufSize = Math.floor(this.ctx.sampleRate * 0.24);
+            const bufSize = Math.floor(this.ctx.sampleRate * 0.28);
             const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
             const data = buf.getChannelData(0);
             for (let i = 0; i < bufSize; i++) {
@@ -300,10 +406,10 @@
             noise.buffer = buf;
             const filter = this.ctx.createBiquadFilter();
             filter.type = 'bandpass';
-            filter.frequency.setValueAtTime(950, now);
+            filter.frequency.setValueAtTime(1100, now);
             const gain = this.ctx.createGain();
-            gain.gain.setValueAtTime(0.09, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+            gain.gain.setValueAtTime(0.26, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
             noise.connect(filter);
             filter.connect(gain);
             gain.connect(dest);
@@ -314,7 +420,7 @@
             this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
-            if (now - this.lastScreechSfxTime < 0.32) return;
+            if (now - this.lastScreechSfxTime < 0.28) return;
             this.lastScreechSfxTime = now;
 
             const dest = this.sfxGainNode || this.ctx.destination;
@@ -322,8 +428,8 @@
             const gain = this.ctx.createGain();
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(980, now);
-            osc.frequency.linearRampToValueAtTime(760, now + 0.2);
-            gain.gain.setValueAtTime(0.042, now);
+            osc.frequency.linearRampToValueAtTime(740, now + 0.2);
+            gain.gain.setValueAtTime(0.18, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
             osc.connect(gain);
             gain.connect(dest);
@@ -339,7 +445,7 @@
             this.lastBurstSfxTime = now;
 
             const dest = this.sfxGainNode || this.ctx.destination;
-            const bufSize = Math.floor(this.ctx.sampleRate * 0.28);
+            const bufSize = Math.floor(this.ctx.sampleRate * 0.30);
             const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
             const data = buf.getChannelData(0);
             for (let i = 0; i < bufSize; i++) {
@@ -350,10 +456,10 @@
             const filter = this.ctx.createBiquadFilter();
             filter.type = 'bandpass';
             filter.frequency.setValueAtTime(1200, now);
-            filter.frequency.exponentialRampToValueAtTime(350, now + 0.25);
+            filter.frequency.exponentialRampToValueAtTime(320, now + 0.26);
             const gain = this.ctx.createGain();
-            gain.gain.setValueAtTime(0.18, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.27);
+            gain.gain.setValueAtTime(0.35, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
             noise.connect(filter);
             filter.connect(gain);
             gain.connect(dest);
@@ -375,12 +481,12 @@
                 osc.frequency.setValueAtTime(240, now);
                 osc.frequency.setValueAtTime(180, now + 0.12);
             }
-            gain.gain.setValueAtTime(0.11, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+            gain.gain.setValueAtTime(0.28, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
             osc.connect(gain);
             gain.connect(dest);
             osc.start(now);
-            osc.stop(now + 0.27);
+            osc.stop(now + 0.29);
         }
 
         /**
@@ -390,21 +496,20 @@
             this.ensureActive();
             if (!this.ctx || !this.sfxEnabled) return;
             const now = this.ctx.currentTime;
-            if (now - this.lastCrashSfxTime < 0.24) return;
+            if (now - this.lastCrashSfxTime < 0.22) return;
             this.lastCrashSfxTime = now;
 
             const dest = this.sfxGainNode || this.ctx.destination;
             const safeIntensity = Number.isFinite(intensity) ? Math.min(1.5, Math.max(0.2, intensity)) : 0.6;
-            const duration = 0.26 + safeIntensity * 0.22;
+            const duration = 0.28 + safeIntensity * 0.24;
 
             // 1. Metallic crunch noise burst
             const bufferSize = Math.floor(this.ctx.sampleRate * duration);
             const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
             const data = buffer.getChannelData(0);
             for (let i = 0; i < bufferSize; i++) {
-                // Modulated envelope to simulate sheet metal folding & buckling
                 const foldMod = 0.7 + 0.3 * Math.sin(i * 0.045);
-                data[i] = (Math.random() * 2 - 1) * foldMod * Math.exp(-i / (this.ctx.sampleRate * 0.13));
+                data[i] = (Math.random() * 2 - 1) * foldMod * Math.exp(-i / (this.ctx.sampleRate * 0.14));
             }
 
             const noise = this.ctx.createBufferSource();
@@ -416,7 +521,7 @@
             filter.Q.setValueAtTime(1.4, now);
 
             const gain = this.ctx.createGain();
-            gain.gain.setValueAtTime(0.14 + safeIntensity * 0.11, now);
+            gain.gain.setValueAtTime(0.32 + safeIntensity * 0.24, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
             noise.connect(filter);
@@ -429,13 +534,13 @@
             const oscGain = this.ctx.createGain();
             osc.type = 'sine';
             osc.frequency.setValueAtTime(125, now);
-            osc.frequency.exponentialRampToValueAtTime(30, now + 0.20);
-            oscGain.gain.setValueAtTime(0.18, now);
-            oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.21);
+            osc.frequency.exponentialRampToValueAtTime(30, now + 0.22);
+            oscGain.gain.setValueAtTime(0.32, now);
+            oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.23);
             osc.connect(oscGain);
             oscGain.connect(dest);
             osc.start(now);
-            osc.stop(now + 0.22);
+            osc.stop(now + 0.24);
 
             // 3. High-frequency glass tinkle on heavy impacts
             if (safeIntensity > 0.65) {
@@ -444,12 +549,12 @@
                     const gGain = this.ctx.createGain();
                     gOsc.type = 'sine';
                     gOsc.frequency.setValueAtTime(2400 + Math.random() * 2200, now + g * 0.04);
-                    gGain.gain.setValueAtTime(0.035, now + g * 0.04);
-                    gGain.gain.exponentialRampToValueAtTime(0.001, now + g * 0.04 + 0.09);
+                    gGain.gain.setValueAtTime(0.08, now + g * 0.04);
+                    gGain.gain.exponentialRampToValueAtTime(0.001, now + g * 0.04 + 0.10);
                     gOsc.connect(gGain);
                     gGain.connect(dest);
                     gOsc.start(now + g * 0.04);
-                    gOsc.stop(now + g * 0.04 + 0.10);
+                    gOsc.stop(now + g * 0.04 + 0.11);
                 }
             }
         }
@@ -462,14 +567,14 @@
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(460, now);
-            osc.frequency.exponentialRampToValueAtTime(980, now + 0.13);
-            gain.gain.setValueAtTime(0.08, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+            osc.frequency.setValueAtTime(520, now);
+            osc.frequency.exponentialRampToValueAtTime(1180, now + 0.14);
+            gain.gain.setValueAtTime(0.24, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
             osc.connect(gain);
             gain.connect(dest);
             osc.start(now);
-            osc.stop(now + 0.15);
+            osc.stop(now + 0.16);
         }
 
         playHorn(isAggressive = true) {
@@ -490,7 +595,7 @@
             osc2.frequency.setValueAtTime(isAggressive ? 520 : 620, now);
 
             const dur = isAggressive ? 0.32 : 0.24;
-            gain.gain.setValueAtTime(0.07, now);
+            gain.gain.setValueAtTime(0.26, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
 
             osc1.connect(gain);

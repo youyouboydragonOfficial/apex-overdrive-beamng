@@ -4047,6 +4047,28 @@
                 label.textContent = `${pct}% (${desc})`;
             }
         }
+
+        const bgmSlider = document.getElementById('setting-bgm-slider');
+        const bgmVal = document.getElementById('setting-bgm-val');
+        const sfxSlider = document.getElementById('setting-sfx-slider');
+        const sfxVal = document.getElementById('setting-sfx-val');
+        const bgmLbl = document.getElementById('setting-bgm-label');
+        const sfxStatus = document.getElementById('setting-sfx-status');
+
+        if (bgmSlider) {
+            bgmSlider.value = Math.round((audio.bgmVolume || 1.0) * 100);
+            if (bgmVal) bgmVal.textContent = `${bgmSlider.value}%`;
+        }
+        if (sfxSlider) {
+            sfxSlider.value = Math.round((audio.sfxVolume || 1.0) * 100);
+            if (sfxVal) sfxVal.textContent = `${sfxSlider.value}%`;
+        }
+        const bgmNames = ['BGM OFF', 'BGM 1: SYNTH', 'BGM 2: EURO', 'BGM 3: DARK'];
+        if (bgmLbl) bgmLbl.textContent = bgmNames[audio.bgmMode] || 'BGM 1: SYNTH';
+        if (sfxStatus) {
+            sfxStatus.textContent = audio.sfxEnabled ? 'ON' : 'OFF';
+            sfxStatus.className = audio.sfxEnabled ? 'text-emerald-400 font-bold' : 'text-slate-400 font-bold';
+        }
     }
 
     function openGarageModal() {
@@ -4330,14 +4352,17 @@
 
         // Robust persistent audio activation on any user interaction or window focus/visibility change
         const keepAudioActive = () => {
+            audio.init();
             audio.ensureActive();
         };
-        window.addEventListener('pointerdown', keepAudioActive, { passive: true });
-        window.addEventListener('keydown', keepAudioActive, { passive: true });
+        ['pointerdown', 'mousedown', 'click', 'keydown', 'touchstart'].forEach(evt => {
+            window.addEventListener(evt, keepAudioActive, { passive: true, capture: true });
+            document.addEventListener(evt, keepAudioActive, { passive: true, capture: true });
+        });
         window.addEventListener('focus', keepAudioActive);
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) {
-                audio.ensureActive();
+                keepAudioActive();
             }
         });
 
@@ -4607,6 +4632,55 @@
             try { localStorage.setItem('crashoria_steer_sensitivity', '130'); } catch (err) {}
             syncSettingsUI();
         });
+
+        // Sound & Music Settings Handlers
+        const btnTestSound = document.getElementById('btn-setting-test-sound');
+        if (btnTestSound) {
+            btnTestSound.addEventListener('click', () => {
+                audio.init();
+                audio.ensureActive();
+                audio.testSound();
+                addFloatingNotification('🔊 サウンドテスト再生中...', 'text-emerald-300 font-bold');
+            });
+        }
+
+        const btnSettingCycleBgm = document.getElementById('btn-setting-cycle-bgm');
+        if (btnSettingCycleBgm) {
+            btnSettingCycleBgm.addEventListener('click', () => {
+                const bgmBtn = document.getElementById('btn-bgm');
+                if (bgmBtn) bgmBtn.click();
+                syncSettingsUI();
+            });
+        }
+
+        const btnSettingToggleSfx = document.getElementById('btn-setting-toggle-sfx');
+        if (btnSettingToggleSfx) {
+            btnSettingToggleSfx.addEventListener('click', () => {
+                const sfxBtn = document.getElementById('btn-sound');
+                if (sfxBtn) sfxBtn.click();
+                syncSettingsUI();
+            });
+        }
+
+        const bgmSliderEl = document.getElementById('setting-bgm-slider');
+        if (bgmSliderEl) {
+            bgmSliderEl.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value, 10);
+                audio.setBgmVolume(val / 100);
+                const bgmVal = document.getElementById('setting-bgm-val');
+                if (bgmVal) bgmVal.textContent = `${val}%`;
+            });
+        }
+
+        const sfxSliderEl = document.getElementById('setting-sfx-slider');
+        if (sfxSliderEl) {
+            sfxSliderEl.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value, 10);
+                audio.setSfxVolume(val / 100);
+                const sfxVal = document.getElementById('setting-sfx-val');
+                if (sfxVal) sfxVal.textContent = `${val}%`;
+            });
+        }
 
         // Desktop Shortcut IPC triggers
         const triggerShortcutCreation = () => {

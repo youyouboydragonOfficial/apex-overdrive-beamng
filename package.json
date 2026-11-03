@@ -1,7 +1,7 @@
 {
   "name": "crashoria-ultimate-road-adventure",
-  "version": "3.4.5",
-  "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.5 - 単一インスタンス制御・描画準備完了待機・GPU高安定化パッチ (Single Instance Lock & Safe Boot Stability)",
+  "version": "3.4.6",
+  "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.6 - 高音質WebAudioサウンド＆BGM復旧・音量ブースト・設定画面音量調整対応パッチ (High-Definition Audio & BGM Revival)",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -32,10 +32,10 @@
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
       "shortcutName": "Crashoria Ultimate Road Adventure",
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.4.5.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.4.6.exe"
     },
     "portable": {
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.4.5.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.4.6.exe"
     }
   },
   "devDependencies": {
