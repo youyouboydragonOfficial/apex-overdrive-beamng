@@ -1,7 +1,7 @@
 {
   "name": "crashoria-ultimate-road-adventure",
-  "version": "3.4.4",
-  "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.4 - アンインストール＆危険地帯確認ダイアログの最前面表示修正 (Z-Index Fix & OS Window Focus/Minimize Refinement)",
+  "version": "3.4.5",
+  "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.5 - 単一インスタンス制御・描画準備完了待機・GPU高安定化パッチ (Single Instance Lock & Safe Boot Stability)",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -32,10 +32,10 @@
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
       "shortcutName": "Crashoria Ultimate Road Adventure",
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.4.4.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.4.5.exe"
     },
     "portable": {
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.4.4.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.4.5.exe"
     }
   },
   "devDependencies": {

@@ -166,6 +166,14 @@
         camera = new THREE.PerspectiveCamera(62, wrapper.clientWidth / wrapper.clientHeight, 0.1, 380);
         camera.position.set(0, 3.6, 8.2);
 
+        canvas.addEventListener('webglcontextlost', (e) => {
+            e.preventDefault();
+            console.warn('WebGL context lost. Restoring when GPU recovers...');
+        }, false);
+        canvas.addEventListener('webglcontextrestored', () => {
+            console.log('WebGL context restored.');
+        }, false);
+
         renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
         renderer.setSize(wrapper.clientWidth, wrapper.clientHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -3730,16 +3738,34 @@
         camera.lookAt(lookTarget);
     }
 
+    // DOM Visibility & Pointer-Events Helpers (100% Reliable Offline & Fast)
+    function hideElement(elOrId) {
+        const el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+        if (!el) return;
+        el.style.display = 'none';
+        el.style.pointerEvents = 'none';
+        el.classList.add('hidden');
+    }
+
+    function showElement(elOrId, displayType = 'flex') {
+        const el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+        if (!el) return;
+        el.style.display = displayType;
+        el.style.pointerEvents = 'auto';
+        el.classList.remove('hidden');
+    }
+
     function startNewRace() {
         audio.init();
         audio.ensureActive();
 
-        const home = document.getElementById('home-screen');
-        if (home) home.classList.add('hidden');
-        const settings = document.getElementById('settings-modal');
-        if (settings) settings.classList.add('hidden');
-        const modal = document.getElementById('modal-overlay');
-        if (modal) modal.classList.add('hidden');
+        // 100% guarantee all overlays and modals are closed and completely hidden
+        hideElement('splash-screen');
+        hideElement('home-screen');
+        hideElement('modal-overlay');
+        hideElement('settings-modal');
+        hideElement('danger-zone-modal');
+        hideElement('uninstall-confirm-modal');
 
         trafficCars.forEach(tc => scene.remove(tc.mesh));
         trafficCars = [];
@@ -3797,7 +3823,11 @@
         // Show sandbox toolbar only in SANDBOX mode
         const sbBar = document.getElementById('sandbox-toolbar');
         if (sbBar) {
-            sbBar.classList.toggle('hidden', state.gameType !== 'SANDBOX');
+            if (state.gameType === 'SANDBOX') {
+                showElement(sbBar, 'flex');
+            } else {
+                hideElement(sbBar);
+            }
         }
 
         const initTraffic = Math.max(2, Math.round(lvlSpec.trafficCount * state.trafficDensityMult));
@@ -3812,7 +3842,7 @@
 
         updateHUD();
         updateDamageSchematicUI();
-        document.getElementById('modal-overlay').classList.add('hidden');
+        hideElement('modal-overlay');
     }
 
     function updateHomePreview() {
@@ -3847,7 +3877,7 @@
             openHomeScreen();
             return;
         }
-        splash.classList.remove('hidden');
+        showElement(splash, 'flex');
         splash.style.opacity = '1';
         splashProgress = 0;
         splashAnimationDone = false;
@@ -3865,6 +3895,13 @@
             closeSplashScreen();
         };
 
+        // Safety fallback timer: auto-dismiss splash screen after 2.5s maximum under any condition
+        setTimeout(() => {
+            if (!splashAnimationDone) {
+                closeSplashScreen();
+            }
+        }, 2500);
+
         requestAnimationFrame(updateSplashStep);
     }
 
@@ -3873,9 +3910,9 @@
         if (!splashStartTime) splashStartTime = timestamp;
         const elapsed = (timestamp - splashStartTime) / 1000;
 
-        // Smooth cubic progression across 2.2 seconds total
-        const targetProgress = Math.min(100, (elapsed / 2.2) * 100);
-        splashProgress = THREE.MathUtils.lerp(splashProgress, targetProgress, 0.14);
+        // Smooth cubic progression across 1.8 seconds total
+        const targetProgress = Math.min(100, (elapsed / 1.8) * 100);
+        splashProgress = THREE.MathUtils.lerp(splashProgress, targetProgress, 0.16);
 
         const bar = document.getElementById('splash-progress-bar');
         const pctText = document.getElementById('splash-pct-text');
@@ -3897,12 +3934,10 @@
             }
         }
 
-        if (elapsed >= 2.25 && dispPct >= 99) {
+        if (elapsed >= 1.9 || (elapsed >= 1.4 && dispPct >= 99)) {
             if (bar) bar.style.width = '100%';
             if (pctText) pctText.textContent = '100%';
-            setTimeout(() => {
-                closeSplashScreen();
-            }, 180);
+            closeSplashScreen();
             return;
         }
 
@@ -3915,9 +3950,7 @@
         const splash = document.getElementById('splash-screen');
         if (splash) {
             splash.style.opacity = '0';
-            setTimeout(() => {
-                splash.classList.add('hidden');
-            }, 600);
+            hideElement(splash);
         }
         openHomeScreen();
     }
@@ -3952,54 +3985,50 @@
             editionText.className = info.isPortable ? 'font-bold text-amber-400' : 'font-bold text-sky-400';
         }
         if (portableCard) {
-            if (info.isPortable) portableCard.classList.remove('hidden');
-            else portableCard.classList.add('hidden');
+            if (info.isPortable) showElement(portableCard, 'flex');
+            else hideElement(portableCard);
         }
         if (installerCard) {
-            if (info.isPortable) installerCard.classList.add('hidden');
-            else installerCard.classList.remove('hidden');
+            if (info.isPortable) hideElement(installerCard);
+            else showElement(installerCard, 'flex');
         }
     }
 
     function openDangerZoneModal() {
-        const modal = document.getElementById('danger-zone-modal');
-        if (modal) modal.classList.remove('hidden');
+        hideElement('splash-screen');
+        showElement('danger-zone-modal', 'flex');
         syncDangerZoneUI();
     }
 
     function closeDangerZoneModal() {
-        const modal = document.getElementById('danger-zone-modal');
-        if (modal) modal.classList.add('hidden');
-        const uninst = document.getElementById('uninstall-confirm-modal');
-        if (uninst) uninst.classList.add('hidden');
+        hideElement('danger-zone-modal');
+        hideElement('uninstall-confirm-modal');
         pendingDangerAction = null;
+        if (state.mode === 'HOME') {
+            openHomeScreen();
+        }
     }
 
     function openHomeScreen() {
         audio.ensureActive();
         state.mode = 'HOME';
-        const home = document.getElementById('home-screen');
-        if (home) home.classList.remove('hidden');
-        const modal = document.getElementById('modal-overlay');
-        if (modal) modal.classList.add('hidden');
-        const settings = document.getElementById('settings-modal');
-        if (settings) settings.classList.add('hidden');
-        const danger = document.getElementById('danger-zone-modal');
-        if (danger) danger.classList.add('hidden');
-        const uninst = document.getElementById('uninstall-confirm-modal');
-        if (uninst) uninst.classList.add('hidden');
+        hideElement('splash-screen');
+        hideElement('modal-overlay');
+        hideElement('settings-modal');
+        hideElement('danger-zone-modal');
+        hideElement('uninstall-confirm-modal');
+        showElement('home-screen', 'flex');
         updateHomePreview();
     }
 
     function openSettingsModal() {
-        const settings = document.getElementById('settings-modal');
-        if (settings) settings.classList.remove('hidden');
+        hideElement('splash-screen');
+        showElement('settings-modal', 'flex');
         syncSettingsUI();
     }
 
     function closeSettingsModal() {
-        const settings = document.getElementById('settings-modal');
-        if (settings) settings.classList.add('hidden');
+        hideElement('settings-modal');
         if (state.mode === 'HOME') {
             openHomeScreen();
         }
@@ -4025,11 +4054,13 @@
         state.mode = 'MENU';
         state.cameraDragYaw = 0.45;
         state.cameraDragPitch = 0.08;
-        const home = document.getElementById('home-screen');
-        if (home) home.classList.add('hidden');
-        const modal = document.getElementById('modal-overlay');
-        modal.classList.remove('hidden');
-        document.getElementById('result-stats').classList.add('hidden');
+        hideElement('splash-screen');
+        hideElement('home-screen');
+        hideElement('settings-modal');
+        hideElement('danger-zone-modal');
+        hideElement('uninstall-confirm-modal');
+        showElement('modal-overlay', 'flex');
+        hideElement('result-stats');
         document.getElementById('modal-badge').innerHTML = '<i class="fa-solid fa-bolt"></i> BEAMNG SOFT-BODY VERTEX PHYSICS & 3D SHOWROOM';
         document.getElementById('modal-badge').className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-300 text-[10px] font-bold';
         document.getElementById('modal-title').textContent = 'SHOWROOM & STAGE SELECT';
@@ -4045,16 +4076,15 @@
         } catch (e) {}
 
         audio.playEtcDing(true);
-        const modal = document.getElementById('modal-overlay');
-        modal.classList.remove('hidden');
+        hideElement('home-screen');
+        showElement('modal-overlay', 'flex');
 
         document.getElementById('modal-badge').innerHTML = '<i class="fa-solid fa-trophy"></i> STAGE CLEAR!! 目標距離達成・完全制覇！';
         document.getElementById('modal-badge').className = 'inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/25 border border-emerald-400/50 text-emerald-300 text-xs font-bold';
         document.getElementById('modal-title').textContent = `🏆 LEVEL ${state.selectedLevel} CLEARED!!`;
 
         const statsBox = document.getElementById('result-stats');
-        statsBox.classList.remove('hidden');
-        statsBox.classList.add('grid');
+        showElement(statsBox, 'grid');
 
         const rank = state.hp >= 75 ? 'S' : (state.hp >= 40 ? 'A' : 'B');
         document.getElementById('final-score').textContent = `${Math.floor(state.score).toLocaleString()} (RANK ${rank})`;
@@ -4066,16 +4096,15 @@
 
     function showGameOverModal() {
         state.mode = 'GAMEOVER';
-        const modal = document.getElementById('modal-overlay');
-        modal.classList.remove('hidden');
+        hideElement('home-screen');
+        showElement('modal-overlay', 'flex');
 
         document.getElementById('modal-badge').innerHTML = '<i class="fa-solid fa-skull-crossbones"></i> VEHICLE DESTROYED - 耐久度 0% 大爆発';
         document.getElementById('modal-badge').className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/20 border border-red-400/40 text-red-300 text-[10px] font-bold';
         document.getElementById('modal-title').textContent = 'TOTAL WRECKED!';
 
         const statsBox = document.getElementById('result-stats');
-        statsBox.classList.remove('hidden');
-        statsBox.classList.add('grid');
+        showElement(statsBox, 'grid');
 
         document.getElementById('final-score').textContent = Math.floor(state.score).toLocaleString();
         document.getElementById('final-overtakes').textContent = `${state.overtakes}台`;
@@ -4213,7 +4242,11 @@
                     return;
                 }
             }
-            if (e.code === 'Enter') {
+            if (e.code === 'Enter' || e.code === 'Space') {
+                if (state.mode === 'SPLASH') {
+                    closeSplashScreen();
+                    return;
+                }
                 if (state.mode === 'HOME') {
                     openGarageModal();
                     return;
@@ -4224,23 +4257,23 @@
                 }
             }
             if (e.code === 'Escape') {
+                const uninst = document.getElementById('uninstall-confirm-modal');
+                if (uninst && uninst.style.display !== 'none' && !uninst.classList.contains('hidden')) {
+                    closeUninstallConfirmModal();
+                    return;
+                }
                 const danger = document.getElementById('danger-zone-modal');
-                if (danger && !danger.classList.contains('hidden')) {
+                if (danger && danger.style.display !== 'none' && !danger.classList.contains('hidden')) {
                     closeDangerZoneModal();
                     return;
                 }
-                const uninst = document.getElementById('uninstall-confirm-modal');
-                if (uninst && !uninst.classList.contains('hidden')) {
-                    uninst.classList.add('hidden');
-                    return;
-                }
                 const settings = document.getElementById('settings-modal');
-                if (settings && !settings.classList.contains('hidden')) {
+                if (settings && settings.style.display !== 'none' && !settings.classList.contains('hidden')) {
                     closeSettingsModal();
                     return;
                 }
                 const modal = document.getElementById('modal-overlay');
-                if (modal && !modal.classList.contains('hidden')) {
+                if (modal && modal.style.display !== 'none' && !modal.classList.contains('hidden')) {
                     openHomeScreen();
                     return;
                 }
@@ -4640,14 +4673,13 @@
             if (title) title.textContent = titleText;
             if (desc) desc.innerHTML = descHtml;
             if (uninstModal) {
-                uninstModal.classList.remove('hidden');
+                showElement(uninstModal, 'flex');
                 uninstModal.style.zIndex = '9999';
             }
         }
 
         function closeUninstallConfirmModal() {
-            const uninstModal = document.getElementById('uninstall-confirm-modal');
-            if (uninstModal) uninstModal.classList.add('hidden');
+            hideElement('uninstall-confirm-modal');
             pendingDangerAction = null;
         }
 
@@ -4693,10 +4725,8 @@
         const btnUninstProceed = document.getElementById('btn-uninstall-proceed');
         if (btnUninstProceed) {
             btnUninstProceed.addEventListener('click', () => {
-                const uninstModal = document.getElementById('uninstall-confirm-modal');
-                if (uninstModal) uninstModal.classList.add('hidden');
-                const dangerModal = document.getElementById('danger-zone-modal');
-                if (dangerModal) dangerModal.classList.add('hidden');
+                hideElement('uninstall-confirm-modal');
+                hideElement('danger-zone-modal');
                 try {
                     const { ipcRenderer } = require('electron');
                     if (pendingDangerAction === 'DELETE_PORTABLE') {

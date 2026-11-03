@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.4</title>
+    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.5</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Bundled Offline Three.js r128 & Cannon.js 0.6.2 -->
@@ -15,6 +15,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
+        /* Essential Offline Visibility & Layout Rules (Guaranteed to work even if CDN is unreachable) */
+        .hidden {
+            display: none !important;
+        }
+        .pointer-events-none {
+            pointer-events: none !important;
+        }
+        .pointer-events-auto {
+            pointer-events: auto !important;
+        }
         @keyframes splashBarShimmerAnim {
             0% { transform: translateX(-100%); }
             100% { transform: translateX(250%); }
@@ -484,7 +494,7 @@
                 <!-- Glowing Title Branding -->
                 <div>
                     <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-300 text-xs font-bold mb-3">
-                        <i class="fa-solid fa-car-burst text-orange-400"></i> BEAMNG 軟体物理エンジン搭載 v3.4.4
+                        <i class="fa-solid fa-car-burst text-orange-400"></i> BEAMNG 軟体物理エンジン搭載 v3.4.5
                     </div>
                     <h1 class="font-['Orbitron'] font-black text-3xl sm:text-5xl tracking-widest bg-gradient-to-r from-white via-sky-300 to-amber-400 bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(56,189,248,0.6)]">
                         CRASHORIA
@@ -497,19 +507,22 @@
                 <!-- Exactly 3 Main Big Buttons: ゲームを始める / 設定 / 危険地帯 -->
                 <div class="w-full flex flex-col gap-3.5">
                     <!-- 1. ゲームを始める (ショールーム＆ステージ選択画面へ遷移) -->
-                    <button id="btn-home-start" type="button" class="primary-btn w-full py-4 px-6 rounded-2xl font-black text-white text-lg tracking-wider flex items-center justify-center gap-3 cursor-pointer shadow-[0_0_35px_rgba(239,68,68,0.65)] hover:scale-[1.02] active:scale-[0.98] transition-all">
-                        <i class="fa-solid fa-flag-checkered text-xl text-yellow-300"></i>
-                        <span>ゲームを始める</span>
+                    <button id="btn-home-start" type="button" class="primary-btn w-full py-4 px-6 rounded-2xl font-black text-white text-lg tracking-wider flex flex-col items-center justify-center gap-0.5 cursor-pointer shadow-[0_0_35px_rgba(239,68,68,0.65)] hover:scale-[1.02] active:scale-[0.98] transition-all pointer-events-auto">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-flag-checkered text-xl text-yellow-300"></i>
+                            <span>ゲームを始める</span>
+                        </div>
+                        <span class="text-[11px] font-medium text-amber-200/90 tracking-normal">ショールーム＆出撃 (Space / Enter)</span>
                     </button>
 
                     <!-- 2. 設定 (操舵感度＆各種設定) -->
-                    <button id="btn-home-settings" type="button" class="game-btn w-full py-3.5 px-6 rounded-2xl font-bold text-sky-300 border-sky-500/40 text-base flex items-center justify-center gap-2.5 cursor-pointer hover:border-sky-400 active:scale-[0.98] transition-all">
+                    <button id="btn-home-settings" type="button" class="game-btn w-full py-3.5 px-6 rounded-2xl font-bold text-sky-300 border-sky-500/40 text-base flex items-center justify-center gap-2.5 cursor-pointer hover:border-sky-400 active:scale-[0.98] transition-all pointer-events-auto">
                         <i class="fa-solid fa-sliders text-sky-400"></i>
                         <span>設定</span>
                     </button>
 
                     <!-- 3. 危険地帯 (アンインストール・完全消去・初期化) -->
-                    <button id="btn-home-danger" type="button" class="game-btn w-full py-3.5 px-6 rounded-2xl font-bold text-rose-400 border-rose-500/50 hover:bg-rose-950/60 text-base flex items-center justify-center gap-2.5 cursor-pointer shadow-[0_0_15px_rgba(244,63,94,0.3)] hover:border-rose-400 active:scale-[0.98] transition-all">
+                    <button id="btn-home-danger" type="button" class="game-btn w-full py-3.5 px-6 rounded-2xl font-bold text-rose-400 border-rose-500/50 hover:bg-rose-950/60 text-base flex items-center justify-center gap-2.5 cursor-pointer shadow-[0_0_15px_rgba(244,63,94,0.3)] hover:border-rose-400 active:scale-[0.98] transition-all pointer-events-auto">
                         <i class="fa-solid fa-triangle-exclamation text-rose-500"></i>
                         <span>危険地帯</span>
                     </button>
@@ -733,7 +746,7 @@
         <!-- ========================================================================= -->
         <!-- REDESIGNED SPLIT-VIEW 3D SHOWROOM & STAGE SELECT UI (Crystal Clear & Easy to Read!) -->
         <!-- ========================================================================= -->
-        <div id="modal-overlay" class="hidden absolute inset-0 z-30 flex flex-col lg:flex-row items-stretch justify-between p-3 sm:p-5 bg-gradient-to-r from-slate-950/95 via-slate-950/70 to-transparent pointer-events-none">
+        <div id="modal-overlay" class="hidden absolute inset-0 z-40 flex flex-col lg:flex-row items-stretch justify-between p-3 sm:p-5 bg-gradient-to-r from-slate-950/95 via-slate-950/70 to-transparent pointer-events-none">
 
             <!-- Left Interactive Control Deck (Scrollable, high contrast, readable fonts) -->
             <div class="pointer-events-auto hud-glass w-full lg:w-[560px] xl:w-[610px] h-full rounded-3xl p-4 sm:p-5 border border-sky-500/35 flex flex-col justify-between gap-3 overflow-y-auto custom-scroll">
@@ -749,12 +762,12 @@
                         </h2>
                     </div>
                     <div class="flex items-center gap-2 w-full sm:w-auto">
-                        <button id="btn-garage-back-home" type="button" class="game-btn py-3 px-4 rounded-2xl font-bold text-amber-300 border-amber-500/40 text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer shrink-0" title="ホーム画面へ戻る">
+                        <button id="btn-garage-back-home" type="button" class="game-btn py-3 px-4 rounded-2xl font-bold text-amber-300 border-amber-500/40 text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer shrink-0 pointer-events-auto" title="ホーム画面へ戻る">
                             <i class="fa-solid fa-house"></i>
                             <span>ホーム</span>
                         </button>
-                        <button id="btn-start" type="button" class="primary-btn flex-1 sm:flex-none py-3 px-6 rounded-2xl font-black text-white text-sm sm:text-base tracking-wider flex items-center justify-center gap-2 cursor-pointer shrink-0">
-                            <i class="fa-solid fa-flag-checkered"></i>
+                        <button id="btn-start" type="button" class="primary-btn flex-1 sm:flex-none py-3 px-6 rounded-2xl font-black text-white text-sm sm:text-base tracking-wider flex items-center justify-center gap-2 cursor-pointer shrink-0 pointer-events-auto shadow-[0_0_30px_rgba(239,68,68,0.7)] animate-pulse">
+                            <i class="fa-solid fa-flag-checkered text-yellow-300 text-lg"></i>
                             <span id="btn-start-text">エンジン始動・出撃！</span>
                         </button>
                     </div>

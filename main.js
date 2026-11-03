@@ -75,13 +75,15 @@ function createDesktopShortcut() {
   }
 }
 
+let mainWindow = null;
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1440,
     height: 860,
     minWidth: 1024,
     minHeight: 640,
-    title: 'Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.4',
+    title: 'Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.5',
     backgroundColor: '#040710',
     autoHideMenuBar: true,
     show: true,
@@ -91,6 +93,19 @@ function createWindow() {
       additionalArguments: isSmokeTest ? ['--smoke-test'] : []
     }
   });
+
+  mainWindow = win;
+
+  win.once('ready-to-show', () => {
+    win.show();
+  });
+
+  // Fallback so window always shows even if ready-to-show is delayed
+  setTimeout(() => {
+    if (win && !win.isDestroyed() && !win.isVisible()) {
+      win.show();
+    }
+  }, 1000);
 
   win.loadFile(path.join(__dirname, 'src', 'index.html'));
 
@@ -215,23 +230,38 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(() => {
-  // Automatically ensure Desktop shortcut exists on first run
-  try {
-    const desktopPath = app.getPath('desktop');
-    const shortcutPath = path.join(desktopPath, 'Crashoria Ultimate Road Adventure.lnk');
-    if (!fs.existsSync(shortcutPath)) {
-      createDesktopShortcut();
-    }
-  } catch (e) {}
+const gotTheLock = isSmokeTest ? true : app.requestSingleInstanceLock();
 
-  createWindow();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  if (!isSmokeTest) {
+    app.on('second-instance', () => {
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.focus();
+      }
+    });
+  }
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  app.whenReady().then(() => {
+    // Automatically ensure Desktop shortcut exists on first run
+    try {
+      const desktopPath = app.getPath('desktop');
+      const shortcutPath = path.join(desktopPath, 'Crashoria Ultimate Road Adventure.lnk');
+      if (!fs.existsSync(shortcutPath)) {
+        createDesktopShortcut();
+      }
+    } catch (e) {}
+
+    createWindow();
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    });
   });
-});
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
-});
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') app.quit();
+  });
+}
