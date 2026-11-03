@@ -1,7 +1,7 @@
 {
   "name": "crashoria-ultimate-road-adventure",
-  "version": "3.4.3",
-  "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.3 - 車両旋回性能チューニング：急ハンドル回避性能の復活＆やりすぎ防止リバランス (Crisp Emergency Steering & Anti-Oversteer Refinement)",
+  "version": "3.4.4",
+  "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.4 - アンインストール＆危険地帯確認ダイアログの最前面表示修正 (Z-Index Fix & OS Window Focus/Minimize Refinement)",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -32,10 +32,10 @@
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
       "shortcutName": "Crashoria Ultimate Road Adventure",
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.4.3.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.4.4.exe"
     },
     "portable": {
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.4.3.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.4.4.exe"
     }
   },
   "devDependencies": {

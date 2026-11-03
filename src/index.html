@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.3</title>
+    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.4</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Bundled Offline Three.js r128 & Cannon.js 0.6.2 -->
@@ -484,7 +484,7 @@
                 <!-- Glowing Title Branding -->
                 <div>
                     <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-300 text-xs font-bold mb-3">
-                        <i class="fa-solid fa-car-burst text-orange-400"></i> BEAMNG 軟体物理エンジン搭載 v3.4.3
+                        <i class="fa-solid fa-car-burst text-orange-400"></i> BEAMNG 軟体物理エンジン搭載 v3.4.4
                     </div>
                     <h1 class="font-['Orbitron'] font-black text-3xl sm:text-5xl tracking-widest bg-gradient-to-r from-white via-sky-300 to-amber-400 bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(56,189,248,0.6)]">
                         CRASHORIA
@@ -703,8 +703,11 @@
         <!-- ========================================================================= -->
         <!-- UNINSTALL CONFIRMATION MODAL (アンインストール・完全消去 最終確認) -->
         <!-- ========================================================================= -->
-        <div id="uninstall-confirm-modal" class="hidden absolute inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md pointer-events-auto">
-            <div class="hud-glass max-w-md w-full rounded-3xl p-6 border-2 border-rose-500 shadow-[0_0_50px_rgba(244,63,94,0.6)] flex flex-col gap-4 text-center">
+        <div id="uninstall-confirm-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/95 backdrop-blur-lg pointer-events-auto select-none" style="z-index: 9999;">
+            <div class="hud-glass max-w-md w-full rounded-3xl p-6 border-2 border-rose-500 shadow-[0_0_60px_rgba(244,63,94,0.7)] flex flex-col gap-4 text-center relative animate-in fade-in zoom-in-95 duration-150">
+                <button id="btn-uninstall-close-x" type="button" class="absolute top-4 right-4 game-btn w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white" title="閉じる">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
                 <div class="w-14 h-14 rounded-full bg-rose-600/30 border-2 border-rose-500 flex items-center justify-center mx-auto text-rose-400 text-2xl">
                     <i class="fa-solid fa-trash-can"></i>
                 </div>

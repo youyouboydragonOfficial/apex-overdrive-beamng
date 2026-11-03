@@ -18,12 +18,29 @@ function getAppInfo() {
   const exeDir = path.dirname(process.execPath);
   const candidates = [
     path.join(exeDir, 'Uninstall CrashoriaUltimateRoadAdventure.exe'),
+    path.join(exeDir, 'Uninstall Crashoria Ultimate Road Adventure.exe'),
     path.join(exeDir, 'Uninstall Crashoria.exe'),
     path.join(exeDir, 'Uninstall.exe'),
     path.join(exeDir, 'unins000.exe'),
     path.join(process.resourcesPath, '..', 'Uninstall CrashoriaUltimateRoadAdventure.exe'),
+    path.join(process.resourcesPath, '..', 'Uninstall Crashoria Ultimate Road Adventure.exe'),
+    path.join(process.resourcesPath, '..', 'Uninstall Crashoria.exe'),
     path.join(process.resourcesPath, '..', 'Uninstall.exe')
   ];
+
+  // Dynamically inspect exe directory for any uninstaller executable
+  try {
+    if (fs.existsSync(exeDir)) {
+      const files = fs.readdirSync(exeDir);
+      for (const f of files) {
+        if (/^unins.*\.exe$/i.test(f) || /^uninstall.*\.exe$/i.test(f)) {
+          const fullP = path.join(exeDir, f);
+          if (!candidates.includes(fullP)) candidates.push(fullP);
+        }
+      }
+    }
+  } catch (e) {}
+
   const foundUninstaller = candidates.find(p => fs.existsSync(p));
   const portableExe = process.env.PORTABLE_EXECUTABLE_FILE ||
     (process.execPath.toLowerCase().includes('portable') ? process.execPath : null);
@@ -64,7 +81,7 @@ function createWindow() {
     height: 860,
     minWidth: 1024,
     minHeight: 640,
-    title: 'Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.3',
+    title: 'Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.4',
     backgroundColor: '#040710',
     autoHideMenuBar: true,
     show: true,
@@ -118,6 +135,9 @@ function createWindow() {
     try {
       const info = getAppInfo();
       const target = info.portableExePath;
+      if (win) {
+        win.setAlwaysOnTop(false);
+      }
       if (fs.existsSync(target)) {
         shell.showItemInFolder(target);
         event.reply('open-portable-folder-result', { ok: true, path: target });
@@ -136,9 +156,14 @@ function createWindow() {
       const info = getAppInfo();
       const targetFile = info.portableExePath;
       const userData = info.userDataPath;
-      // Spawn detached cmd to wait 2 seconds after quit, delete portable exe, and clean up userData folder
+      // Minimize window so any system prompts are shown in front
+      if (win) {
+        win.setAlwaysOnTop(false);
+        win.minimize();
+      }
+      // Spawn hidden detached cmd to wait 2 seconds after quit, delete portable exe, and clean up userData folder
       const cleanupCmd = `timeout /t 2 /nobreak >nul & del /f /q "${targetFile}" & rmdir /s /q "${userData}"`;
-      spawn('cmd.exe', ['/c', cleanupCmd], { detached: true, stdio: 'ignore' }).unref();
+      spawn('cmd.exe', ['/c', cleanupCmd], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
       setTimeout(() => {
         app.quit();
       }, 300);
@@ -163,11 +188,19 @@ function createWindow() {
   ipcMain.on('uninstall-app', (event) => {
     try {
       const info = getAppInfo();
+      // Minimize window immediately so uninstaller or Windows Settings is 100% in the foreground
+      if (win) {
+        win.setAlwaysOnTop(false);
+        win.minimize();
+      }
+
       if (info.hasUninstaller && info.uninstallerPath) {
         spawn(info.uninstallerPath, [], { detached: true, stdio: 'ignore' }).unref();
-        app.quit();
+        setTimeout(() => {
+          app.quit();
+        }, 400);
       } else {
-        // Fallback for Portable version: open Windows Apps & Features settings so user can manage/remove
+        // Fallback for Portable/Unpackaged: launch Windows Apps & Features settings in front
         exec('start ms-settings:appsfeatures || control appwiz.cpl');
         event.reply('uninstall-app-result', { ok: true, launchedSettings: true });
       }

@@ -3970,6 +3970,9 @@
     function closeDangerZoneModal() {
         const modal = document.getElementById('danger-zone-modal');
         if (modal) modal.classList.add('hidden');
+        const uninst = document.getElementById('uninstall-confirm-modal');
+        if (uninst) uninst.classList.add('hidden');
+        pendingDangerAction = null;
     }
 
     function openHomeScreen() {
@@ -4629,17 +4632,34 @@
         const btnCloseDangerBottom = document.getElementById('btn-close-danger-zone-bottom');
         if (btnCloseDangerBottom) btnCloseDangerBottom.addEventListener('click', closeDangerZoneModal);
 
+        function openUninstallConfirmModal(action, titleText, descHtml) {
+            pendingDangerAction = action;
+            const uninstModal = document.getElementById('uninstall-confirm-modal');
+            const title = document.getElementById('confirm-modal-title');
+            const desc = document.getElementById('confirm-modal-desc');
+            if (title) title.textContent = titleText;
+            if (desc) desc.innerHTML = descHtml;
+            if (uninstModal) {
+                uninstModal.classList.remove('hidden');
+                uninstModal.style.zIndex = '9999';
+            }
+        }
+
+        function closeUninstallConfirmModal() {
+            const uninstModal = document.getElementById('uninstall-confirm-modal');
+            if (uninstModal) uninstModal.classList.add('hidden');
+            pendingDangerAction = null;
+        }
+
         // Portable: Delete .exe
         const btnPortableDelete = document.getElementById('btn-danger-portable-delete');
         if (btnPortableDelete) {
             btnPortableDelete.addEventListener('click', () => {
-                pendingDangerAction = 'DELETE_PORTABLE';
-                const uninstModal = document.getElementById('uninstall-confirm-modal');
-                const title = document.getElementById('confirm-modal-title');
-                const desc = document.getElementById('confirm-modal-desc');
-                if (title) title.textContent = 'DELETE PORTABLE APP?';
-                if (desc) desc.innerHTML = 'ダウンロードしたポータブル実行ファイル本体（.exe）をPCから自動的に安全消去し、ゲームを終了します。<br><span class="text-rose-400 font-bold">※この操作は取り消せません。本当によろしいですか？</span>';
-                if (uninstModal) uninstModal.classList.remove('hidden');
+                openUninstallConfirmModal(
+                    'DELETE_PORTABLE',
+                    'DELETE PORTABLE APP?',
+                    'ダウンロードしたポータブル実行ファイル本体（.exe）をPCから自動的に安全消去し、ゲームを終了します。<br><span class="text-rose-400 font-bold">※この操作は取り消せません。本当によろしいですか？</span>'
+                );
             });
         }
 
@@ -4661,13 +4681,11 @@
         const btnInstallerUninst = document.getElementById('btn-danger-installer-uninstall');
         if (btnInstallerUninst) {
             btnInstallerUninst.addEventListener('click', () => {
-                pendingDangerAction = 'UNINSTALL_SETUP';
-                const uninstModal = document.getElementById('uninstall-confirm-modal');
-                const title = document.getElementById('confirm-modal-title');
-                const desc = document.getElementById('confirm-modal-desc');
-                if (title) title.textContent = 'UNINSTALL APP?';
-                if (desc) desc.innerHTML = 'Windows公式アンインストーラーを起動してアプリをPCから完全に削除します。<br>よろしいですか？';
-                if (uninstModal) uninstModal.classList.remove('hidden');
+                openUninstallConfirmModal(
+                    'UNINSTALL_SETUP',
+                    'UNINSTALL APP?',
+                    'Windows公式アンインストーラーを起動してアプリをPCから完全に削除します。<br>よろしいですか？'
+                );
             });
         }
 
@@ -4677,12 +4695,15 @@
             btnUninstProceed.addEventListener('click', () => {
                 const uninstModal = document.getElementById('uninstall-confirm-modal');
                 if (uninstModal) uninstModal.classList.add('hidden');
+                const dangerModal = document.getElementById('danger-zone-modal');
+                if (dangerModal) dangerModal.classList.add('hidden');
                 try {
                     const { ipcRenderer } = require('electron');
                     if (pendingDangerAction === 'DELETE_PORTABLE') {
                         addFloatingNotification('🗑️ ポータブル版を消去して終了しています...', 'text-rose-400 font-bold');
                         ipcRenderer.send('delete-portable-app');
                     } else {
+                        addFloatingNotification('🗑️ アンインストーラーを起動しています...', 'text-rose-400 font-bold');
                         ipcRenderer.send('uninstall-app');
                     }
                 } catch (err) {
@@ -4693,11 +4714,12 @@
 
         const btnUninstCancel = document.getElementById('btn-uninstall-cancel');
         if (btnUninstCancel) {
-            btnUninstCancel.addEventListener('click', () => {
-                const uninstModal = document.getElementById('uninstall-confirm-modal');
-                if (uninstModal) uninstModal.classList.add('hidden');
-                pendingDangerAction = null;
-            });
+            btnUninstCancel.addEventListener('click', closeUninstallConfirmModal);
+        }
+
+        const btnUninstCloseX = document.getElementById('btn-uninstall-close-x');
+        if (btnUninstCloseX) {
+            btnUninstCloseX.addEventListener('click', closeUninstallConfirmModal);
         }
 
         // Reset all data
