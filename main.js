@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { exec, spawn } = require('child_process');
@@ -11,7 +11,7 @@ app.commandLine.appendSwitch('enable-gpu-rasterization');
 app.commandLine.appendSwitch('force_high_performance_gpu');
 // Unrestricted Web Audio Autoplay Policy for Seamless BGM & SFX
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
-app.commandLine.appendSwitch('disable-features', 'PreloadMediaEngagementData');
+app.commandLine.appendSwitch('disable-features', 'PreloadMediaEngagementData,MediaStream,WebRTC,VideoCaptureService');
 
 // Helper to inspect application environment (Portable vs Installed)
 function getAppInfo() {
@@ -83,7 +83,7 @@ function createWindow() {
     height: 860,
     minWidth: 1024,
     minHeight: 640,
-    title: 'Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.5.1',
+    title: 'Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.5.2',
     backgroundColor: '#040710',
     autoHideMenuBar: true,
     show: true,
@@ -269,6 +269,15 @@ if (!gotTheLock) {
   }
 
   app.whenReady().then(() => {
+    // Hard-deny all camera, microphone, and media capture requests to guarantee 100% security privacy
+    if (session.defaultSession) {
+      session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+        callback(false);
+      });
+      session.defaultSession.setPermissionCheckHandler((webContents, permission) => {
+        return false;
+      });
+    }
     // Automatically ensure Desktop shortcut exists on first run
     try {
       const desktopPath = app.getPath('desktop');

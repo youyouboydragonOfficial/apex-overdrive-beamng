@@ -4120,6 +4120,18 @@
         }
     }
 
+    function syncAttachmentUI() {
+        try {
+            document.querySelectorAll('.attachment-btn').forEach(btn => {
+                if (btn.getAttribute('data-attachment') === (state.customAttachment || 'NONE')) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
+            });
+        } catch (e) {}
+    }
+
     function openGarageModal() {
         audio.ensureActive();
         state.mode = 'MENU';
@@ -4130,13 +4142,20 @@
         hideElement('settings-modal');
         hideElement('danger-zone-modal');
         hideElement('uninstall-confirm-modal');
-        syncAttachmentUI();
+        try { syncAttachmentUI(); } catch (e) {}
         showElement('modal-overlay', 'flex');
         hideElement('result-stats');
-        document.getElementById('modal-badge').innerHTML = '<i class="fa-solid fa-bolt"></i> BEAMNG SOFT-BODY VERTEX PHYSICS & 3D SHOWROOM';
-        document.getElementById('modal-badge').className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-300 text-[10px] font-bold';
-        document.getElementById('modal-title').textContent = 'SHOWROOM & STAGE SELECT';
-        document.getElementById('btn-start-text').textContent = 'エンジン始動・出撃！';
+        try {
+            const badge = document.getElementById('modal-badge');
+            if (badge) {
+                badge.innerHTML = '<i class="fa-solid fa-bolt"></i> BEAMNG SOFT-BODY VERTEX PHYSICS & 3D SHOWROOM';
+                badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-300 text-[10px] font-bold';
+            }
+            const title = document.getElementById('modal-title');
+            if (title) title.textContent = 'SHOWROOM & STAGE SELECT';
+            const startTxt = document.getElementById('btn-start-text');
+            if (startTxt) startTxt.textContent = 'エンジン始動・出撃！';
+        } catch (e) {}
     }
 
     function showStageClearModal() {
@@ -4465,8 +4484,25 @@
                 e.preventDefault();
                 document.querySelectorAll('.attachment-btn').forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
-                state.customAttachment = btn.getAttribute('data-attachment') || 'NONE';
-                if (audio && audio.playHazardClick) audio.playHazardClick();
+                const att = btn.getAttribute('data-attachment') || 'NONE';
+                state.customAttachment = att;
+
+                // Pivot Showroom camera to dramatically showcase the newly installed attachment
+                if (att === 'RAM_BLADE') {
+                    state.cameraDragYaw = 2.85; // Front angle view
+                    state.cameraDragPitch = 0.05;
+                } else if (att === 'ROCKET_THRUSTER') {
+                    state.cameraDragYaw = -0.45; // Rear jet thrusters view
+                    state.cameraDragPitch = 0.12;
+                } else if (att === 'SPIKE_ARMOR') {
+                    state.cameraDragYaw = 1.45; // Broadside spike armor view
+                    state.cameraDragPitch = 0.08;
+                }
+
+                if (audio) {
+                    if (att === 'ROCKET_THRUSTER' && audio.playNitroBurst) audio.playNitroBurst();
+                    else if (audio.playHazardClick) audio.playHazardClick();
+                }
                 rebuildPlayerCar();
                 const attName = btn.querySelector('div:first-child')?.textContent || state.customAttachment;
                 addFloatingNotification(`🔧 アタッチメント装着: ${attName}`, 'text-amber-300 font-bold');

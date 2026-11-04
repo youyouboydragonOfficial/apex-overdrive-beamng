@@ -1,6 +1,6 @@
 {
   "name": "crashoria-ultimate-road-adventure",
-  "version": "3.5.1",
+  "version": "3.5.2",
   "description": "Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.5.1 - Attachment 3D Visualizer & Background Zombie Audio Fix",
   "main": "main.js",
   "scripts": {
@@ -32,10 +32,10 @@
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
       "shortcutName": "Crashoria Ultimate Road Adventure",
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.5.1.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Setup-v3.5.2.exe"
     },
     "portable": {
-      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.5.1.exe"
+      "artifactName": "Crashoria-Ultimate-Road-Adventure-Portable-v3.5.2.exe"
     }
   },
   "devDependencies": {

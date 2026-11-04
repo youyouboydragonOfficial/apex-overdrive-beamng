@@ -50,12 +50,7 @@
                     this.init();
                 } catch (e) {}
 
-                try {
-                    navigator.mediaDevices?.addEventListener?.('devicechange', () => {
-                        this.init();
-                        this.ensureActive();
-                    });
-                } catch (e) {}
+                /* navigator.mediaDevices permanently removed: camera/mic hardware is never queried */
 
                 document.addEventListener('visibilitychange', () => {
                     if (document.hidden) {
