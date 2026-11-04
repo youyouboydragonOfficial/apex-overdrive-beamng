@@ -371,7 +371,8 @@
         }
         const customOpts = {
             finishType: state.customFinish,
-            underglowEnabled: state.underglowEnabled
+            underglowEnabled: state.underglowEnabled,
+            attachment: state.customAttachment || 'NONE'
         };
         if (state.customPaintColor !== null) {
             customOpts.paintColor = state.customPaintColor;
@@ -4129,6 +4130,7 @@
         hideElement('settings-modal');
         hideElement('danger-zone-modal');
         hideElement('uninstall-confirm-modal');
+        syncAttachmentUI();
         showElement('modal-overlay', 'flex');
         hideElement('result-stats');
         document.getElementById('modal-badge').innerHTML = '<i class="fa-solid fa-bolt"></i> BEAMNG SOFT-BODY VERTEX PHYSICS & 3D SHOWROOM';
@@ -4454,6 +4456,20 @@
                 fb.classList.add('selected');
                 state.customFinish = fb.getAttribute('data-finish');
                 rebuildPlayerCar();
+            });
+        });
+
+        // Attachment Selector Buttons
+        document.querySelectorAll('.attachment-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.attachment-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                state.customAttachment = btn.getAttribute('data-attachment') || 'NONE';
+                if (audio && audio.playHazardClick) audio.playHazardClick();
+                rebuildPlayerCar();
+                const attName = btn.querySelector('div:first-child')?.textContent || state.customAttachment;
+                addFloatingNotification(`🔧 アタッチメント装着: ${attName}`, 'text-amber-300 font-bold');
             });
         });
 
@@ -4942,3 +4958,19 @@
         animate();
     });
 })(window);
+
+
+    if (typeof require !== 'undefined') {
+        try {
+            const { ipcRenderer } = require('electron');
+            ipcRenderer.on('app-window-state', (_event, winState) => {
+                if (winState === 'minimized' || winState === 'closing') {
+                    if (audio && audio.stopAllAudio) audio.stopAllAudio();
+                } else if (winState === 'restored') {
+                    if (audio && audio.masterGainNode && audio.ctx) {
+                        audio.masterGainNode.gain.setValueAtTime(audio.masterVolume, audio.ctx.currentTime);
+                    }
+                }
+            });
+        } catch (e) {}
+    }

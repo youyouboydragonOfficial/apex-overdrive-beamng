@@ -83,7 +83,7 @@ function createWindow() {
     height: 860,
     minWidth: 1024,
     minHeight: 640,
-    title: 'Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.5.0',
+    title: 'Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.5.1',
     backgroundColor: '#040710',
     autoHideMenuBar: true,
     show: true,
@@ -108,6 +108,29 @@ function createWindow() {
     }
   }, 1000);
 
+  win.on('minimize', () => {
+    try {
+      win.webContents.send('app-window-state', 'minimized');
+    } catch (e) {}
+  });
+
+  win.on('restore', () => {
+    try {
+      win.webContents.send('app-window-state', 'restored');
+    } catch (e) {}
+  });
+
+  win.on('close', () => {
+    try {
+      win.webContents.send('app-window-state', 'closing');
+    } catch (e) {}
+  });
+
+  win.on('closed', () => {
+    mainWindow = null;
+    app.exit(0);
+  });
+
   win.loadFile(path.join(__dirname, 'src', 'index.html'));
 
   win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
@@ -129,7 +152,7 @@ function createWindow() {
   });
 
   ipcMain.on('quit-app', () => {
-    app.quit();
+    app.exit(0);
   });
 
   // Query app environment info (Portable vs Installed)
@@ -263,6 +286,6 @@ if (!gotTheLock) {
   });
 
   app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit();
+    app.exit(0);
   });
 }

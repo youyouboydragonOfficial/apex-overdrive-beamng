@@ -1400,49 +1400,140 @@
         // ATTACHMENT ACCESSORIES (Ram Blade, Rocket Thruster, Spike Armor)
         // =========================================================================
         const attachmentType = customOptions.attachment || 'NONE';
+        const carZFront = -2.32;
+        const carZRear = 2.05;
+
         if (attachmentType === 'RAM_BLADE') {
             const bladeGroup = new THREE.Group();
-            const plowMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9, roughness: 0.25 });
-            const bladeGeo = new THREE.BoxGeometry(2.35, 0.65, 0.45);
-            const blade = new THREE.Mesh(bladeGeo, plowMat);
-            blade.position.set(0, 0.38, -2.35);
-            const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.12, 0.48), new THREE.MeshBasicMaterial({ color: 0xfbbf24 }));
-            stripe.position.set(0, 0.42, -2.35);
+            const steelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.95, roughness: 0.2 });
+            const edgeMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.98, roughness: 0.1 });
+            const hazardMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+            const redLightMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+
+            // Dual angled wedge shovel wings (forming sharp locomotive V-plow)
+            [-0.62, 0.62].forEach((wx, side) => {
+                const wingGeo = new THREE.BoxGeometry(1.35, 0.72, 0.18);
+                const wing = new THREE.Mesh(wingGeo, steelMat);
+                wing.rotation.y = side === 0 ? 0.38 : -0.38;
+                wing.position.set(wx, 0.42, carZFront - 0.18);
+
+                // Heavy bottom cutting edge
+                const edge = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.12, 0.22), edgeMat);
+                edge.position.set(0, -0.30, 0.02);
+                wing.add(edge);
+
+                // Hazard stripes
+                const stripe = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.10, 0.20), hazardMat);
+                stripe.position.set(0, 0.15, 0.02);
+                wing.add(stripe);
+
+                // Clearance lights on outer ends
+                const light = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), redLightMat);
+                light.position.set(side === 0 ? -0.65 : 0.65, 0.32, 0.05);
+                wing.add(light);
+
+                bladeGroup.add(wing);
+            });
+
+            // Center steel reinforcing ridge
+            const centerBeam = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.78, 0.55), steelMat);
+            centerBeam.position.set(0, 0.42, carZFront - 0.30);
+            bladeGroup.add(centerBeam);
+
+            // Chrome Hydraulic Support Push Struts
             [-0.75, 0.75].forEach(sx => {
-                const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.6, 8), chromeMat);
-                strut.rotation.x = Math.PI / 4;
-                strut.position.set(sx, 0.45, -2.15);
+                const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.75, 8), chromeMat);
+                strut.rotation.x = Math.PI / 3.8;
+                strut.position.set(sx, 0.48, carZFront + 0.28);
                 bladeGroup.add(strut);
             });
-            bladeGroup.add(blade, stripe);
+
             chassisGroup.add(bladeGroup);
         } else if (attachmentType === 'ROCKET_THRUSTER') {
             const thrusterGroup = new THREE.Group();
-            const nozzleMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.2 });
-            [-0.42, 0.42].forEach(tx => {
-                const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.24, 0.85, 16), nozzleMat);
-                tube.rotation.x = Math.PI / 2;
-                tube.position.set(tx, 0.78, 1.85);
-                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.04, 8, 16), new THREE.MeshBasicMaterial({ color: 0x06b6d4 }));
-                ring.position.set(tx, 0.78, 2.28);
-                thrusterGroup.add(tube, ring);
+            const carbonMat = new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.85, roughness: 0.25 });
+            const goldRingMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.95, roughness: 0.15 });
+            const plasmaGlowMat = new THREE.MeshBasicMaterial({ color: 0x00f5d4 });
+
+            // Twin Massive Jet Booster Nacelles
+            [-0.48, 0.48].forEach(tx => {
+                const nacelle = new THREE.Group();
+                nacelle.position.set(tx, 0.88, carZRear - 0.15);
+
+                // Main casing
+                const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 1.15, 16), carbonMat);
+                barrel.rotation.x = Math.PI / 2;
+                nacelle.add(barrel);
+
+                // Gold alloy nozzle ring
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.05, 8, 16), goldRingMat);
+                ring.position.set(0, 0, 0.58);
+                nacelle.add(ring);
+
+                // Glowing plasma inner core
+                const plasma = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.85, 10), plasmaGlowMat);
+                plasma.rotation.x = -Math.PI / 2;
+                plasma.position.set(0, 0, 0.82);
+                nacelle.add(plasma);
+
+                thrusterGroup.add(nacelle);
             });
+
+            // Center NOS High-Pressure Nitrogen Bottle with Chrome Straps
+            const tankMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.15 });
+            const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.72, 12), tankMat);
+            tank.rotation.z = Math.PI / 2;
+            tank.position.set(0, 0.76, carZRear - 0.22);
+
+            const strap1 = new THREE.Mesh(new THREE.TorusGeometry(0.145, 0.02, 6, 12), chromeMat);
+            strap1.rotation.y = Math.PI / 2;
+            strap1.position.set(-0.22, 0.76, carZRear - 0.22);
+            const strap2 = strap1.clone();
+            strap2.position.x = 0.22;
+
+            thrusterGroup.add(tank, strap1, strap2);
             chassisGroup.add(thrusterGroup);
         } else if (attachmentType === 'SPIKE_ARMOR') {
             const armorGroup = new THREE.Group();
-            const spikeMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.95, roughness: 0.1 });
-            [-1.08, 1.08].forEach(sx => {
-                const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.4, 8), spikeMat);
-                bar.rotation.x = Math.PI / 2;
-                bar.position.set(sx, 0.48, 0);
-                armorGroup.add(bar);
-                [-1.1, -0.4, 0.4, 1.1].forEach(sz => {
-                    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.24, 6), spikeMat);
+            const cageMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.92, roughness: 0.18 });
+            const spikeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.98, roughness: 0.08 });
+            const lightMat = new THREE.MeshBasicMaterial({ color: 0xfffbeb });
+
+            // 1. Heavy side rock sliders with menacing steel spikes
+            [-1.12, 1.12].forEach(sx => {
+                const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3.6, 8), cageMat);
+                rail.rotation.x = Math.PI / 2;
+                rail.position.set(sx, 0.44, 0);
+                armorGroup.add(rail);
+
+                [-1.3, -0.65, 0, 0.65, 1.3].forEach(sz => {
+                    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.34, 8), spikeMat);
                     spike.rotation.z = sx > 0 ? -Math.PI / 2 : Math.PI / 2;
-                    spike.position.set(sx + (sx > 0 ? 0.12 : -0.12), 0.48, sz);
+                    spike.position.set(sx + (sx > 0 ? 0.17 : -0.17), 0.44, sz);
                     armorGroup.add(spike);
                 });
             });
+
+            // 2. Overhead Heavy Roll-Cage Halo Bars
+            [-0.78, 0.78].forEach(cx => {
+                const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 2.6, 8), cageMat);
+                bar.rotation.x = Math.PI / 2;
+                bar.position.set(cx, 1.28, 0);
+                armorGroup.add(bar);
+            });
+
+            // 3. Roof Rally Lightbar with 4 glowing floodlights
+            const lightbar = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.12, 0.18), cageMat);
+            lightbar.position.set(0, 1.34, -0.45);
+            armorGroup.add(lightbar);
+
+            [-0.6, -0.2, 0.2, 0.6].forEach(lx => {
+                const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.14, 12), lightMat);
+                lamp.rotation.x = Math.PI / 2;
+                lamp.position.set(lx, 1.34, -0.52);
+                armorGroup.add(lamp);
+            });
+
             chassisGroup.add(armorGroup);
         }
 

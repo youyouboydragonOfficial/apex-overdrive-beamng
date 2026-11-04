@@ -56,6 +56,33 @@
                         this.ensureActive();
                     });
                 } catch (e) {}
+
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        if (this.masterGainNode && this.ctx) {
+                            this.masterGainNode.gain.setValueAtTime(0, this.ctx.currentTime);
+                        }
+                    } else {
+                        if (this.masterGainNode && this.ctx) {
+                            this.masterGainNode.gain.setValueAtTime(this.masterVolume, this.ctx.currentTime);
+                        }
+                    }
+                });
+
+                window.addEventListener('beforeunload', () => {
+                    this.stopAllAudio();
+                    if (this.ctx && this.ctx.state !== 'closed') {
+                        this.ctx.close().catch(() => {});
+                    }
+                });
+            }
+        }
+
+        stopAllAudio() {
+            this.stopBGM();
+            this.stopEngine();
+            if (this.masterGainNode && this.ctx && this.ctx.currentTime) {
+                this.masterGainNode.gain.setValueAtTime(0, this.ctx.currentTime);
             }
         }
 

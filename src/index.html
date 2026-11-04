@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.5.0</title>
+    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.5.1</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Bundled Offline Three.js r128 & Cannon.js 0.6.2 -->
@@ -131,6 +131,20 @@
             border-color: #38bdf8;
             background: rgba(14, 165, 233, 0.3);
             color: #fff;
+        }
+        .attachment-btn {
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .attachment-btn:hover {
+            border-color: rgba(56, 189, 248, 0.8) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+        }
+        .attachment-btn.selected {
+            border-color: #38bdf8 !important;
+            background: linear-gradient(145deg, rgba(14, 116, 144, 0.65), rgba(15, 23, 42, 0.95)) !important;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.6), inset 0 0 10px rgba(56, 189, 248, 0.3) !important;
+            transform: translateY(-2px);
         }
         .critical-vignette {
             pointer-events: none;
@@ -494,7 +508,7 @@
                 <!-- Glowing Title Branding -->
                 <div>
                     <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-300 text-xs font-bold mb-3">
-                        <i class="fa-solid fa-car-burst text-orange-400"></i> BEAMNG 軟体物理エンジン搭載 v3.5.0
+                        <i class="fa-solid fa-car-burst text-orange-400"></i> BEAMNG 軟体物理エンジン搭載 v3.5.1
                     </div>
                     <h1 class="font-['Orbitron'] font-black text-3xl sm:text-5xl tracking-widest bg-gradient-to-r from-white via-sky-300 to-amber-400 bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(56,189,248,0.6)]">
                         CRASHORIA
