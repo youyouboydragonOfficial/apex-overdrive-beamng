@@ -1019,6 +1019,266 @@
         };
     }
 
+
+    function createWreckingBall(zOffset = -185) {
+        const group = new THREE.Group();
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.3 });
+        const postL = new THREE.Mesh(new THREE.BoxGeometry(0.8, 8.5, 0.8), frameMat);
+        postL.position.set(-ROAD_WIDTH * 0.48, 4.25, 0);
+        const postR = new THREE.Mesh(new THREE.BoxGeometry(0.8, 8.5, 0.8), frameMat);
+        postR.position.set(ROAD_WIDTH * 0.48, 4.25, 0);
+        const cross = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH * 0.98, 0.8, 0.8), frameMat);
+        cross.position.set(0, 8.2, 0);
+        group.add(postL, postR, cross);
+
+        // Swinging chain & giant iron wrecking ball
+        const swingPivot = new THREE.Group();
+        swingPivot.position.set(0, 8.0, 0);
+
+        const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 5.8, 8), frameMat);
+        chain.position.set(0, -2.9, 0);
+
+        const ballMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.95, roughness: 0.15 });
+        const ball = new THREE.Mesh(new THREE.SphereGeometry(1.4, 20, 20), ballMat);
+        ball.position.set(0, -5.8, 0);
+
+        // Warning spikes on ball
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2;
+            const spike = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.65, 8), frameMat);
+            spike.rotation.z = angle - Math.PI / 2;
+            spike.position.set(Math.cos(angle) * 1.4, -5.8 + Math.sin(angle) * 1.4, 0);
+            swingPivot.add(spike);
+        }
+
+        swingPivot.add(chain, ball);
+        group.add(swingPivot);
+        group.position.set(0, 0, zOffset);
+        group.userData.swingPivot = swingPivot;
+        group.userData.swingSpeed = 1.8 + Math.random() * 0.8;
+        group.userData.swingOffset = Math.random() * Math.PI * 2;
+
+        return {
+            mesh: group,
+            type: 'WRECKING_BALL',
+            width: 3.2,
+            length: 3.0,
+            triggered: false,
+            swingPivot
+        };
+    }
+
+    function createTntPyramid(zOffset = -185, laneIndex = null) {
+        if (laneIndex === null) laneIndex = Math.floor(Math.random() * 6);
+        const laneX = LANE_CENTERS[laneIndex];
+        const group = new THREE.Group();
+
+        const tntMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.35 });
+        const bandMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+
+        // Pyramid of 6 explosive TNT barrels
+        const positions = [
+            [-0.7, 0.55, 0], [0.7, 0.55, 0], [0, 0.55, -0.7],
+            [-0.35, 1.55, -0.2], [0.35, 1.55, -0.2],
+            [0, 2.45, -0.2]
+        ];
+
+        positions.forEach(p => {
+            const b = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 1.0, 14), tntMat);
+            b.position.set(p[0], p[1], p[2]);
+            const band = new THREE.Mesh(new THREE.CylinderGeometry(0.385, 0.385, 0.22, 14), bandMat);
+            band.position.set(p[0], p[1], p[2]);
+            group.add(b, band);
+        });
+
+        group.position.set(laneX, 0, zOffset);
+        return {
+            mesh: group,
+            type: 'TNT_PYRAMID',
+            laneIndex,
+            width: 2.8,
+            length: 2.2,
+            triggered: false
+        };
+    }
+
+    function createRoadworkCones(zOffset = -185, laneIndex = null) {
+        if (laneIndex === null) laneIndex = Math.floor(Math.random() * 6);
+        const laneX = LANE_CENTERS[laneIndex];
+        const group = new THREE.Group();
+
+        // Flashing yellow arrow direction board
+        const signMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
+        const sign = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.4, 0.2), signMat);
+        sign.position.set(0, 1.5, 0);
+        const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.45, 1.1, 4), new THREE.MeshBasicMaterial({ color: 0xf59e0b }));
+        arrow.rotation.z = Math.PI / 2;
+        arrow.position.set(0, 1.5, 0.12);
+        group.add(sign, arrow);
+
+        // 5 reflective traffic cones in a lead-in wedge
+        const coneMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.4 });
+        const stripeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        [-1.2, -0.6, 0, 0.6, 1.2].forEach((cz, i) => {
+            const cone = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.75, 12), coneMat);
+            cone.position.set((i - 2) * 0.35, 0.375, cz * 2.2 + 2.5);
+            const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.19, 0.18, 12), stripeMat);
+            stripe.position.set((i - 2) * 0.35, 0.42, cz * 2.2 + 2.5);
+            group.add(cone, stripe);
+        });
+
+        group.position.set(laneX, 0, zOffset);
+        return {
+            mesh: group,
+            type: 'ROADWORK_CONES',
+            laneIndex,
+            width: 3.0,
+            length: 7.0,
+            triggered: false
+        };
+    }
+
+    function createWaterBarrels(zOffset = -185, laneIndex = null) {
+        if (laneIndex === null) laneIndex = Math.floor(Math.random() * 6);
+        const laneX = LANE_CENTERS[laneIndex];
+        const group = new THREE.Group();
+
+        // 3 yellow impact attenuator barrels with black lids
+        const barrelMat = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.4 });
+        const lidMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
+
+        [-0.65, 0, 0.65].forEach((bx, idx) => {
+            const b = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.1, 14), barrelMat);
+            b.position.set(bx, 0.55, idx * 0.8);
+            const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.1, 14), lidMat);
+            lid.position.set(bx, 1.12, idx * 0.8);
+            group.add(b, lid);
+        });
+
+        group.position.set(laneX, 0, zOffset);
+        return {
+            mesh: group,
+            type: 'WATER_BARRELS',
+            laneIndex,
+            width: 2.8,
+            length: 2.6,
+            triggered: false
+        };
+    }
+
+    function createFallingSignboard(zOffset = -185) {
+        const group = new THREE.Group();
+        const metalMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8, roughness: 0.3 });
+        const pL = new THREE.Mesh(new THREE.BoxGeometry(0.6, 6.5, 0.6), metalMat);
+        pL.position.set(-ROAD_WIDTH * 0.48, 3.25, 0);
+        const pR = new THREE.Mesh(new THREE.BoxGeometry(0.6, 6.5, 0.6), metalMat);
+        pR.position.set(ROAD_WIDTH * 0.48, 3.25, 0);
+        const gantry = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH * 0.98, 0.6, 0.6), metalMat);
+        gantry.position.set(0, 6.2, 0);
+
+        // Huge green highway guide signboard
+        const boardMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.4 });
+        const board = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH * 0.72, 2.2, 0.25), boardMat);
+        board.position.set(0, 4.6, 0);
+
+        group.add(pL, pR, gantry, board);
+        group.position.set(0, 0, zOffset);
+        group.userData.board = board;
+        group.userData.falling = false;
+
+        return {
+            mesh: group,
+            type: 'FALLING_SIGNBOARD',
+            width: ROAD_WIDTH * 0.75,
+            length: 2.2,
+            triggered: false
+        };
+    }
+
+    function createCliffChasmFork(zOffset = -195) {
+        const group = new THREE.Group();
+
+        // Overhead warning arch
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 });
+        const arch = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH * 0.98, 0.8, 0.8), frameMat);
+        arch.position.set(0, 5.5, 0);
+
+        // Signboards: Left = Safe / Right = Dead End Cliff
+        const safeSign = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH * 0.42, 1.4, 0.2), new THREE.MeshBasicMaterial({ color: 0x10b981 }));
+        safeSign.position.set(-ROAD_WIDTH * 0.24, 4.2, 0);
+
+        const dangerSign = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH * 0.42, 1.4, 0.2), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+        dangerSign.position.set(ROAD_WIDTH * 0.24, 4.2, 0);
+
+        // Broken crumbling road section on right 3 lanes (x > 0)
+        const brokenMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.95 });
+        const chasmHole = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH * 0.48, 12.0, 16.0), new THREE.MeshBasicMaterial({ color: 0x050201 }));
+        chasmHole.position.set(ROAD_WIDTH * 0.24, -6.1, 8.0);
+
+        // Warning skull / caution pylons
+        [-0.5, 0, 0.5].forEach(dx => {
+            const bar = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.9, 0.2), new THREE.MeshBasicMaterial({ color: 0xf59e0b }));
+            bar.position.set(ROAD_WIDTH * 0.24 + dx * 3.0, 0.45, 0.5);
+            group.add(bar);
+        });
+
+        group.add(arch, safeSign, dangerSign, chasmHole);
+        group.position.set(0, 0, zOffset);
+
+        return {
+            mesh: group,
+            type: 'CLIFF_CHASM',
+            width: ROAD_WIDTH,
+            length: 16.0,
+            chasmXMin: 0.5, // Any car on x > 0.5 falls into the canyon abyss!
+            triggered: false
+        };
+    }
+
+    function createSandstormVortex(zOffset = -185) {
+        const group = new THREE.Group();
+        const vortexGeo = new THREE.CylinderGeometry(8.5, 1.8, 14, 16, 1, true);
+        const vortexMat = new THREE.MeshBasicMaterial({
+            color: 0xd97706,
+            transparent: true,
+            opacity: 0.38,
+            wireframe: true,
+            side: THREE.DoubleSide
+        });
+        const vortex = new THREE.Mesh(vortexGeo, vortexMat);
+        vortex.position.set(0, 7.0, 0);
+        group.add(vortex);
+        group.position.set(0, 0, zOffset);
+        group.userData.spinner = vortex;
+
+        return {
+            mesh: group,
+            type: 'SANDSTORM_VORTEX',
+            width: 14.0,
+            length: 8.0,
+            triggered: false
+        };
+    }
+
+    function createMineRocks(zOffset = -185) {
+        const group = new THREE.Group();
+        const rockMat = new THREE.MeshStandardMaterial({ color: 0x57534e, roughness: 0.9 });
+        [-4.5, -1.5, 1.5, 4.5].forEach(rx => {
+            const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(1.2 + Math.random() * 0.6), rockMat);
+            rock.position.set(rx + (Math.random() - 0.5), 0.8, (Math.random() - 0.5) * 2.0);
+            rock.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+            group.add(rock);
+        });
+        group.position.set(0, 0, zOffset);
+        return {
+            mesh: group,
+            type: 'MINE_ROCKS',
+            width: 12.0,
+            length: 3.5,
+            triggered: false
+        };
+    }
+
     global.CrashoriaWorldBuilder = {
         ROAD_WIDTH,
         LANE_CENTERS,
@@ -1035,25 +1295,21 @@
         createBlackIcePatch,
         createValleyMegaRamp,
         createBoulderObstacle,
-        createTunnelDeluge
+        createTunnelDeluge,
+        createHydroPuddle,
+        createLaserSecurityGrid,
+        createMoltenLavaCrack,
+        createToriiArchGate,
+        createChicaneTireBarrier,
+        createWreckingBall,
+        createTntPyramid,
+        createRoadworkCones,
+        createWaterBarrels,
+        createFallingSignboard,
+        createCliffChasmFork,
+        createSandstormVortex,
+        createMineRocks
     };
     global.ApexWorldBuilder = global.CrashoriaWorldBuilder;
-    const _dummyWorldBuilder = {
-        ROAD_WIDTH,
-        LANE_CENTERS,
-        HIGHWAY_SEGMENT_LENGTH,
-        MAP_SPECS,
-        LEVEL_SPECS,
-        createProceduralRoadTexture,
-        createProceduralEnvTexture,
-        createFinishGoalArch,
-        createSandboxObstacle,
-        createOrvisGantry,
-        createCyberBoostPad,
-        createFlameVentGantry,
-        createBlackIcePatch,
-        createValleyMegaRamp,
-        createBoulderObstacle,
-        createTunnelDeluge
-    };
+    const _dummyWorldBuilder = global.CrashoriaWorldBuilder;
 })(window);

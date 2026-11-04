@@ -349,6 +349,63 @@
             armorMultiplier: 1.10,
             profile: 'GT3_RACE',
             stats: { speed: 95, accel: 98, handling: 99, armor: 75, mass: 62 }
+        },
+        MEGA_RIG: {
+            id: 'MEGA_RIG',
+            name: 'ROAD BISON 18-WHEELER',
+            category: 'HEAVY DIESEL SEMI-TRUCK',
+            desc: '8.5トンの巨大18輪セミトレーラー。超高剛性クロモリ鋼グリルの突進力で一般車を紙屑のように吹き飛ばすモンスターマシン。',
+            color: 0xb91c1c,
+            accent: 0x1c1917,
+            rimColor: 0xe2e8f0,
+            caliperColor: 0xf59e0b,
+            underglowColor: 0xef4444,
+            maxSpeed: 305,
+            accel: 82,
+            steerPower: 22.0,
+            massKg: 8500,
+            stiffness: 2.80,
+            armorMultiplier: 3.20,
+            profile: 'SEMI_TRUCK',
+            stats: { speed: 68, accel: 74, handling: 62, armor: 100, mass: 100 }
+        },
+        ARMORED_SWAT: {
+            id: 'ARMORED_SWAT',
+            name: 'ENFORCER 6x6 SWAT APC',
+            category: 'MILITARY ARMORED INTERCEPTOR',
+            desc: '特殊部隊用6輪装甲迎撃車。厚さ50mmの複合装甲と高出力V8ディーゼルツインターボを搭載し、バリケードを一撃粉砕する。',
+            color: 0x1e293b,
+            accent: 0x0f172a,
+            rimColor: 0x475569,
+            caliperColor: 0xef4444,
+            underglowColor: 0x3b82f6,
+            maxSpeed: 335,
+            accel: 92,
+            steerPower: 26.5,
+            massKg: 5200,
+            stiffness: 2.50,
+            armorMultiplier: 2.80,
+            profile: 'SWAT_APC',
+            stats: { speed: 76, accel: 84, handling: 72, armor: 100, mass: 98 }
+        },
+        MONSTER_TRUCK: {
+            id: 'MONSTER_TRUCK',
+            name: 'BEAST CRUSHER 4x4',
+            category: 'SUPERCHARGED MONSTER TRUCK',
+            desc: '巨大ハイリフトタイヤとスーパーチャージャーV8を積んだモンスタートラック。車高が高く、障害物や敵車を上から踏み潰す！',
+            color: 0x7c3aed,
+            accent: 0xfacc15,
+            rimColor: 0xfacc15,
+            caliperColor: 0x22c55e,
+            underglowColor: 0xa855f7,
+            maxSpeed: 320,
+            accel: 110,
+            steerPower: 31.0,
+            massKg: 3800,
+            stiffness: 2.20,
+            armorMultiplier: 2.40,
+            profile: 'MONSTER_4X4',
+            stats: { speed: 74, accel: 90, handling: 85, armor: 95, mass: 92 }
         }
     };
 
@@ -817,10 +874,13 @@
     function buildSculptedPlayerCar(carKey, envTexture, customOptions = {}) {
         const spec = CAR_SPECS[carKey] || CAR_SPECS.HYPER;
         const profile = spec.profile;
-        const isSUV = profile === 'HEAVY_SUV' || profile === 'CYBER_ANGULAR' || profile === 'HEAVY_DEKOTORA';
-        const isArmored = profile === 'MUSCLE_ARMORED' || profile === 'CYBER_ANGULAR' || profile === 'HEAVY_DEKOTORA';
+        const isSemi = profile === 'SEMI_TRUCK';
+        const isSWAT = profile === 'SWAT_APC';
+        const isMonster = profile === 'MONSTER_4X4';
+        const isSUV = profile === 'HEAVY_SUV' || profile === 'CYBER_ANGULAR' || profile === 'HEAVY_DEKOTORA' || isSemi || isSWAT || isMonster;
+        const isArmored = profile === 'MUSCLE_ARMORED' || profile === 'CYBER_ANGULAR' || profile === 'HEAVY_DEKOTORA' || isSemi || isSWAT;
         const isLMP = profile === 'LMP_PROTOTYPE' || profile === 'OPEN_WHEEL_F1' || profile === 'GT3_RACE';
-        const isWideDrift = profile === 'WIDEBODY_DRIFT' || profile === 'ROTARY_AERO' || profile === 'WRC_WIDE' || profile === 'GT3_RACE';
+        const isWideDrift = profile === 'WIDEBODY_DRIFT' || profile === 'ROTARY_AERO' || profile === 'WRC_WIDE' || profile === 'GT3_RACE' || isMonster;
 
         const root = new THREE.Group();
         const chassisGroup = new THREE.Group();
@@ -1302,8 +1362,9 @@
         tailBar.position.set(0, isSUV ? 0.88 : 0.72, 2.15);
         chassisGroup.add(tailBar);
 
-        // Quad Titanium Exhaust Pipes + Twin Blue NOS Flame Cones
+        // Quad Titanium Exhaust Pipes + Twin Blue NOS Flame Cones & Orange Backfires
         const nosFlames = [];
+        const backfireFlames = [];
         [-0.58, -0.40, 0.40, 0.58].forEach((ex, idx) => {
             const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.34, 12), chromeMat);
             pipe.rotation.x = Math.PI / 2;
@@ -1321,7 +1382,69 @@
             flame.position.set(ex, 0.32, 2.65);
             chassisGroup.add(flame);
             nosFlames.push(flame);
+
+            const bfGeo = new THREE.ConeGeometry(0.16, 0.75, 8);
+            bfGeo.rotateX(Math.PI / 2);
+            const bfMat = new THREE.MeshBasicMaterial({
+                color: idx % 2 === 0 ? 0xff6600 : 0xffcc00,
+                transparent: true,
+                opacity: 0.0
+            });
+            const bfFlame = new THREE.Mesh(bfGeo, bfMat);
+            bfFlame.position.set(ex, 0.32, 2.55);
+            chassisGroup.add(bfFlame);
+            backfireFlames.push(bfFlame);
         });
+
+        // =========================================================================
+        // ATTACHMENT ACCESSORIES (Ram Blade, Rocket Thruster, Spike Armor)
+        // =========================================================================
+        const attachmentType = customOptions.attachment || 'NONE';
+        if (attachmentType === 'RAM_BLADE') {
+            const bladeGroup = new THREE.Group();
+            const plowMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9, roughness: 0.25 });
+            const bladeGeo = new THREE.BoxGeometry(2.35, 0.65, 0.45);
+            const blade = new THREE.Mesh(bladeGeo, plowMat);
+            blade.position.set(0, 0.38, -2.35);
+            const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.12, 0.48), new THREE.MeshBasicMaterial({ color: 0xfbbf24 }));
+            stripe.position.set(0, 0.42, -2.35);
+            [-0.75, 0.75].forEach(sx => {
+                const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.6, 8), chromeMat);
+                strut.rotation.x = Math.PI / 4;
+                strut.position.set(sx, 0.45, -2.15);
+                bladeGroup.add(strut);
+            });
+            bladeGroup.add(blade, stripe);
+            chassisGroup.add(bladeGroup);
+        } else if (attachmentType === 'ROCKET_THRUSTER') {
+            const thrusterGroup = new THREE.Group();
+            const nozzleMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.2 });
+            [-0.42, 0.42].forEach(tx => {
+                const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.24, 0.85, 16), nozzleMat);
+                tube.rotation.x = Math.PI / 2;
+                tube.position.set(tx, 0.78, 1.85);
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.04, 8, 16), new THREE.MeshBasicMaterial({ color: 0x06b6d4 }));
+                ring.position.set(tx, 0.78, 2.28);
+                thrusterGroup.add(tube, ring);
+            });
+            chassisGroup.add(thrusterGroup);
+        } else if (attachmentType === 'SPIKE_ARMOR') {
+            const armorGroup = new THREE.Group();
+            const spikeMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.95, roughness: 0.1 });
+            [-1.08, 1.08].forEach(sx => {
+                const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.4, 8), spikeMat);
+                bar.rotation.x = Math.PI / 2;
+                bar.position.set(sx, 0.48, 0);
+                armorGroup.add(bar);
+                [-1.1, -0.4, 0.4, 1.1].forEach(sz => {
+                    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.24, 6), spikeMat);
+                    spike.rotation.z = sx > 0 ? -Math.PI / 2 : Math.PI / 2;
+                    spike.position.set(sx + (sx > 0 ? 0.12 : -0.12), 0.48, sz);
+                    armorGroup.add(spike);
+                });
+            });
+            chassisGroup.add(armorGroup);
+        }
 
         // Neon Underglow Plane
         const underglowMat = new THREE.MeshBasicMaterial({
@@ -1423,6 +1546,8 @@
             tailBar,
             underglowMesh,
             nosFlames,
+            backfireFlames,
+            attachment: attachmentType,
             beamSkeleton,
             deformableMeshes,
             wheels,

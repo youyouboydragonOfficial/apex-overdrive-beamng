@@ -13,7 +13,7 @@
             this.bgmGainNode = null;
             this.sfxGainNode = null;
             this.sfxEnabled = true;
-            this.bgmMode = 1; // 1: Cyber Synthwave, 2: Nitro Eurobeat, 3: Dark Overdrive, 0: OFF
+            this.bgmMode = 1; // 1: Cyber Synthwave, 2: Nitro Eurobeat, 3: Dark Overdrive, 4: Police Pursuit, 5: Destruction Derby, 6: Canyon Rock, 0: OFF
             this.masterVolume = 1.0;
             this.bgmVolume = 1.0;
             this.sfxVolume = 1.0;
@@ -197,12 +197,18 @@
             const bassPatterns = {
                 1: [55, 55, 110, 55, 65.4, 65.4, 130.8, 65.4, 73.4, 73.4, 146.8, 73.4, 61.7, 61.7, 123.5, 82.4],
                 2: [65.4, 130.8, 65.4, 130.8, 73.4, 146.8, 73.4, 146.8, 82.4, 164.8, 82.4, 164.8, 77.8, 155.6, 98.0, 196.0],
-                3: [41.2, 41.2, 41.2, 82.4, 43.65, 43.65, 41.2, 41.2, 49.0, 49.0, 46.25, 46.25, 41.2, 82.4, 61.7, 55.0]
+                3: [41.2, 41.2, 41.2, 82.4, 43.65, 43.65, 41.2, 41.2, 49.0, 49.0, 46.25, 46.25, 41.2, 82.4, 61.7, 55.0],
+                4: [73.4, 73.4, 146.8, 73.4, 82.4, 82.4, 164.8, 82.4, 98.0, 98.0, 196.0, 98.0, 87.3, 87.3, 174.6, 82.4],
+                5: [36.7, 36.7, 73.4, 36.7, 36.7, 73.4, 36.7, 73.4, 41.2, 41.2, 82.4, 41.2, 38.9, 38.9, 77.8, 43.7],
+                6: [49.0, 98.0, 49.0, 73.4, 55.0, 110.0, 55.0, 82.4, 61.7, 123.5, 61.7, 98.0, 55.0, 110.0, 49.0, 73.4]
             };
             const leadPatterns = {
                 1: [440, 0, 523.3, 659.3, 587.3, 0, 523.3, 440, 392, 0, 440, 523.3, 659.3, 587.3, 523.3, 493.9],
                 2: [523.3, 659.3, 784.0, 659.3, 587.3, 698.5, 880.0, 698.5, 659.3, 784.0, 987.8, 784.0, 880.0, 784.0, 659.3, 587.3],
-                3: [329.6, 0, 349.2, 0, 329.6, 392.0, 0, 349.2, 329.6, 0, 293.7, 0, 261.6, 293.7, 329.6, 246.9]
+                3: [329.6, 0, 349.2, 0, 329.6, 392.0, 0, 349.2, 329.6, 0, 293.7, 0, 261.6, 293.7, 329.6, 246.9],
+                4: [587.3, 784.0, 880.0, 1174.7, 880.0, 784.0, 659.3, 587.3, 659.3, 880.0, 987.8, 1174.7, 987.8, 880.0, 784.0, 659.3],
+                5: [293.7, 0, 311.1, 0, 293.7, 0, 349.2, 0, 329.6, 0, 293.7, 0, 261.6, 277.2, 293.7, 0],
+                6: [392.0, 493.9, 587.3, 493.9, 440.0, 554.4, 659.3, 554.4, 493.9, 622.3, 740.0, 622.3, 440.0, 554.4, 392.0, 493.9]
             };
 
             const bassFreq = bassPatterns[this.bgmMode]?.[step % 16];
@@ -1030,6 +1036,180 @@
             gain.gain.setValueAtTime(0.28, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(dest);
+            noise.start(now);
+        }
+        /**
+         * Exhaust Antilag / Backfire pop gunshot
+         */
+        playBackfire(pitchMult = 1.0) {
+            this.ensureActive();
+            if (!this.ctx || !this.sfxEnabled) return;
+            const now = this.ctx.currentTime;
+            const dest = this.sfxGainNode || this.ctx.destination;
+
+            // Sharp metallic snap
+            const snap = this.ctx.createOscillator();
+            const snapGain = this.ctx.createGain();
+            snap.type = 'triangle';
+            snap.frequency.setValueAtTime(320 * pitchMult, now);
+            snap.frequency.exponentialRampToValueAtTime(45, now + 0.08);
+            snapGain.gain.setValueAtTime(0.35, now);
+            snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+            snap.connect(snapGain);
+            snapGain.connect(dest);
+            snap.start(now);
+            snap.stop(now + 0.10);
+
+            // Explosive noise crackle
+            const bufSize = Math.floor(this.ctx.sampleRate * 0.14);
+            const buffer = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufSize, 2.2);
+            }
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(950, now);
+            filter.Q.setValueAtTime(1.5, now);
+            const nGain = this.ctx.createGain();
+            nGain.gain.setValueAtTime(0.38, now);
+            nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+            noise.connect(filter);
+            filter.connect(nGain);
+            nGain.connect(dest);
+            noise.start(now);
+        }
+
+        /**
+         * Guardrail / Metal Scraping Friction with bright sparks
+         */
+        playSparksScrape(duration = 0.25) {
+            this.ensureActive();
+            if (!this.ctx || !this.sfxEnabled) return;
+            const now = this.ctx.currentTime;
+            if (this.lastScrapeTime && (now - this.lastScrapeTime < 0.12)) return;
+            this.lastScrapeTime = now;
+            const dest = this.sfxGainNode || this.ctx.destination;
+
+            const bufSize = Math.floor(this.ctx.sampleRate * duration);
+            const buffer = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * 0.75 + Math.sin(i * 0.42) * 0.25;
+            }
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(2800, now);
+            filter.frequency.linearRampToValueAtTime(1900, now + duration);
+            filter.Q.setValueAtTime(3.5, now);
+            const gain = this.ctx.createGain();
+            gain.gain.setValueAtTime(0.24, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(dest);
+            noise.start(now);
+        }
+
+        /**
+         * Canyon Cliff Plummet Fall & Colossal Crater Impact
+         */
+        playCliffFall() {
+            this.ensureActive();
+            if (!this.ctx || !this.sfxEnabled) return;
+            const now = this.ctx.currentTime;
+            const dest = this.sfxGainNode || this.ctx.destination;
+
+            const howl = this.ctx.createOscillator();
+            const howlGain = this.ctx.createGain();
+            howl.type = 'sawtooth';
+            howl.frequency.setValueAtTime(680, now);
+            howl.frequency.exponentialRampToValueAtTime(95, now + 1.25);
+            howlGain.gain.setValueAtTime(0.28, now);
+            howlGain.gain.linearRampToValueAtTime(0.38, now + 1.15);
+            howlGain.gain.exponentialRampToValueAtTime(0.001, now + 1.35);
+
+            const hFilter = this.ctx.createBiquadFilter();
+            hFilter.type = 'lowpass';
+            hFilter.frequency.setValueAtTime(1200, now);
+            hFilter.frequency.linearRampToValueAtTime(400, now + 1.25);
+
+            howl.connect(hFilter);
+            hFilter.connect(howlGain);
+            howlGain.connect(dest);
+            howl.start(now);
+            howl.stop(now + 1.35);
+
+            setTimeout(() => {
+                this.playExplosion();
+                this.playCrash(2.2);
+            }, 1250);
+        }
+
+        /**
+         * Destruction Derby / Stadium Arena Crowd Cheering Roar
+         */
+        playCrowdCheer() {
+            this.ensureActive();
+            if (!this.ctx || !this.sfxEnabled) return;
+            const now = this.ctx.currentTime;
+            const dest = this.sfxGainNode || this.ctx.destination;
+            const dur = 1.6;
+            const bufSize = Math.floor(this.ctx.sampleRate * dur);
+            const buffer = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * i / bufSize);
+            }
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(820, now);
+            filter.frequency.linearRampToValueAtTime(1150, now + 0.8);
+            filter.frequency.linearRampToValueAtTime(650, now + dur);
+            filter.Q.setValueAtTime(1.2, now);
+            const gain = this.ctx.createGain();
+            gain.gain.setValueAtTime(0.01, now);
+            gain.gain.linearRampToValueAtTime(0.22, now + 0.4);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(dest);
+            noise.start(now);
+        }
+
+        /**
+         * Windshield & Window Glass Shatter
+         */
+        playGlassShatter() {
+            this.ensureActive();
+            if (!this.ctx || !this.sfxEnabled) return;
+            const now = this.ctx.currentTime;
+            const dest = this.sfxGainNode || this.ctx.destination;
+
+            const bufSize = Math.floor(this.ctx.sampleRate * 0.35);
+            const buffer = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufSize, 0.7);
+            }
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.setValueAtTime(3200, now);
+            filter.Q.setValueAtTime(2.0, now);
+            const gain = this.ctx.createGain();
+            gain.gain.setValueAtTime(0.28, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
             noise.connect(filter);
             filter.connect(gain);
             gain.connect(dest);

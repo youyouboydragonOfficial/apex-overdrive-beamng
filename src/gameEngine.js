@@ -43,7 +43,13 @@
         mode: 'SPLASH', // SPLASH, HOME, MENU, PLAYING, EXPLODING, GAMEOVER, STAGECLEAR
         appInfo: { isPortable: false, portableExePath: '' },
         steerSensitivity: 1.0, // Fine steering sensitivity preference (50% - 150%)
-        gameType: 'CAREER', // CAREER (Stage Clear Goal), ENDLESS, SANDBOX (BeamNG Crash Lab)
+        gameType: 'CAREER', // CAREER, ENDLESS, SANDBOX, POLICE_CHASE, DERBY
+        customAttachment: 'NONE', // NONE, RAM_BLADE, ROCKET_THRUSTER, SPIKE_ARMOR
+        cliffFall: false,
+        isPlummeting: false,
+        screenShake: 0,
+        derbySurvivors: 6,
+        trapsHit: 0,
         selectedCar: 'HYPER',
         selectedMap: 'TOKYO',
         selectedLevel: 2,
@@ -1076,22 +1082,22 @@
         if (!type) {
             const map = state.selectedMap || 'TOKYO';
             const mapPools = {
-                TOKYO: ['ORVIS_CAMERA', 'RAMP', 'BARREL', 'OIL', 'REPAIR'],
-                CANYON: ['BOULDER_FALL', 'RAMP', 'BARREL', 'SPIKE', 'REPAIR'],
-                SNOW: ['BLACK_ICE', 'RAMP', 'CONTAINER', 'REPAIR', 'BARREL'],
-                INFERNO: ['FLAME_VENT', 'BARREL', 'CRUSHER', 'CONCRETE_WALL', 'REPAIR'],
-                SHUTO_C1: ['CYBER_BOOST', 'TUNNEL_DELUGE', 'RAMP', 'CONTAINER', 'REPAIR'],
-                HAKONE: ['VALLEY_RAMP', 'SPIKE', 'RAMP', 'REPAIR', 'BARREL'],
-                RAINY_OSAKA: ['HYDRO_PUDDLE', 'BARREL', 'OIL', 'RAMP', 'REPAIR'],
-                GERMAN_AUTOBAHN: ['ORVIS_CAMERA', 'CYBER_BOOST', 'BARREL', 'REPAIR', 'CONTAINER'],
-                NEON_VEGAS: ['LASER_GRID', 'CYBER_BOOST', 'RAMP', 'REPAIR', 'BARREL'],
-                SUNSET_MIAMI: ['HYDRO_PUDDLE', 'VALLEY_RAMP', 'BARREL', 'REPAIR', 'RAMP'],
-                VOLCANO_CALDERA: ['LAVA_CRACK', 'FLAME_VENT', 'CRUSHER', 'BARREL', 'REPAIR'],
-                MONACO_GP: ['CHICANE_BARRIER', 'VALLEY_RAMP', 'SPIKE', 'REPAIR', 'BARREL'],
-                FOGGY_SILENT: ['BOULDER_FALL', 'BARREL', 'SPIKE', 'OIL', 'REPAIR'],
-                AURORA_NORDIC: ['BLACK_ICE', 'HYDRO_PUDDLE', 'RAMP', 'REPAIR', 'CONTAINER'],
-                DUBAI_GOLDEN: ['CYBER_BOOST', 'LASER_GRID', 'RAMP', 'REPAIR', 'BARREL'],
-                KYOTO_CHERRY: ['TORII_GATE', 'VALLEY_RAMP', 'OIL', 'REPAIR', 'BARREL']
+                TOKYO: ['ORVIS_CAMERA', 'CYBER_BOOST', 'ROADWORK_CONES', 'WATER_BARRELS', 'FALLING_SIGNBOARD', 'OIL', 'RAMP', 'TUNNEL_DELUGE', 'CHICANE_BARRIER', 'REPAIR'],
+                CANYON: ['CLIFF_CHASM', 'BOULDER_FALL', 'VALLEY_RAMP', 'MINE_ROCKS', 'SANDSTORM_VORTEX', 'SPIKE', 'BARREL', 'CONTAINER', 'TNT_PYRAMID', 'REPAIR'],
+                SNOW: ['BLACK_ICE', 'HYDRO_PUDDLE', 'BOULDER_FALL', 'VALLEY_RAMP', 'CONTAINER', 'WATER_BARRELS', 'ROADWORK_CONES', 'SPIKE', 'BARREL', 'REPAIR'],
+                INFERNO: ['FLAME_VENT', 'LAVA_CRACK', 'CRUSHER', 'CONCRETE_WALL', 'WRECKING_BALL', 'TNT_PYRAMID', 'BARREL', 'SPIKE', 'CYBER_BOOST', 'REPAIR'],
+                SHUTO_C1: ['CYBER_BOOST', 'TUNNEL_DELUGE', 'CHICANE_BARRIER', 'ORVIS_CAMERA', 'OIL', 'WATER_BARRELS', 'ROADWORK_CONES', 'RAMP', 'FALLING_SIGNBOARD', 'REPAIR'],
+                HAKONE: ['VALLEY_RAMP', 'TORII_GATE', 'CHICANE_BARRIER', 'BOULDER_FALL', 'OIL', 'SPIKE', 'RAMP', 'BARREL', 'CONTAINER', 'REPAIR'],
+                RAINY_OSAKA: ['HYDRO_PUDDLE', 'TUNNEL_DELUGE', 'OIL', 'WATER_BARRELS', 'ROADWORK_CONES', 'CHICANE_BARRIER', 'ORVIS_CAMERA', 'RAMP', 'BARREL', 'REPAIR'],
+                GERMAN_AUTOBAHN: ['ORVIS_CAMERA', 'CYBER_BOOST', 'FALLING_SIGNBOARD', 'CHICANE_BARRIER', 'WATER_BARRELS', 'ROADWORK_CONES', 'CONTAINER', 'BARREL', 'RAMP', 'REPAIR'],
+                NEON_VEGAS: ['LASER_GRID', 'CYBER_BOOST', 'TORII_GATE', 'RAMP', 'TNT_PYRAMID', 'OIL', 'BARREL', 'WATER_BARRELS', 'CONTAINER', 'REPAIR'],
+                SUNSET_MIAMI: ['HYDRO_PUDDLE', 'VALLEY_RAMP', 'ROADWORK_CONES', 'WATER_BARRELS', 'CYBER_BOOST', 'BARREL', 'REPAIR', 'RAMP', 'OIL', 'CHICANE_BARRIER'],
+                VOLCANO_CALDERA: ['LAVA_CRACK', 'FLAME_VENT', 'CRUSHER', 'CONCRETE_WALL', 'WRECKING_BALL', 'TNT_PYRAMID', 'BARREL', 'REPAIR', 'SPIKE', 'CYBER_BOOST'],
+                MONACO_GP: ['CHICANE_BARRIER', 'VALLEY_RAMP', 'ROADWORK_CONES', 'WATER_BARRELS', 'SPIKE', 'REPAIR', 'BARREL', 'OIL', 'CYBER_BOOST', 'RAMP'],
+                FOGGY_SILENT: ['BOULDER_FALL', 'MINE_ROCKS', 'SANDSTORM_VORTEX', 'BARREL', 'SPIKE', 'OIL', 'REPAIR', 'CONTAINER', 'RAMP', 'CHICANE_BARRIER'],
+                AURORA_NORDIC: ['BLACK_ICE', 'HYDRO_PUDDLE', 'BOULDER_FALL', 'WATER_BARRELS', 'ROADWORK_CONES', 'RAMP', 'REPAIR', 'CONTAINER', 'BARREL', 'SPIKE'],
+                DUBAI_GOLDEN: ['CYBER_BOOST', 'LASER_GRID', 'SANDSTORM_VORTEX', 'TNT_PYRAMID', 'RAMP', 'REPAIR', 'BARREL', 'WATER_BARRELS', 'CONTAINER', 'ROADWORK_CONES'],
+                KYOTO_CHERRY: ['TORII_GATE', 'VALLEY_RAMP', 'ROADWORK_CONES', 'WATER_BARRELS', 'OIL', 'REPAIR', 'BARREL', 'SPIKE', 'RAMP', 'CHICANE_BARRIER']
             };
             const pool = mapPools[map] || ['SPIKE', 'BARREL', 'OIL', 'RAMP', 'REPAIR'];
             type = pool[Math.floor(Math.random() * pool.length)];
@@ -1154,6 +1160,48 @@
             return;
         } else if (type === 'CHICANE_BARRIER') {
             const obj = WorldBuilder.createChicaneTireBarrier(zOffset, laneIndex);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        }
+
+        if (type === 'WRECKING_BALL') {
+            const obj = WorldBuilder.createWreckingBall(zOffset);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        } else if (type === 'TNT_PYRAMID') {
+            const obj = WorldBuilder.createTntPyramid(zOffset, laneIndex);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        } else if (type === 'ROADWORK_CONES') {
+            const obj = WorldBuilder.createRoadworkCones(zOffset, laneIndex);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        } else if (type === 'WATER_BARRELS') {
+            const obj = WorldBuilder.createWaterBarrels(zOffset, laneIndex);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        } else if (type === 'FALLING_SIGNBOARD') {
+            const obj = WorldBuilder.createFallingSignboard(zOffset);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        } else if (type === 'CLIFF_CHASM') {
+            const obj = WorldBuilder.createCliffChasmFork(zOffset);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        } else if (type === 'SANDSTORM_VORTEX') {
+            const obj = WorldBuilder.createSandstormVortex(zOffset);
+            scene.add(obj.mesh);
+            roadTraps.push(obj);
+            return;
+        } else if (type === 'MINE_ROCKS') {
+            const obj = WorldBuilder.createMineRocks(zOffset);
             scene.add(obj.mesh);
             roadTraps.push(obj);
             return;

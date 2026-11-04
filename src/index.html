@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.4.6</title>
+    <title>Crashoria: Ultimate Road Adventure - BeamNG Soft-Body Physics Edition v3.5.0</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Bundled Offline Three.js r128 & Cannon.js 0.6.2 -->
@@ -180,8 +180,8 @@
             </div>
         </div>
 
-        <!-- Center: Armor Bar + Goal Distance Progress Bar (Flexible width, compresses gracefully so right-side controls never overflow) -->
-        <div class="hidden md:flex flex-col gap-0.5 max-w-[260px] w-full shrink mx-1.5">
+        <!-- Center: Armor Bar + Goal Distance Progress Bar (Always visible on all screens!) -->
+        <div class="flex flex-col gap-0.5 w-44 sm:w-64 max-w-[280px] shrink mx-1 sm:mx-2">
             <div class="flex justify-between items-center text-[10px]">
                 <span class="font-bold flex items-center gap-1 text-slate-200">
                     <i class="fa-solid fa-car-burst text-orange-400"></i>
@@ -408,8 +408,8 @@
             </div>
         </div>
 
-        <!-- Bottom-Left Soft-Body Chassis & 4-Wheel Schematic -->
-        <div class="pointer-events-none hidden sm:flex absolute bottom-4 left-4 hud-glass p-3 rounded-2xl border border-slate-700/80 items-center gap-3.5 z-10">
+        <!-- Bottom-Left Real-Time Soft-Body Frame Damage HUD (Always Visible!) -->
+        <div class="pointer-events-none flex absolute bottom-3 sm:bottom-4 left-2 sm:left-4 hud-glass p-2.5 sm:p-3 rounded-2xl border border-sky-500/40 shadow-[0_0_20px_rgba(14,165,233,0.25)] items-center gap-2.5 sm:gap-3.5 z-10 scale-90 sm:scale-100 origin-bottom-left">
             <div class="relative w-14 h-24 flex flex-col items-center justify-between p-1.5 bg-slate-900/95 rounded-xl border border-slate-700">
                 <div id="schem-tire-FL" class="absolute -left-1.5 top-2.5 w-2 h-5 rounded-sm bg-emerald-400 border border-white/30"></div>
                 <div id="schem-tire-FR" class="absolute -right-1.5 top-2.5 w-2 h-5 rounded-sm bg-emerald-400 border border-white/30"></div>
@@ -494,7 +494,7 @@
                 <!-- Glowing Title Branding -->
                 <div>
                     <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-300 text-xs font-bold mb-3">
-                        <i class="fa-solid fa-car-burst text-orange-400"></i> BEAMNG 軟体物理エンジン搭載 v3.4.6
+                        <i class="fa-solid fa-car-burst text-orange-400"></i> BEAMNG 軟体物理エンジン搭載 v3.5.0
                     </div>
                     <h1 class="font-['Orbitron'] font-black text-3xl sm:text-5xl tracking-widest bg-gradient-to-r from-white via-sky-300 to-amber-400 bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(56,189,248,0.6)]">
                         CRASHORIA
@@ -835,6 +835,22 @@
                         <div class="text-xs text-slate-400">最高速度</div>
                         <div id="final-topspeed" class="font-['Orbitron'] text-sm sm:text-base font-black text-emerald-400">0 km/h</div>
                     </div>
+                    <!-- Estimated Financial Damage & Destruction Valuation -->
+                    <div id="damage-valuation-card" class="col-span-3 bg-red-950/70 p-3 rounded-2xl border border-red-500/60 mt-1 text-left flex flex-col gap-1.5 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-rose-300 flex items-center gap-1.5">
+                                <i class="fa-solid fa-file-invoice-dollar text-yellow-400 text-sm"></i>
+                                事故調査書・推定損害総額 (CRASH DAMAGE VALUATION)
+                            </span>
+                            <span id="estimated-damage-cost" class="font-['Orbitron'] text-base sm:text-lg font-black text-yellow-300 animate-pulse">
+                                ¥0円
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-[10px] text-slate-300 border-t border-red-800/40 pt-1.5">
+                            <div>自車損害額: <span id="damage-detail-car" class="font-bold text-rose-300 font-mono">¥0</span></div>
+                            <div>公共・他車賠償: <span id="damage-detail-infra" class="font-bold text-amber-300 font-mono">¥0</span></div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Clean 3-Tab Navigation Bar -->
@@ -974,6 +990,21 @@
                             <div class="font-bold text-xs text-white">VALKYRIE GT3</div>
                             <div class="text-[10px] text-slate-400">スワンネックGTウイング</div>
                         </div>
+                        <div data-car="MEGA_RIG" class="select-card rounded-xl p-2 text-left border-rose-500/50">
+                            <div class="text-[9px] font-bold text-rose-400">特殊・超重量セミ</div>
+                            <div class="font-bold text-xs text-white">ROAD BISON</div>
+                            <div class="text-[10px] text-amber-300">8.5t 鋼鉄グリル粉砕</div>
+                        </div>
+                        <div data-car="ARMORED_SWAT" class="select-card rounded-xl p-2 text-left border-blue-500/50">
+                            <div class="text-[9px] font-bold text-blue-400">特殊・軍用装甲</div>
+                            <div class="font-bold text-xs text-white">SWAT ENFORCER</div>
+                            <div class="text-[10px] text-sky-300">5.2t 6x6 防弾装甲車</div>
+                        </div>
+                        <div data-car="MONSTER_TRUCK" class="select-card rounded-xl p-2 text-left border-purple-500/50">
+                            <div class="text-[9px] font-bold text-purple-400">特殊・モンスタートラック</div>
+                            <div class="font-bold text-xs text-white">BEAST CRUSHER</div>
+                            <div class="text-[10px] text-yellow-300">巨大タイヤ踏み潰し</div>
+                        </div>
                     </div>
 
                     <!-- Custom Paint & Finish Bar -->
@@ -994,6 +1025,35 @@
                             <button type="button" data-finish="CHROME" class="finish-btn px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-700 text-slate-300">クローム鏡面</button>
                         </div>
                     </div>
+
+                    <!-- Custom Attachment Accessories Selector -->
+                    <div class="bg-slate-900/90 p-3 rounded-2xl border border-slate-800 space-y-1.5">
+                        <div class="text-xs font-bold text-amber-300 flex items-center justify-between">
+                            <span class="flex items-center gap-1.5">
+                                <i class="fa-solid fa-wrench text-amber-400"></i>
+                                アタッチメント特殊装備 (EQUIP ATTACHMENT)
+                            </span>
+                            <span class="text-[10px] text-slate-400 font-normal">車体に物理装着＆性能変化</span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <button type="button" data-attachment="NONE" class="attachment-btn selected p-2 rounded-xl border border-slate-700 bg-slate-800/80 text-left text-xs font-bold text-slate-300 hover:border-sky-400 transition cursor-pointer">
+                                <div class="text-white">標準仕様</div>
+                                <div class="text-[9px] text-slate-400">アタッチメントなし</div>
+                            </button>
+                            <button type="button" data-attachment="RAM_BLADE" class="attachment-btn p-2 rounded-xl border border-slate-700 bg-slate-800/80 text-left text-xs font-bold text-slate-300 hover:border-amber-400 transition cursor-pointer">
+                                <div class="text-amber-300 flex items-center gap-1"><i class="fa-solid fa-shield-halved"></i> ラムブレード</div>
+                                <div class="text-[9px] text-slate-400">正面衝撃-80%＆敵車跳ね上げ</div>
+                            </button>
+                            <button type="button" data-attachment="ROCKET_THRUSTER" class="attachment-btn p-2 rounded-xl border border-slate-700 bg-slate-800/80 text-left text-xs font-bold text-slate-300 hover:border-cyan-400 transition cursor-pointer">
+                                <div class="text-cyan-300 flex items-center gap-1"><i class="fa-solid fa-rocket"></i> ロケットバーニア</div>
+                                <div class="text-[9px] text-slate-400">ニトロ+120km/h＆爆発加速</div>
+                            </button>
+                            <button type="button" data-attachment="SPIKE_ARMOR" class="attachment-btn p-2 rounded-xl border border-slate-700 bg-slate-800/80 text-left text-xs font-bold text-slate-300 hover:border-rose-400 transition cursor-pointer">
+                                <div class="text-rose-400 flex items-center gap-1"><i class="fa-solid fa-burst"></i> 装甲スパイク</div>
+                                <div class="text-[9px] text-slate-400">横体当たりダメージ2倍</div>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- TAB 2: GAME MODE, STAGE, DIFFICULTY & TRAFFIC VOLUME SLIDER -->
@@ -1001,18 +1061,26 @@
                     <!-- Game Mode Selector -->
                     <div>
                         <div class="text-xs font-bold text-sky-300 mb-1.5"><i class="fa-solid fa-flag mr-1"></i>ゲームモード選択</div>
-                        <div id="mode-select-grid" class="grid grid-cols-3 gap-2">
+                        <div id="mode-select-grid" class="grid grid-cols-2 sm:grid-cols-5 gap-2">
                             <div data-mode="CAREER" class="select-card selected rounded-xl p-2.5 text-left">
-                                <div class="text-xs font-bold text-emerald-400">🏆 ステージクリア制</div>
-                                <div class="text-[11px] text-slate-300 mt-0.5">目標距離のゴールゲート到達でステージ制覇！</div>
+                                <div class="text-xs font-bold text-emerald-400">🏆 ステージ制覇</div>
+                                <div class="text-[11px] text-slate-300 mt-0.5">ゴール到達で制覇！</div>
+                            </div>
+                            <div data-mode="POLICE_CHASE" class="select-card rounded-xl p-2.5 text-left border-rose-500/50">
+                                <div class="text-xs font-bold text-rose-400">🚨 ポリスチェイス</div>
+                                <div class="text-[11px] text-slate-300 mt-0.5">指名手配★1〜5大追撃！</div>
+                            </div>
+                            <div data-mode="DERBY" class="select-card rounded-xl p-2.5 text-left border-purple-500/50">
+                                <div class="text-xs font-bold text-purple-400">💥 ダービー破壊</div>
+                                <div class="text-[11px] text-slate-300 mt-0.5">最後の一台まで激突！</div>
                             </div>
                             <div data-mode="SANDBOX" class="select-card rounded-xl p-2.5 text-left">
-                                <div class="text-xs font-bold text-cyan-300">🧪 物理クラッシュ実験場</div>
-                                <div class="text-[11px] text-slate-300 mt-0.5">ゲームオーバーなし！圧壊ローラーや壁を自在配置</div>
+                                <div class="text-xs font-bold text-cyan-300">🧪 実験場</div>
+                                <div class="text-[11px] text-slate-300 mt-0.5">ゲームオーバーなし</div>
                             </div>
                             <div data-mode="ENDLESS" class="select-card rounded-xl p-2.5 text-left">
-                                <div class="text-xs font-bold text-amber-400">♾️ エンドレス耐久</div>
-                                <div class="text-[11px] text-slate-300 mt-0.5">限界まで走り続けてハイスコアを競うモード</div>
+                                <div class="text-xs font-bold text-amber-400">♾️ エンドレス</div>
+                                <div class="text-[11px] text-slate-300 mt-0.5">限界スコアアタック</div>
                             </div>
                         </div>
                     </div>
@@ -1030,7 +1098,7 @@
                             </div>
                             <div data-map="CANYON" class="select-card rounded-xl p-2 text-left">
                                 <div class="text-xs font-bold text-amber-400">🏜️ 大渓谷夕陽</div>
-                                <div class="text-[9px] text-amber-300 mt-0.5">🪨 巨石崩落＆突風</div>
+                                <div class="text-[9px] text-red-400 mt-0.5">☠️ 道路崩落・谷底崖転落大破</div>
                             </div>
                             <div data-map="SNOW" class="select-card rounded-xl p-2 text-left">
                                 <div class="text-xs font-bold text-cyan-200">❄️ ブリザード雪山</div>
